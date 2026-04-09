@@ -1,0 +1,110 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - button " Back" [ref=e5] [cursor=pointer]:
+        - generic [ref=e6]: 
+        - text: Back
+      - generic [ref=e7]:
+        - heading " Share Your Experience" [level=1] [ref=e8]:
+          - generic [ref=e9]: 
+          - text: Share Your Experience
+        - paragraph [ref=e10]: We value your feedback! Let us know how we did.
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]: Your Name *
+          - textbox "Enter your name" [ref=e14]
+        - generic [ref=e15]:
+          - generic [ref=e16]: Location
+          - textbox "e.g. Mumbai, Thane" [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]: Your Rating *
+          - generic [ref=e20] [cursor=pointer]:
+            - generic [ref=e21]: 
+            - generic [ref=e22]: 
+            - generic [ref=e23]: 
+            - generic [ref=e24]: 
+            - generic [ref=e25]: 
+        - generic [ref=e26]:
+          - generic [ref=e27]: Your Review *
+          - textbox "Tell us about your experience..." [ref=e28]
+        - generic [ref=e29]:
+          - generic [ref=e30]: Your Photo (optional)
+          - generic [ref=e32] [cursor=pointer]:
+            - generic [ref=e33]: 
+            - text: Add Photo
+        - button " Submit Review" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: 
+          - text: Submit Review
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - heading "quick links" [level=3] [ref=e40]
+        - link " Home" [ref=e41] [cursor=pointer]:
+          - /url: "#home"
+          - generic [ref=e42]: 
+          - text: Home
+        - link " About" [ref=e43] [cursor=pointer]:
+          - /url: "#about"
+          - generic [ref=e44]: 
+          - text: About
+        - link " Services" [ref=e45] [cursor=pointer]:
+          - /url: "#services"
+          - generic [ref=e46]: 
+          - text: Services
+        - link " Products" [ref=e47] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e48]: 
+          - text: Products
+        - link " Design Gallery" [ref=e49] [cursor=pointer]:
+          - /url: "#gallery"
+          - generic [ref=e50]: 
+          - text: Design Gallery
+        - link " Contact" [ref=e51] [cursor=pointer]:
+          - /url: "#contact"
+          - generic [ref=e52]: 
+          - text: Contact
+      - generic [ref=e53]:
+        - heading "contact info" [level=3] [ref=e54]
+        - link " +91-9321812823 , +91-8318727813" [ref=e55] [cursor=pointer]:
+          - /url: tel:+91-9321812823 , +91-8318727813
+          - generic [ref=e56]: 
+          - text: +91-9321812823 , +91-8318727813
+        - link " contact@ananyahouseoffurniture.com" [ref=e57] [cursor=pointer]:
+          - /url: mailto:contact@ananyahouseoffurniture.com
+          - generic [ref=e58]: 
+          - text: contact@ananyahouseoffurniture.com
+        - link " Diva-Shil Road, Khardipada, Thane, Maharashtra, India -[400612]" [ref=e59] [cursor=pointer]:
+          - /url: https://maps.app.goo.gl/3wAw79stEiGNyeWa9
+          - generic [ref=e60]: 
+          - text: Diva-Shil Road, Khardipada, Thane, Maharashtra, India -[400612]
+      - generic [ref=e61]:
+        - heading "share your experience" [level=3] [ref=e62]
+        - paragraph [ref=e63]: We value your feedback! Let us know how we did.
+        - link " Submit Review" [ref=e64] [cursor=pointer]:
+          - /url: /submit-review
+          - generic [ref=e65]: 
+          - text: Submit Review
+      - generic [ref=e66]:
+        - heading "follow us" [level=3] [ref=e67]
+        - link " facebook" [ref=e68] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e69]: 
+          - text: facebook
+        - link " twitter" [ref=e70] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e71]: 
+          - text: twitter
+        - link " instagram" [ref=e72] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e73]: 
+          - text: instagram
+        - link " linkedin" [ref=e74] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e75]: 
+          - text: linkedin
+    - generic [ref=e76]: created by Ananya House of Furniture Team | all rights reserved
+  - link "" [ref=e77] [cursor=pointer]:
+    - /url: https://wa.me/919321812823?text=Hi%2C%20I%20am%20interested%20in%20your%20furniture
+    - generic [ref=e78]: 
+  - button "Open Next.js Dev Tools" [ref=e84] [cursor=pointer]:
+    - img [ref=e85]
