@@ -33,7 +33,7 @@ export default function FeaturedProducts() {
       <h1 className="heading">our <span>products</span></h1>
       <div className="featured-products-grid">
         {products.map((product) => (
-          <Link key={product.id} href={`/products/${product.id}`} className="featured-product-card">
+          <Link key={product.id} href={`/products/${product.slug || product.id}`} className="featured-product-card">
             <div className="fp-card-img">
               <img src={product.image} alt={product.name} />
             </div>

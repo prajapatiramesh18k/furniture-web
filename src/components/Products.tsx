@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 
 interface Product {
   id: string | number;
+  slug?: string;
   name: string;
   image: string;
   price: number;
@@ -162,12 +164,9 @@ export default function Products() {
                     </button>
                     <img src={product.image} alt={product.name} />
                     <div className="product-card-overlay">
-                      <button
-                        className="product-quickview-btn"
-                        onClick={() => setQuickviewProduct(product)}
-                      >
-                        <i className="fas fa-eye"></i> Quick View
-                      </button>
+                      <Link href={`/products/${product.slug || product.id}`} className="product-quickview-btn">
+                        <i className="fas fa-eye"></i> View Details
+                      </Link>
                     </div>
                   </div>
 

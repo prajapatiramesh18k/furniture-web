@@ -43,7 +43,7 @@ export default function ProductsPage() {
       ) : (
         <div className="products-page-grid">
           {products.map((product) => (
-            <Link key={product.id} href={`/products/${product.id}`} className="products-page-card">
+            <Link key={product.id} href={`/products/${product.slug || product.id}`} className="products-page-card">
               <div className="products-page-card-img">
                 <img src={product.image} alt={product.name} />
                 <div className="products-page-card-overlay">
