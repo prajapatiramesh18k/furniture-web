@@ -1,10 +1,16 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import NavbarWrapper from '@/components/NavbarWrapper';
+import Footer from '@/components/Footer';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
+import CloseButton from '@/components/CloseButton';
 
 const blogData = [
   {
     id: 1,
+    slug: 'complete-guide-buying-right-bed-bedroom',
     title: 'Complete Guide to Buying the Right Bed for Your Bedroom',
-    image: 'images/blog-1.jpg',
+    image: '/images/blog-1.jpg',
     excerpt:
       'Offers practical advice on selecting the perfect bed size, material, and design based on client needs and space.',
     fullContent:
@@ -13,13 +19,14 @@ const blogData = [
     readTime: '5 min read',
     date: '5th July, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-2.jpg',
+    authorImage: '/images/team-2.jpg',
     tags: ['Beds', 'Bedroom', 'Buying Guide'],
   },
   {
     id: 2,
+    slug: 'furniture-care-101-tips-maintain-wooden-furniture',
     title: 'Furniture Care 101: Tips to Maintain Wooden Furniture',
-    image: 'images/blog-2.jpg',
+    image: '/images/blog-2.jpg',
     excerpt:
       'Helps clients keep their furniture in top condition with easy maintenance tips, enhancing the longevity of their investment.',
     fullContent:
@@ -28,13 +35,14 @@ const blogData = [
     readTime: '4 min read',
     date: '10th March, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-5.png',
+    authorImage: '/images/team-5.png',
     tags: ['Wooden Furniture', 'Maintenance', 'Care Tips'],
   },
   {
     id: 3,
+    slug: '5-simple-ways-make-small-space-look-bigger-furniture',
     title: '5 Simple Ways to Make a Small Space Look Bigger with Furniture',
-    image: 'images/blog-3.jpg',
+    image: '/images/blog-3.jpg',
     excerpt:
       'Provides smart furniture arrangement ideas that maximize space, ideal for clients with smaller homes or apartments.',
     fullContent:
@@ -43,55 +51,85 @@ const blogData = [
     readTime: '3 min read',
     date: '11th April, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-6.png',
+    authorImage: '/images/team-6.png',
     tags: ['Small Spaces', 'Interior Design', 'Space Saving'],
   },
 ];
 
-const slugMap: Record<number, string> = {
-  1: 'complete-guide-buying-right-bed-bedroom',
-  2: 'furniture-care-101-tips-maintain-wooden-furniture',
-  3: '5-simple-ways-make-small-space-look-bigger-furniture',
-};
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-export default function Blog() {
+export async function generateStaticParams() {
+  return blogData.map((p) => ({ slug: p.slug }));
+}
+
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const post = blogData.find((p) => p.slug === slug);
+  if (!post) return {};
+  return {
+    title: `${post.title} | Ananya House of Furniture`,
+    description: post.excerpt,
+  };
+}
+
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params;
+  const post = blogData.find((p) => p.slug === slug);
+  if (!post) notFound();
+
+  const paragraphs = post.fullContent.split('\n').filter((p) => p.trim() !== '');
+
   return (
-    <section className="blog" id="blog">
-      <h1 className="heading"> our <span> blogs</span></h1>
+    <>
+      <NavbarWrapper />
+      <div className="blog-post-page">
+        <div className="blog-post-header">
+          <div className="blog-post-hero">
+            <img src={post.image} alt={post.title} className="blog-post-hero-img" />
+            <div className="blog-post-hero-overlay">
+              <CloseButton href="/blog" />
+            </div>
+          </div>
+        </div>
 
-      <div className="box-container">
-        {blogData.map((post) => (
-          <Link
-            key={post.id}
-            href={`/blog/${slugMap[post.id]}`}
-            className="box"
-          >
-            <div className="image">
-              <img src={post.image} alt={post.title} />
-              <span className="blog-category">{post.category}</span>
+        <div className="blog-post-container">
+          <div className="blog-post-meta">
+            <span className="blog-post-category">{post.category}</span>
+            <span className="blog-post-date"><i className="fas fa-calendar"></i> {post.date}</span>
+            <span className="blog-post-readtime"><i className="fas fa-clock"></i> {post.readTime}</span>
+          </div>
+
+          <h1 className="blog-post-title">{post.title}</h1>
+
+          <div className="blog-post-author">
+            <img src={post.authorImage} alt={post.author} />
+            <span>By {post.author}</span>
+          </div>
+
+          <div className="blog-post-content">
+            {paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+
+          {post.tags && post.tags.length > 0 && (
+            <div className="blog-post-tags">
+              {post.tags.map((tag, index) => (
+                <span key={index} className="blog-tag">{tag}</span>
+              ))}
             </div>
-            <div className="content">
-              <h3>{post.title}</h3>
-              <p>{post.excerpt}</p>
-              <span className="btn">read more</span>
-              <div className="icons">
-                <span>
-                  <i className="fas fa-calendar"></i>
-                  {post.date}
-                </span>
-                <span>
-                  <i className="fas fa-user"></i>
-                  {post.author}
-                </span>
-                <span>
-                  <i className="fas fa-clock"></i>
-                  {post.readTime}
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
+          )}
+
+          <div className="blog-post-actions">
+            <Link href="/contact" className="btn"><i className="fas fa-phone"></i> Get in Touch</Link>
+            <Link href="/blog" className="btn btn-outline">More Articles</Link>
+          </div>
+        </div>
       </div>
-    </section>
+      <Footer />
+      <WhatsAppFloat />
+    </>
   );
 }

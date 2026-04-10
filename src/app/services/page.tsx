@@ -1,17 +1,13 @@
 'use client';
 import Link from 'next/link';
+import CloseButton from '@/components/CloseButton';
 import { services } from '@/lib/services-data';
 
 export default function ServicesPage() {
   return (
     <div className="services-page">
-      <button className="sr-back services-page-back" onClick={() => window.history.back()}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-      </button>
-
       <div className="services-page-hero">
+        <CloseButton href="/" />
         <h1>Our <span>Services</span></h1>
         <p>From custom furniture design to restoration, we offer everything you need to furnish and care for your home beautifully.</p>
       </div>

@@ -2,21 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import GalleryImage from '@/lib/models/GalleryImage';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect();
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-
-    let images;
-    if (category) {
-      images = await GalleryImage.find({ category }).sort({ uploadedAt: -1 });
-    } else {
-      images = await GalleryImage.find().sort({ uploadedAt: -1 });
-    }
-    return NextResponse.json(images);
+    const images = await GalleryImage.find().sort({ uploadedAt: -1 });
+    return NextResponse.json(
+      { images },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch gallery' }, { status: 500 });
+    return NextResponse.json({ images: [], error: 'Failed to fetch gallery' }, { status: 500 });
   }
 }
 

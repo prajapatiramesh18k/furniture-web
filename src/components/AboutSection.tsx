@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import CloseButton from '@/components/CloseButton';
 
 const aboutData = {
   tagline: 'Welcome to Ananya House of Furniture',
@@ -50,6 +51,7 @@ export default function AboutSection({ standalone = false }: AboutSectionProps) 
     return (
       <div className="about-section-full">
         <div className="about-full-hero">
+          <CloseButton href="/" />
           <div className="about-full-image">
             <img src="images/about.jpg" alt="About Ananya House of Furniture" />
             <div className="about-full-image-overlay" />

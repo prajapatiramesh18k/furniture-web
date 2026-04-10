@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import CloseButton from '@/components/CloseButton';
 
 interface GalleryImage {
   _id: string;
@@ -52,11 +53,14 @@ const allCategories = [
   { id: 'kids-room', name: 'Kids Room', icon: 'fa-child' },
 ];
 
+const IMAGES_PER_PAGE = 12;
+
 export default function GalleryPage() {
   const [allImages, setAllImages] = useState<GalleryImage[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,9 +86,19 @@ export default function GalleryPage() {
     ? allImages
     : allImages.filter(img => img.category === activeCategory);
 
+  const totalPages = Math.ceil(filteredImages.length / IMAGES_PER_PAGE);
+  const startIndex = (currentPage - 1) * IMAGES_PER_PAGE;
+  const paginatedImages = filteredImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
+
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
     setLightboxOpen(true);
+  };
+
+  // Reset to page 1 when category changes
+  const handleCategoryChange = (catId: string) => {
+    setActiveCategory(catId);
+    setCurrentPage(1);
   };
 
   const prevImage = () => {
@@ -109,13 +123,8 @@ export default function GalleryPage() {
 
   return (
     <div className="gallery-page">
-      <button className="sr-back gallery-page-back" onClick={() => window.history.back()}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-      </button>
-
       <div className="gallery-page-hero">
+        <CloseButton href="/" />
         <h1>Design <span>Gallery</span></h1>
         <p>Browse our collection of handcrafted furniture and interior design ideas for every room.</p>
       </div>
@@ -127,7 +136,7 @@ export default function GalleryPage() {
             <button
               key={cat.id}
               className={`gallery-filter-btn ${activeCategory === cat.id ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => handleCategoryChange(cat.id)}
             >
               <i className={`fas ${cat.icon}`}></i>
               <span>{cat.name}</span>
@@ -143,13 +152,13 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="gallery-page-grid">
-            {filteredImages.map((img, index) => (
+            {paginatedImages.map((img, index) => (
               <div
                 key={img._id}
                 className="gallery-page-item"
                 onClick={() => openLightbox(index)}
               >
-                <img src={img.url} alt={img.category} loading="lazy" />
+                <img src={img.url} alt={img.category} loading="lazy" decoding="async" />
                 <div className="gallery-page-item-overlay">
                   <div className="gpo-actions">
                     <button
@@ -170,6 +179,36 @@ export default function GalleryPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <i className="fas fa-chevron-left"></i> Previous
+            </button>
+            <div className="pagination-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next <i className="fas fa-chevron-right"></i>
+            </button>
           </div>
         )}
       </div>

@@ -32,7 +32,10 @@ export async function GET() {
       category: p.category,
       description: p.description,
     }));
-    return NextResponse.json({ products: [...staticProducts, ...dbFormatted] });
+    return NextResponse.json(
+      { products: [...staticProducts, ...dbFormatted] },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch {
     return NextResponse.json({ products: staticProducts });
   }

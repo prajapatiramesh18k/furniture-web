@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import GalleryImage from '@/lib/models/GalleryImage';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    const images = await GalleryImage.find().sort({ uploadedAt: -1 });
-    return NextResponse.json({ images });
+    const category = request.nextUrl.searchParams.get('category');
+
+    let images;
+    if (category) {
+      images = await GalleryImage.find({ category }).sort({ uploadedAt: -1 });
+    } else {
+      images = await GalleryImage.find().sort({ uploadedAt: -1 });
+    }
+    return NextResponse.json(images, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    return NextResponse.json({ images: [], error: 'Failed to fetch gallery' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch gallery' }, { status: 500 });
   }
 }
 
@@ -31,8 +38,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = request.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
     await GalleryImage.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Image deleted' });

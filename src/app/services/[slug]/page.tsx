@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { services } from '@/lib/services-data';
+import CloseButton from '@/components/CloseButton';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -29,13 +30,8 @@ export default async function ServiceDetailPage({ params }: Props) {
 
   return (
     <div className="service-detail-page">
-      <Link href="/services" className="sr-back service-detail-back">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
-      </Link>
-
       <div className="service-detail-hero">
+        <CloseButton href="/services" />
         <div className="service-detail-img">
           <img src={service.image} alt={service.name} />
         </div>

@@ -39,6 +39,13 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      {/* Close button */}
+      <a href="/" className="close-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </a>
+
       {/* Left Side - Image */}
       <div className="login-page-left">
         <img src="/images/contact.png" alt="Ananya House of Furniture" />
@@ -50,13 +57,6 @@ export default function LoginPage() {
 
       {/* Right Side - Form */}
       <div className="login-page-right">
-        <button className="login-back-btn" onClick={() => router.push('/')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-          Back to Home
-        </button>
-
         <div className="login-form-wrap">
           <div className="login-form-header">
             <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
