@@ -1,52 +1,115 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { products } from '@/lib/products-data';
 import CloseButton from '@/components/CloseButton';
+import { useCart } from '@/context/CartContext';
 
-interface Props {
-  params: Promise<{ slug: string }>;
+interface Product {
+  id: string | number;
+  slug: string;
+  name: string;
+  image: string;
+  price: number;
+  originalPrice: number;
+  rating: number;
+  category: string;
+  description: string;
 }
 
-export async function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+export default function ProductDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { addToCart } = useCart();
+  const slug = typeof params.slug === 'string' ? params.slug : '';
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [added, setAdded] = useState(false);
 
-export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
-  if (!product) return {};
-  return {
-    title: `${product.name} | Ananya House of Furniture`,
-    description: product.description,
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        const products: Product[] = data.products || [];
+        const found = products.find(p => p.slug === slug);
+        setProduct(found || null);
+
+        if (found) {
+          const related = products
+            .filter(p => p.category === found.category && p.slug !== slug)
+            .slice(0, 3);
+          setRelatedProducts(related);
+        }
+      } catch (error) {
+        console.error('Failed to fetch product:', error);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [slug]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart({
+      id: String(product.id),
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      quantity: 1,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
-}
 
-export default async function ProductDetailPage({ params }: Props) {
-  const { slug } = await params;
-  const product = products.find((p) => p.slug === slug);
-  if (!product) notFound();
+  if (loading) {
+    return (
+      <div className="product-detail-page">
+        <CloseButton href="/products" />
+        <div style={{ textAlign: 'center', padding: '6rem' }}>
+          <p style={{ color: '#999', fontSize: '1.6rem' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const relatedProducts = products.filter((p) => p.category === product.category && p.slug !== slug).slice(0, 3);
+  if (!product) {
+    return (
+      <div className="product-detail-page">
+        <CloseButton href="/products" />
+        <div style={{ textAlign: 'center', padding: '6rem' }}>
+          <p style={{ color: '#999', fontSize: '1.6rem' }}>Product not found</p>
+          <button className="btn" style={{ marginTop: '2rem' }} onClick={() => router.push('/products')}>
+            Back to Products
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const fullStars = Math.floor(product.rating);
   const hasHalf = product.rating % 1 >= 0.5;
-
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
 
+  const categoryName = product.category.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
   return (
     <div className="product-detail-page">
+      <CloseButton href="/products" />
+
       <div className="product-detail-hero">
-        <CloseButton href="/products" />
         <div className="product-detail-gallery">
           <img src={product.image} alt={product.name} className="product-detail-main-img" />
           {discount && (
             <span className="product-detail-discount">-{discount}% OFF</span>
           )}
         </div>
+
         <div className="product-detail-info">
-          <p className="product-detail-category">{product.category.replace(/-/g, ' ')}</p>
+          <p className="product-detail-category">{categoryName}</p>
           <h1>{product.name}</h1>
 
           <div className="product-detail-rating">
@@ -64,7 +127,7 @@ export default async function ProductDetailPage({ params }: Props) {
               />
             ))}
             <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '1.2rem' }}>
-              {product.rating.toFixed(1)} ({Math.floor(product.rating * 20)} reviews)
+              {product.rating.toFixed(1)}
             </span>
           </div>
 
@@ -81,10 +144,25 @@ export default async function ProductDetailPage({ params }: Props) {
           <p className="product-detail-description">{product.description}</p>
 
           <div className="product-detail-actions">
-            <button className="btn">
-              <i className="fas fa-shopping-cart"></i> Add to Cart
+            <button
+              className="btn"
+              onClick={handleAddToCart}
+            >
+              {added ? (
+                <>
+                  <i className="fas fa-check"></i> Added to Cart
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-shopping-cart"></i> Add to Cart
+                </>
+              )}
             </button>
-            <button className="btn" style={{ background: 'transparent', border: '0.2rem solid #a27341', color: '#a27341' }}>
+            <button
+              className="btn"
+              style={{ background: 'transparent', border: '0.2rem solid #a27341', color: '#a27341' }}
+              onClick={() => window.open('https://wa.me/919321812823', '_blank')}
+            >
               <i className="fas fa-phone"></i> Enquire Now
             </button>
           </div>
