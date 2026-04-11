@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vercel ls:*)",
+      "Bash(curl -s \"https://furniture-next-pi.vercel.app/gallery\")",
+      "Bash(curl -s \"https://ananyahouseoffurniture-3uaw6z09v-kartikbabu-coders-projects.vercel.app/api/gallery?category=tv-unit\")"
+    ]
+  }
+}

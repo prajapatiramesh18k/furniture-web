@@ -9,7 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.35",
+    "@ai-sdk/openai": "^3.0.52",
+    "@ai-sdk/react": "^3.0.160",
     "@types/swiper": "^6.0.0",
+    "ai": "^6.0.158",
+    "groq": "^5.20.0",
     "mongoose": "^9.4.1",
     "next": "16.2.2",
     "razorpay": "^2.9.6",

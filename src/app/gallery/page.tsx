@@ -39,13 +39,12 @@ export default function GalleryPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  // Read category from URL on mount
   useEffect(() => {
-    // Defer to after hydration completes to avoid mismatch
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        setMounted(true);
-      });
-    });
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+    if (cat) setActiveCategory(cat);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
