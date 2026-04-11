@@ -34,8 +34,14 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync cart count whenever cart changes
+  useEffect(() => {
+    setCartCount(getCartCount());
+  }, [getCartCount]);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('adminLoggedIn');
@@ -211,7 +217,7 @@ export default function Navbar() {
           </div>
 
           <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(true)}>
-            <span id="cart-count">{getCartCount()}</span>
+            <span id="cart-count" className={cartCount === 0 ? 'hidden' : ''}>{cartCount}</span>
           </div>
           <a id="account-btn" className="fas fa-user" href="/login"></a>
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
