@@ -39,6 +39,11 @@ export default function GalleryPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,7 +126,9 @@ export default function GalleryPage() {
         </div>
 
         {/* Images Grid */}
-        {loading ? (
+        {!mounted ? (
+          <div className="gallery-loading">Loading...</div>
+        ) : loading ? (
           <div className="gallery-loading">Loading...</div>
         ) : filteredImages.length === 0 ? (
           <div className="gallery-page-empty">

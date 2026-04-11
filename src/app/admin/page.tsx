@@ -370,7 +370,7 @@ export default function AdminPage() {
           <i className="fas fa-star"></i> Reviews ({pendingReviews.length})
         </button>
         <button className={activeTab === 'gallery' ? 'active' : ''} onClick={() => setActiveTab('gallery')}>
-          <i className="fas fa-images"></i> Gallery
+          <i className="fas fa-images"></i> Gallery ({galleryImages.length})
         </button>
         <button className={activeTab === 'products' ? 'active' : ''} onClick={() => setActiveTab('products')}>
           <i className="fas fa-box"></i> Products ({products.length})
