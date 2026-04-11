@@ -3,6 +3,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CloseButton from '@/components/CloseButton';
+import NavbarWrapper from '@/components/NavbarWrapper';
+
+const categoryLabels: Record<string, string> = {
+  'bedroom': 'Bedroom',
+  'living-room': 'Living Room',
+  'dining-room': 'Dining Room',
+  'office': 'Office',
+  'entryway': 'Entryway',
+  'kids-room': 'Kids Room',
+  'pooja-unit': 'Pooja Unit',
+  'kitchen': 'Kitchen',
+  'sofa': 'Sofa',
+  'chair': 'Chair',
+  'table': 'Table',
+  'bed': 'Bed',
+  'storage': 'Storage',
+  'decor': 'Decor',
+};
 
 export default function CartPage() {
   const router = useRouter();
@@ -10,11 +28,13 @@ export default function CartPage() {
 
   const subtotal = getCartTotal();
   const deliveryCharge = subtotal >= 5000 ? 0 : 500;
-  const total = subtotal + deliveryCharge;
+  const gst = Math.round(subtotal * 0.12);
+  const total = subtotal + deliveryCharge + gst;
 
   if (cart.length === 0) {
     return (
       <div className="cart-page">
+        <NavbarWrapper />
         <CloseButton href="/" />
         <div className="cart-empty-page">
           <div className="cart-empty-icon">
@@ -28,39 +48,45 @@ export default function CartPage() {
     );
   }
 
+  const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
+
   return (
     <div className="cart-page">
-      <CloseButton href="/" />
-
-      <div className="cart-page-hero">
-        <h1>Shopping <span>Cart</span></h1>
-        <p>{cart.reduce((s, i) => s + i.quantity, 0)} item{cart.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''} in your cart</p>
+      <NavbarWrapper />
+      {/* Hero Banner */}
+      <div className="cart-hero-banner">
+        <div className="cart-hero-content">
+          <h1>Your Cart <span>({totalItems} item{totalItems !== 1 ? 's' : ''})</span></h1>
+          <p>Review your selected furniture before checkout</p>
+        </div>
       </div>
 
       <div className="cart-page-container">
         {/* Items Section */}
         <div className="cart-page-items-section">
-          <div className="cart-page-items-header">
-            <span>Product Details</span>
+          {/* Table Header */}
+          <div className="cart-table-header">
+            <span>Product</span>
             <span>Price</span>
             <span>Quantity</span>
             <span>Total</span>
-            <span></span>
           </div>
 
+          {/* Cart Items */}
           {cart.map((item) => (
-            <div key={item.id} className="cart-item-card">
-              <div className="cic-left">
-                <div className="cic-img">
+            <div key={item.id} className="cart-row-item">
+              <div className="cri-product">
+                <div className="cri-img">
                   <img src={item.image} alt={item.name} />
                 </div>
-                <div className="cic-info">
+                <div className="cri-info">
+                  <p className="cri-category">{categoryLabels[item.id] || 'Furniture'}</p>
                   <h3>{item.name}</h3>
-                  <p className="cic-unit-price">Rs.{item.price.toLocaleString()} / unit</p>
+                  <p className="cri-unit">Rs.{item.price.toLocaleString()} / unit</p>
                 </div>
               </div>
-              <div className="cic-price">Rs.{item.price.toLocaleString()}</div>
-              <div className="cic-qty">
+              <div className="cri-price">Rs.{item.price.toLocaleString()}</div>
+              <div className="cri-qty">
                 <div className="qty-controls">
                   <button
                     className="qty-btn"
@@ -75,34 +101,39 @@ export default function CartPage() {
                   </button>
                 </div>
               </div>
-              <div className="cic-total">Rs.{(item.price * item.quantity).toLocaleString()}</div>
-              <button className="cic-remove" onClick={() => removeFromCart(item.id)} title="Remove item">
-                <i className="fas fa-trash-alt"></i>
+              <div className="cri-total">Rs.{(item.price * item.quantity).toLocaleString()}</div>
+              <button className="cri-remove" onClick={() => removeFromCart(item.id)} title="Remove">
+                <i className="fas fa-times"></i>
               </button>
             </div>
           ))}
 
-          <div className="cart-page-items-footer">
+          {/* Footer */}
+          <div className="cart-table-footer">
             <Link href="/products" className="btn btn-outline">
               <i className="fas fa-arrow-left"></i> Continue Shopping
             </Link>
           </div>
         </div>
 
-        {/* Order Summary Section */}
+        {/* Order Summary Sidebar */}
         <div className="cart-page-summary-section">
-          <div className="cart-summary-card">
+          <div className="order-summary-card">
             <h2>Order Summary</h2>
 
-            <div className="csc-row">
-              <span>Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
+            <div className="osc-row">
+              <span>Subtotal ({totalItems} items)</span>
               <span>Rs.{subtotal.toLocaleString()}</span>
             </div>
-            <div className="csc-row">
+            <div className="osc-row">
+              <span>GST (12%)</span>
+              <span>Rs.{gst.toLocaleString()}</span>
+            </div>
+            <div className="osc-row">
               <span>Delivery</span>
               <span>
                 {deliveryCharge === 0 ? (
-                  <span className="csc-free">FREE</span>
+                  <span className="osc-free">FREE</span>
                 ) : (
                   `Rs.${deliveryCharge.toLocaleString()}`
                 )}
@@ -110,40 +141,60 @@ export default function CartPage() {
             </div>
 
             {deliveryCharge > 0 && (
-              <div className="csc-delivery-note">
-                <i className="fas fa-truck"></i>
+              <div className="osc-delivery-note">
+                <i className="fas fa-info-circle"></i>
                 <span>Add Rs.{(5000 - subtotal).toLocaleString()} more for FREE delivery</span>
               </div>
             )}
 
-            <div className="csc-divider"></div>
+            {/* Coupon */}
+            <div className="osc-coupon-row">
+              <input className="osc-coupon-input" type="text" placeholder="Enter coupon code" />
+              <button className="osc-apply-btn">Apply</button>
+            </div>
 
-            <div className="csc-total-row">
+            <div className="osc-divider"></div>
+
+            <div className="osc-total">
               <span>Total</span>
               <span>Rs.{total.toLocaleString()}</span>
             </div>
 
             <button
-              className="btn csc-checkout-btn"
+              className="btn osc-checkout-btn"
               onClick={() => router.push('/checkout')}
             >
               <i className="fas fa-lock"></i> Proceed to Checkout
             </button>
 
-            <div className="csc-secure-note">
+            <div className="osc-secure">
               <i className="fas fa-shield-alt"></i>
-              <span>Secure 256-bit SSL encryption</span>
+              <span>Secure &amp; Encrypted</span>
             </div>
           </div>
 
-          {/* Promo banner */}
-          <div className="csc-promo-card">
-            <div className="csc-promo-icon">
-              <i className="fas fa-gift"></i>
+          {/* Delivery Promise */}
+          <div className="delivery-promise">
+            <div className="dp-item">
+              <i className="fas fa-truck"></i>
+              <div>
+                <strong>Free Delivery</strong>
+                <p>On orders above Rs.5,000</p>
+              </div>
             </div>
-            <div>
-              <strong>Free Delivery</strong>
-              <p>On all orders above Rs.5,000</p>
+            <div className="dp-item">
+              <i className="fas fa-undo"></i>
+              <div>
+                <strong>Easy Returns</strong>
+                <p>7-day return policy</p>
+              </div>
+            </div>
+            <div className="dp-item">
+              <i className="fas fa-headset"></i>
+              <div>
+                <strong>24/7 Support</strong>
+                <p>Call us anytime</p>
+              </div>
             </div>
           </div>
         </div>

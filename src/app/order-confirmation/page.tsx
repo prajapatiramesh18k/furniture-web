@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import NavbarWrapper from '@/components/NavbarWrapper';
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
@@ -49,6 +50,7 @@ function OrderConfirmationContent() {
 export default function OrderConfirmationPage() {
   return (
     <div className="order-confirmation-wrapper">
+      <NavbarWrapper />
       <Suspense fallback={<div style={{ textAlign: 'center', padding: '6rem' }}>Loading...</div>}>
         <OrderConfirmationContent />
       </Suspense>

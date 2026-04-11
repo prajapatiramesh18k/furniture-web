@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import NavbarWrapper from '@/components/NavbarWrapper';
 import CloseButton from '@/components/CloseButton';
 
 declare global {
@@ -158,6 +159,7 @@ export default function CheckoutPage() {
   if (!mounted || cart.length === 0) {
     return (
       <div className="checkout-page">
+        <NavbarWrapper />
         <CloseButton href="/cart" />
         <div style={{ textAlign: 'center', padding: '6rem' }}>
           <p style={{ color: '#999', fontSize: '1.6rem' }}>Loading...</p>
@@ -168,6 +170,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="checkout-page">
+      <NavbarWrapper />
       <CloseButton href="/cart" />
 
       <div className="checkout-page-hero">

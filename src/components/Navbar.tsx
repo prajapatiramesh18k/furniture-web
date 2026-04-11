@@ -34,21 +34,20 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync cart count whenever cart changes
+  // Wait for client mount before rendering cart count
   useEffect(() => {
+    setMounted(true);
     setCartCount(getCartCount());
-  }, [getCartCount]);
-
-  useEffect(() => {
     const loggedIn = localStorage.getItem('adminLoggedIn');
     if (loggedIn === 'true') setAdminLoggedIn(true);
     const closed = sessionStorage.getItem('bannerClosed');
     if (closed === 'true') setBannerVisible(false);
-  }, []);
+  }, [getCartCount]);
 
   useEffect(() => {
     const handleScroll = () => setMenuOpen(false);
@@ -217,7 +216,7 @@ export default function Navbar() {
           </div>
 
           <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(true)}>
-            <span id="cart-count" className={cartCount === 0 ? 'hidden' : ''}>{cartCount}</span>
+            <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
           <a id="account-btn" className="fas fa-user" href="/login"></a>
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
@@ -225,12 +224,12 @@ export default function Navbar() {
       </header>
 
       {reviewOpen && <SubmitReview onClose={() => setReviewOpen(false)} />}
-      {cartOpen && <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />}
+      {cartOpen && <CartSidebar onClose={() => setCartOpen(false)} />}
     </>
   );
 }
 
-function CartSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function CartSidebar({ onClose }: { onClose: () => void }) {
   const { cart, removeFromCart, updateQuantity, getCartTotal } = useCart();
   const router = useRouter();
 
@@ -240,8 +239,8 @@ function CartSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   };
 
   return (
-    <div className={`cart-items-container${isOpen ? ' active' : ''}`} id="cart-items-container">
-      <div id="close" className="fas fa-times" onClick={onClose}></div>
+    <div className="cart-items-container active" id="cart-items-container">
+      <button className="cart-sidebar-close fas fa-times" onClick={onClose} aria-label="Close cart"></button>
       <h3 className="title">Cart Items</h3>
       {cart.length === 0 ? (
         <div className="cart-empty">
