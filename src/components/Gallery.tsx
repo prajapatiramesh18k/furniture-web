@@ -13,7 +13,6 @@ const fallbackImages: GalleryImage[] = [
   { _id: '2', category: 'bedroom', url: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600', isUploaded: false },
   { _id: '3', category: 'kitchen', url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600', isUploaded: false },
   { _id: '4', category: 'tv-unit', url: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=600', isUploaded: false },
-  { _id: '5', category: 'dining-room', url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600', isUploaded: false },
   { _id: '6', category: 'office', url: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600', isUploaded: false },
   { _id: '7', category: 'pooja-unit', url: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600', isUploaded: false },
   { _id: '8', category: 'bar-unit', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600', isUploaded: false },
@@ -32,7 +31,6 @@ const allCategories = [
   { id: 'all', name: 'All', icon: 'fa-th-large' },
   { id: 'living-room', name: 'Living Room', icon: 'fa-couch' },
   { id: 'bedroom', name: 'Bedroom', icon: 'fa-bed' },
-  { id: 'dining-room', name: 'Dining Room', icon: 'fa-utensils' },
   { id: 'kitchen', name: 'Kitchen', icon: 'fa-utensil-spoon' },
   { id: 'tv-unit', name: 'TV Unit', icon: 'fa-tv' },
   { id: 'pooja-unit', name: 'Pooja Unit', icon: 'fa-praying-hands' },
@@ -52,7 +50,6 @@ const allCategories = [
 const mainCategories = [
   { id: 'living-room', name: 'Living Room', icon: 'fa-couch' },
   { id: 'bedroom', name: 'Bedroom', icon: 'fa-bed' },
-  { id: 'dining-room', name: 'Dining Room', icon: 'fa-utensils' },
   { id: 'kitchen', name: 'Kitchen', icon: 'fa-utensil-spoon' },
   { id: 'tv-unit', name: 'TV Unit', icon: 'fa-tv' },
   { id: 'pooja-unit', name: 'Pooja Unit', icon: 'fa-praying-hands' },

@@ -8,7 +8,6 @@ export default function Contact() {
   const projectTypes = [
     'Living Room Furniture',
     'Bedroom Furniture',
-    'Dining Room Furniture',
     'Office Furniture',
     'Outdoor Furniture',
     'Specialty Furniture',

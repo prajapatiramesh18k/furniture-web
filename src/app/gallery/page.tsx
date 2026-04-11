@@ -30,64 +30,57 @@ const allCategories = [
   { id: 'kids-room', name: 'Kids Room', icon: 'fa-child' },
 ];
 
-const IMAGES_PER_PAGE = 12;
-
 export default function GalleryPage() {
-  const [allImages, setAllImages] = useState<GalleryImage[]>([]);
+  const [images, setImages] = useState<GalleryImage[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Defer to after hydration completes to avoid mismatch
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        setMounted(true);
+      });
+    });
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/gallery');
+        const res = await fetch(`/api/gallery?page=${currentPage}&category=${activeCategory}`);
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setAllImages(data);
-        } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-          setAllImages(data.images);
+        if (Array.isArray(data.images)) {
+          setImages(data.images);
+          setTotalPages(data.totalPages || 0);
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
       }
-      setLoading(false);
     };
     fetchData();
-  }, []);
-
-  const filteredImages = activeCategory === 'all'
-    ? allImages
-    : allImages.filter(img => img.category === activeCategory);
-
-  const totalPages = Math.ceil(filteredImages.length / IMAGES_PER_PAGE);
-  const startIndex = (currentPage - 1) * IMAGES_PER_PAGE;
-  const paginatedImages = filteredImages.slice(startIndex, startIndex + IMAGES_PER_PAGE);
+  }, [currentPage, activeCategory, mounted]);
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
     setLightboxOpen(true);
   };
 
-  // Reset to page 1 when category changes
   const handleCategoryChange = (catId: string) => {
     setActiveCategory(catId);
     setCurrentPage(1);
   };
 
   const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + filteredImages.length) % filteredImages.length);
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % filteredImages.length);
+    setCurrentIndex((prev) => (prev + 1) % images.length);
   };
 
   const sendWhatsApp = (url: string) => {
@@ -126,18 +119,14 @@ export default function GalleryPage() {
         </div>
 
         {/* Images Grid */}
-        {!mounted ? (
-          <div className="gallery-loading">Loading...</div>
-        ) : loading ? (
-          <div className="gallery-loading">Loading...</div>
-        ) : filteredImages.length === 0 ? (
+        {!mounted || images.length === 0 ? (
           <div className="gallery-page-empty">
             <i className="fas fa-images"></i>
             <p>No designs in this category yet.</p>
           </div>
         ) : (
           <div className="gallery-page-grid">
-            {paginatedImages.map((img, index) => (
+            {images.map((img, index) => (
               <div
                 key={img._id}
                 className="gallery-page-item"
@@ -199,27 +188,27 @@ export default function GalleryPage() {
       </div>
 
       {/* Lightbox */}
-      {lightboxOpen && filteredImages[currentIndex] && (
+      {lightboxOpen && images[currentIndex] && (
         <div className="gallery-lightbox" onClick={() => setLightboxOpen(false)}>
           <span className="gallery-lightbox-close" onClick={() => setLightboxOpen(false)}>&times;</span>
           <button className="gallery-lightbox-nav prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>&#10094;</button>
           <img
-            src={filteredImages[currentIndex].url}
+            src={images[currentIndex].url}
             alt=""
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }}
           />
           <button className="gallery-lightbox-nav next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>&#10095;</button>
           <div className="gallery-lightbox-actions" onClick={(e) => e.stopPropagation()}>
-            <a href={filteredImages[currentIndex].url} download className="gallery-lightbox-dl">
+            <a href={images[currentIndex].url} download className="gallery-lightbox-dl">
               <i className="fas fa-download"></i> Download
             </a>
-            <button className="gallery-lightbox-wa" onClick={() => sendWhatsApp(filteredImages[currentIndex].url)}>
+            <button className="gallery-lightbox-wa" onClick={() => sendWhatsApp(images[currentIndex].url)}>
               <i className="fab fa-whatsapp"></i> Enquire on WhatsApp
             </button>
           </div>
           <div className="gallery-lightbox-counter">
-            {currentIndex + 1} / {filteredImages.length}
+            {currentIndex + 1} / {images.length}
           </div>
         </div>
       )}

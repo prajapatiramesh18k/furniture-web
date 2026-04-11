@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
 
@@ -17,7 +17,10 @@ const staticProducts = [
   { id: 12, slug: 'almirah', name: 'Almirah', image: '/images/product.jpg', price: 15999, originalPrice: 21999, rating: 4.4, category: 'bedroom', description: 'Sturdy almirah with locker compartment and adjustable shelves.' },
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const q = searchParams.get('q');
+
   try {
     await dbConnect();
     const dbProducts = await Product.find().lean();
@@ -32,8 +35,22 @@ export async function GET() {
       category: p.category,
       description: p.description,
     }));
+
+    const allProducts = [...staticProducts, ...dbFormatted];
+
+    // Filter by search query if provided
+    let products = allProducts;
+    if (q && q.trim()) {
+      const query = q.toLowerCase().trim();
+      products = allProducts.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query)
+      );
+    }
+
     return NextResponse.json(
-      { products: [...staticProducts, ...dbFormatted] },
+      { products: q ? products : allProducts },
       { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
     );
   } catch {

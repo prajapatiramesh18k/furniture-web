@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import SubmitReview from '@/components/SubmitReview';
 
@@ -12,14 +13,29 @@ const navigation = [
   { label: 'contact', href: '/contact' },
 ];
 
+interface SearchProduct {
+  id: string | number;
+  slug: string;
+  name: string;
+  image: string;
+  price: number;
+  category: string;
+}
+
 export default function Navbar() {
+  const router = useRouter();
   const { getCartCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('adminLoggedIn');
@@ -33,6 +49,50 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeoutRef.current !== null) clearTimeout(searchTimeoutRef.current);
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/products?q=${encodeURIComponent(searchQuery)}`);
+        const data = await res.json();
+        setSearchResults((data.products || []).slice(0, 6));
+      } catch {
+        setSearchResults([]);
+      }
+      setSearchLoading(false);
+    }, 300);
+    return () => {
+      if (searchTimeoutRef.current !== null) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setShowResults(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
@@ -78,9 +138,7 @@ export default function Navbar() {
               key={item.label}
               href={item.href}
               suppressHydrationWarning
-              onClick={() => {
-                setMenuOpen(false);
-              }}
+              onClick={() => setMenuOpen(false)}
             >
               {item.label}
             </a>
@@ -95,16 +153,63 @@ export default function Navbar() {
           )}
         </nav>
         <div className="icons">
-          <div className="header-search-box">
-            <i className="fas fa-search search-icon"></i>
-            <input
-              type="text"
-              placeholder="Search furniture..."
-              id="search-btn"
-              onClick={() => setSearchOpen(true)}
-              readOnly
-            />
+          {/* Inline Search Box */}
+          <div className="nav-search-wrapper" ref={searchRef}>
+            <form onSubmit={handleSearch} className="nav-search-form">
+              <i className="fas fa-search nav-search-icon"></i>
+              <input
+                type="text"
+                className="nav-search-input"
+                placeholder="Search furniture..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowResults(true);
+                }}
+                onFocus={() => setShowResults(true)}
+              />
+            </form>
+            {showResults && searchQuery.trim() && (
+              <div className="nav-search-results">
+                {searchLoading ? (
+                  <div className="nav-search-hint">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    {searchResults.map((product) => (
+                      <a
+                        key={product.id}
+                        href={`/products/${product.slug}`}
+                        className="nav-search-item"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setShowResults(false);
+                        }}
+                      >
+                        <img src={product.image} alt={product.name} />
+                        <div className="nav-search-item-info">
+                          <span className="nav-search-item-name">{product.name}</span>
+                          <span className="nav-search-item-price">Rs.{product.price.toLocaleString()}</span>
+                        </div>
+                      </a>
+                    ))}
+                    <a
+                      href={`/products?q=${encodeURIComponent(searchQuery)}`}
+                      className="nav-search-viewall"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setShowResults(false);
+                      }}
+                    >
+                      View all results for "{searchQuery}"
+                    </a>
+                  </>
+                ) : (
+                  <div className="nav-search-hint">No products found</div>
+                )}
+              </div>
+            )}
           </div>
+
           <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(true)}>
             <span id="cart-count">{getCartCount()}</span>
           </div>
@@ -114,22 +219,6 @@ export default function Navbar() {
       </header>
 
       {reviewOpen && <SubmitReview onClose={() => setReviewOpen(false)} />}
-
-      {searchOpen && (
-        <div className="search-overlay">
-          <div className="search-container">
-            <div className="search-header">
-              <h3>Search Products</h3>
-              <span className="search-close" onClick={() => setSearchOpen(false)}>&times;</span>
-            </div>
-            <input type="text" id="search-input" placeholder="Search for furniture..." />
-            <div className="search-results">
-              <p className="search-hint">Start typing to search...</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {cartOpen && <CartSidebar onClose={() => setCartOpen(false)} />}
     </>
   );

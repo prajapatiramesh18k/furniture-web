@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 
 const categoryLabels: Record<string, string> = {
@@ -26,7 +27,10 @@ const filterCategories = [
 
 const PRODUCTS_PER_PAGE = 12;
 
-export default function ProductsPage() {
+function ProductsPageContent() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
+
   const [products, setProducts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -42,21 +46,37 @@ export default function ProductsPage() {
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const currentProducts = products.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
 
-  // Reset to page 1 when filter changes
+  // Reset to page 1 when filter or search changes
   const handleFilterChange = (filterId: string) => {
     setActiveFilter(filterId);
     setCurrentPage(1);
   };
 
   // Filter products by category
-  const filteredProducts = activeFilter === 'all'
+  const baseFiltered = activeFilter === 'all'
     ? currentProducts
     : currentProducts.filter(p => p.category === activeFilter);
 
+  // Apply search filter
+  const filteredProducts = searchQuery.trim()
+    ? baseFiltered.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : baseFiltered;
+
   // Calculate total pages based on filtered products
-  const filteredTotal = activeFilter === 'all'
-    ? products.length
-    : products.filter(p => p.category === activeFilter).length;
+  const filteredTotal = searchQuery.trim()
+    ? products.filter(p =>
+        (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (activeFilter === 'all' || p.category === activeFilter)
+      ).length
+    : (activeFilter === 'all'
+        ? products.length
+        : products.filter(p => p.category === activeFilter).length);
   const filteredTotalPages = Math.ceil(filteredTotal / PRODUCTS_PER_PAGE);
 
   return (
@@ -67,6 +87,13 @@ export default function ProductsPage() {
         <h1>Our <span>Products</span></h1>
         <p>Discover handcrafted furniture that transforms your space into a home. Every piece is made with care by our skilled artisans.</p>
       </div>
+
+      {searchQuery && (
+        <div className="products-search-info">
+          Showing results for "<strong>{searchQuery}</strong>"
+          <button className="products-search-clear" onClick={() => window.history.back()}>×</button>
+        </div>
+      )}
 
       {products.length === 0 ? (
         <div className="products-page-grid">
@@ -146,5 +173,13 @@ export default function ProductsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div style={{ textAlign: 'center', padding: '4rem' }}>Loading...</div>}>
+      <ProductsPageContent />
+    </Suspense>
   );
 }
