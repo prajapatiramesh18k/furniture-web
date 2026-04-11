@@ -219,16 +219,22 @@ export default function Navbar() {
       </header>
 
       {reviewOpen && <SubmitReview onClose={() => setReviewOpen(false)} />}
-      {cartOpen && <CartSidebar onClose={() => setCartOpen(false)} />}
+      {cartOpen && <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />}
     </>
   );
 }
 
-function CartSidebar({ onClose }: { onClose: () => void }) {
+function CartSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { cart, removeFromCart, updateQuantity, getCartTotal } = useCart();
+  const router = useRouter();
+
+  const handleCheckout = () => {
+    onClose();
+    router.push('/cart');
+  };
 
   return (
-    <div className="cart-items-container" id="cart-items-container">
+    <div className={`cart-items-container${isOpen ? ' active' : ''}`} id="cart-items-container">
       <div id="close" className="fas fa-times" onClick={onClose}></div>
       <h3 className="title">Cart Items</h3>
       {cart.length === 0 ? (
@@ -269,7 +275,7 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
               <span>Rs.{getCartTotal().toLocaleString()}</span>
             </div>
           </div>
-          <button className="btn checkout-btn" onClick={onClose}>
+          <button className="btn checkout-btn" onClick={handleCheckout}>
             <i className="fas fa-lock"></i> Proceed to Checkout
           </button>
         </>

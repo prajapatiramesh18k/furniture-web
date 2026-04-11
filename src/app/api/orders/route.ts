@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
       items: body.items,
       total: body.total,
       paymentMethod: body.paymentMethod,
-      status: 'New Order',
+      paymentId: body.paymentId || null,
+      razorpayOrderId: body.razorpayOrderId || null,
+      status: body.paymentId ? 'Paid' : 'New Order',
       date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     });
     await order.save();
