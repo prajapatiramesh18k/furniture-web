@@ -121,20 +121,45 @@ export default function AdminPage() {
   }, [loggedIn]);
 
   const fetchData = async () => {
-    const [reviewsRes, galleryRes, ordersRes, productsRes] = await Promise.all([
-      fetch('/api/admin/reviews'),
-      fetch('/api/admin/gallery'),
-      fetch('/api/orders'),
-      fetch('/api/admin/products'),
-    ]);
-    const reviewsData = await reviewsRes.json();
-    const galleryData = await galleryRes.json();
-    const ordersData = await ordersRes.json();
-    const productsData = await productsRes.json();
-    setReviews(Array.isArray(reviewsData) ? reviewsData : reviewsData.reviews || []);
-    setGalleryImages(Array.isArray(galleryData) ? galleryData : galleryData.images || []);
-    setOrders(Array.isArray(ordersData) ? ordersData : ordersData.orders || []);
-    setProducts(Array.isArray(productsData) ? productsData : productsData.products || []);
+    try {
+      const [reviewsRes, galleryRes, ordersRes, productsRes] = await Promise.all([
+        fetch('/api/admin/reviews'),
+        fetch('/api/admin/gallery'),
+        fetch('/api/orders'),
+        fetch('/api/admin/products'),
+      ]);
+      const reviewsData = await reviewsRes.json();
+      const galleryData = await galleryRes.json();
+      const ordersData = await ordersRes.json();
+      const productsData = await productsRes.json();
+
+      // Handle reviews - API returns { reviews: [...] }
+      const reviewsArray = Array.isArray(reviewsData) ? reviewsData :
+        (reviewsData.reviews || reviewsData.data || []);
+      setReviews(reviewsArray);
+
+      // Handle gallery - API returns array directly
+      const galleryArray = Array.isArray(galleryData) ? galleryData :
+        (galleryData.images || galleryData.data || []);
+      setGalleryImages(galleryArray);
+
+      // Handle orders - API returns { orders: [...] }
+      const ordersArray = Array.isArray(ordersData) ? ordersData :
+        (ordersData.orders || ordersData.data || []);
+      setOrders(ordersArray);
+
+      // Handle products - API returns { products: [...] }
+      const productsArray = Array.isArray(productsData) ? productsData :
+        (productsData.products || productsData.data || []);
+      setProducts(productsArray);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      // Set empty arrays on error
+      setReviews([]);
+      setGalleryImages([]);
+      setOrders([]);
+      setProducts([]);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {

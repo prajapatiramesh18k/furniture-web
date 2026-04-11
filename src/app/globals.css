@@ -74,12 +74,40 @@
 }
 
 @media (max-width: 768px) {
+    .delivery-banner {
+        padding: 8px 10px;
+    }
+    .delivery-content {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
+    }
     .delivery-content span {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
+        width: 100%;
+        order: 1;
+    }
+    .delivery-content i:first-child {
+        font-size: 1.5rem;
+        order: 0;
+        width: 100%;
     }
     .delivery-content a {
         padding: 6px 15px;
         font-size: 1.2rem;
+        order: 2;
+    }
+    .banner-close {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
     }
 }
 
@@ -1405,38 +1433,94 @@ input, textarea, select {
         display: inline-block;
     }
 
-    .fa-times{
-        transform: rotate(180deg);
+    .header {
+        padding: 1.5rem 2rem;
+    }
+
+    .header .logo {
+        padding-left: 0;
+        flex: 1;
+    }
+
+    .logo-text {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .logo-main {
+        font-size: 1.4rem !important;
+    }
+
+    .logo-sub {
+        font-size: 0.6rem !important;
+    }
+
+    #account-btn {
+        margin-right: 0;
+    }
+
+    .header-search-box {
+        display: flex;
+        flex: 1;
+        max-width: 15rem;
+        margin: 0 1rem;
+    }
+
+    .header-search-box input {
+        width: 100%;
+        font-size: 1.1rem;
+    }
+
+    .header .icons {
+        margin-left: 0;
+        gap: 1.2rem;
     }
 
     .header .navbar{
         position: absolute;
-        top: 99%;
+        top: 100%;
         left: 0; right: 0;
         background: var(--white);
         border-top: .1rem solid var(--main-color);
         clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
     }
 
     .header .navbar.active{
         clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        max-height: 50rem;
+        overflow-y: auto;
+        padding: 2rem 0;
     }
 
     .header .navbar a{
         display: block;
-        margin: 2rem;
+        padding: 1.5rem 2rem;
+        margin: 0;
+        font-size: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .home .slide{
+        background-size: cover !important;
+        background-position: center !important;
     }
 
     .home .slide .content{
-        width: 40rem;
+        padding: 0 2rem;
+        text-align: center;
+        width: 100%;
     }
 
     .home .slide .content h3{
-        font-size: 4rem;
+        font-size: 2.5rem;
+        line-height: 1.3;
     }
 
     .home .slide .content span{
-        font-size: 2.2rem;
+        font-size: 1.8rem;
     }
 }
 
