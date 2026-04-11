@@ -39,6 +39,21 @@ export default function AdminGalleryCategoryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const openConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => onConfirm);
+    setConfirmOpen(true);
+  };
 
   useEffect(() => {
     const logged = localStorage.getItem('adminLoggedIn');
@@ -78,8 +93,10 @@ export default function AdminGalleryCategoryPage() {
           }),
         });
         fetchImages();
+        showToast('Image uploaded successfully!');
       } catch (error) {
         console.error('Upload failed:', error);
+        showToast('Failed to upload image');
       }
       setUploading(false);
     };
@@ -106,13 +123,16 @@ export default function AdminGalleryCategoryPage() {
   };
 
   const deleteImage = async (id: string) => {
-    if (!confirm('Delete this image?')) return;
-    try {
-      await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
-      fetchImages();
-    } catch (error) {
-      console.error('Delete failed:', error);
-    }
+    openConfirm('Are you sure you want to delete this image?', async () => {
+      try {
+        await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
+        fetchImages();
+        showToast('Image deleted successfully!');
+      } catch (error) {
+        console.error('Delete failed:', error);
+        showToast('Failed to delete image');
+      }
+    });
   };
 
   if (!mounted) {
@@ -140,6 +160,12 @@ export default function AdminGalleryCategoryPage() {
 
   return (
     <div className="admin-container">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="admin-toast">
+          <i className="fas fa-check-circle"></i> {toast}
+        </div>
+      )}
       <div className="admin-header">
         <h1><i className="fas fa-images"></i> {categoryName} Gallery</h1>
         <div className="header-actions">
@@ -202,6 +228,31 @@ export default function AdminGalleryCategoryPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      {confirmOpen && (
+        <div className="confirm-overlay" onClick={() => setConfirmOpen(false)}>
+          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
+            <div className="confirm-icon">
+              <i className="fas fa-trash-alt"></i>
+            </div>
+            <h3>Confirm Delete</h3>
+            <p>{confirmMessage}</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={() => setConfirmOpen(false)}>Cancel</button>
+              <button
+                className="confirm-delete"
+                onClick={() => {
+                  if (confirmAction) confirmAction();
+                  setConfirmOpen(false);
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4883,6 +4883,38 @@ input, textarea, select {
     padding: 2rem;
 }
 
+.admin-toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: #28a745;
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 0.5rem;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease;
+}
+
+.admin-toast i {
+    font-size: 1.6rem;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 .admin-container .admin-header {
     display: flex;
     align-items: center;
@@ -8655,6 +8687,13 @@ input, textarea, select {
 
 .gallery-page-empty p {
   font-size: 1.4rem;
+}
+
+.gallery-loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.4rem;
+  color: #a27341;
 }
 
 /* ============================================

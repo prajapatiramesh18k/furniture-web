@@ -86,13 +86,6 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('pooja-unit');
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({ open: false, title: '', message: '', onConfirm: () => {} });
-
   // Product form state
   const [productForm, setProductForm] = useState({
     name: '',
@@ -107,6 +100,21 @@ export default function AdminPage() {
   const [uploadingProduct, setUploadingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loginError, setLoginError] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const openConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => onConfirm);
+    setConfirmOpen(true);
+  };
 
   useEffect(() => {
     const logged = localStorage.getItem('adminLoggedIn');
@@ -114,51 +122,37 @@ export default function AdminPage() {
     setMounted(true);
   }, []);
 
+  // Fetch data only for the active tab
   useEffect(() => {
-    if (loggedIn) {
-      fetchData();
-    }
-  }, [loggedIn]);
+    if (!loggedIn) return;
+    fetchTabData();
+  }, [loggedIn, activeTab]);
 
-  const fetchData = async () => {
+  const fetchTabData = async () => {
     try {
-      const [reviewsRes, galleryRes, ordersRes, productsRes] = await Promise.all([
-        fetch('/api/admin/reviews'),
-        fetch('/api/admin/gallery'),
-        fetch('/api/orders'),
-        fetch('/api/admin/products'),
-      ]);
-      const reviewsData = await reviewsRes.json();
-      const galleryData = await galleryRes.json();
-      const ordersData = await ordersRes.json();
-      const productsData = await productsRes.json();
-
-      // Handle reviews - API returns { reviews: [...] }
-      const reviewsArray = Array.isArray(reviewsData) ? reviewsData :
-        (reviewsData.reviews || reviewsData.data || []);
-      setReviews(reviewsArray);
-
-      // Handle gallery - API returns array directly
-      const galleryArray = Array.isArray(galleryData) ? galleryData :
-        (galleryData.images || galleryData.data || []);
-      setGalleryImages(galleryArray);
-
-      // Handle orders - API returns { orders: [...] }
-      const ordersArray = Array.isArray(ordersData) ? ordersData :
-        (ordersData.orders || ordersData.data || []);
-      setOrders(ordersArray);
-
-      // Handle products - API returns { products: [...] }
-      const productsArray = Array.isArray(productsData) ? productsData :
-        (productsData.products || productsData.data || []);
-      setProducts(productsArray);
+      if (activeTab === 'reviews') {
+        const res = await fetch('/api/admin/reviews');
+        const data = await res.json();
+        const reviewsArray = Array.isArray(data) ? data : (data.reviews || []);
+        setReviews(reviewsArray);
+      } else if (activeTab === 'gallery') {
+        const res = await fetch('/api/admin/gallery');
+        const data = await res.json();
+        const galleryArray = Array.isArray(data) ? data : (data.images || []);
+        setGalleryImages(galleryArray);
+      } else if (activeTab === 'orders') {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        const ordersArray = Array.isArray(data) ? data : (data.orders || []);
+        setOrders(ordersArray);
+      } else if (activeTab === 'products') {
+        const res = await fetch('/api/admin/products');
+        const data = await res.json();
+        const productsArray = Array.isArray(data) ? data : (data.products || []);
+        setProducts(productsArray);
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      // Set empty arrays on error
-      setReviews([]);
-      setGalleryImages([]);
-      setOrders([]);
-      setProducts([]);
     }
   };
 
@@ -196,32 +190,22 @@ export default function AdminPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, approved: true }),
     });
-    fetchData();
+    fetchTabData();
   };
 
   const deleteReview = async (id: string) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Delete Review',
-      message: 'Are you sure you want to delete this review? This action cannot be undone.',
-      onConfirm: async () => {
-        await fetch(`/api/admin/reviews?id=${id}`, { method: 'DELETE' });
-        setConfirmDialog(prev => ({ ...prev, open: false }));
-        fetchData();
-      },
+    openConfirm('Are you sure you want to delete this review?', async () => {
+      await fetch(`/api/admin/reviews?id=${id}`, { method: 'DELETE' });
+      fetchTabData();
+      showToast('Review deleted successfully!');
     });
   };
 
   const deleteGalleryImage = async (id: string) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Delete Image',
-      message: 'Are you sure you want to delete this gallery image? This action cannot be undone.',
-      onConfirm: async () => {
-        await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
-        setConfirmDialog(prev => ({ ...prev, open: false }));
-        fetchData();
-      },
+    openConfirm('Are you sure you want to delete this image?', async () => {
+      await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
+      fetchTabData();
+      showToast('Image deleted successfully!');
     });
   };
 
@@ -240,7 +224,8 @@ export default function AdminPage() {
             url: reader.result,
           }),
         });
-        fetchData();
+        fetchTabData();
+        showToast('Image uploaded successfully!');
       };
       reader.readAsDataURL(file);
     }
@@ -297,7 +282,7 @@ export default function AdminPage() {
         setProductImage('');
         setProductImageFile(null);
         setEditingProduct(null);
-        fetchData();
+        fetchTabData();
       } else {
         alert('Failed to save product');
       }
@@ -307,15 +292,10 @@ export default function AdminPage() {
   };
 
   const deleteProduct = async (id: string) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Delete Product',
-      message: 'Are you sure you want to delete this product? This action cannot be undone.',
-      onConfirm: async () => {
-        await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' });
-        setConfirmDialog(prev => ({ ...prev, open: false }));
-        fetchData();
-      },
+    openConfirm('Are you sure you want to delete this product?', async () => {
+      await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' });
+      fetchTabData();
+      showToast('Product deleted successfully!');
     });
   };
 
@@ -371,6 +351,12 @@ export default function AdminPage() {
 
   return (
     <div className="admin-container" style={{ display: loggedIn ? 'block' : 'none' }}>
+      {/* Toast Notification */}
+      {toast && (
+        <div className="admin-toast">
+          <i className="fas fa-check-circle"></i> {toast}
+        </div>
+      )}
       <div className="admin-header">
         <h1><i className="fas fa-chair"></i> Ananya Admin Panel</h1>
         <div className="header-actions">
@@ -676,28 +662,30 @@ export default function AdminPage() {
       </div>
 
       {/* Confirmation Dialog */}
-      {confirmDialog.open && (
-        <div className="confirm-overlay" onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>
+      {confirmOpen && (
+        <div className="confirm-overlay" onClick={() => setConfirmOpen(false)}>
           <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
             <div className="confirm-icon">
               <i className="fas fa-trash-alt"></i>
             </div>
-            <h3>{confirmDialog.title}</h3>
-            <p>{confirmDialog.message}</p>
+            <h3>Confirm Delete</h3>
+            <p>{confirmMessage}</p>
             <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={() => setConfirmOpen(false)}>Cancel</button>
               <button
-                className="confirm-cancel"
-                onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+                className="confirm-delete"
+                onClick={() => {
+                  if (confirmAction) confirmAction();
+                  setConfirmOpen(false);
+                }}
               >
-                Cancel
-              </button>
-              <button className="confirm-delete" onClick={confirmDialog.onConfirm}>
                 Yes, Delete
               </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

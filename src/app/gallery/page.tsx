@@ -9,29 +9,6 @@ interface GalleryImage {
   isUploaded: boolean;
 }
 
-const fallbackImages: GalleryImage[] = [
-  { _id: '1', category: 'living-room', url: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800', isUploaded: false },
-  { _id: '2', category: 'bedroom', url: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800', isUploaded: false },
-  { _id: '3', category: 'kitchen', url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800', isUploaded: false },
-  { _id: '4', category: 'tv-unit', url: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=800', isUploaded: false },
-  { _id: '5', category: 'dining-room', url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800', isUploaded: false },
-  { _id: '6', category: 'office', url: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800', isUploaded: false },
-  { _id: '7', category: 'pooja-unit', url: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800', isUploaded: false },
-  { _id: '8', category: 'bar-unit', url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800', isUploaded: false },
-  { _id: '9', category: 'ceiling', url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800', isUploaded: false },
-  { _id: '10', category: 'bed-panelling', url: 'https://images.unsplash.com/photo-1616137466211-f939a420be84?w=800', isUploaded: false },
-  { _id: '11', category: 'shoe-rack', url: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800', isUploaded: false },
-  { _id: '12', category: 'kids-room', url: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800', isUploaded: false },
-  { _id: '13', category: 'almirah', url: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800', isUploaded: false },
-  { _id: '14', category: 'dining-table', url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800', isUploaded: false },
-  { _id: '15', category: 'crockery-unit', url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800', isUploaded: false },
-  { _id: '16', category: 'door', url: 'https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=800', isUploaded: false },
-  { _id: '17', category: 'entryway', url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800', isUploaded: false },
-  { _id: '18', category: 'living-room', url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800', isUploaded: false },
-  { _id: '19', category: 'bedroom', url: 'https://images.unsplash.com/photo-1616137466211-f939a420be84?w=800', isUploaded: false },
-  { _id: '20', category: 'kitchen', url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800', isUploaded: false },
-];
-
 const allCategories = [
   { id: 'all', name: 'All', icon: 'fa-th-large' },
   { id: 'living-room', name: 'Living Room', icon: 'fa-couch' },
@@ -61,23 +38,22 @@ export default function GalleryPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch('/api/gallery', { signal: controller.signal });
-        clearTimeout(timeoutId);
+        const res = await fetch('/api/gallery');
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setAllImages(data);
-        } else {
-          setAllImages(fallbackImages);
+        } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+          setAllImages(data.images);
         }
-      } catch {
-        setAllImages(fallbackImages);
+      } catch (error) {
+        console.error('Failed to fetch gallery:', error);
       }
+      setLoading(false);
     };
     fetchData();
   }, []);
@@ -122,7 +98,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="gallery-page">
+    <div className="gallery-page" suppressHydrationWarning>
       <div className="gallery-page-hero">
         <CloseButton href="/" />
         <h1>Design <span>Gallery</span></h1>
@@ -145,7 +121,9 @@ export default function GalleryPage() {
         </div>
 
         {/* Images Grid */}
-        {filteredImages.length === 0 ? (
+        {loading ? (
+          <div className="gallery-loading">Loading...</div>
+        ) : filteredImages.length === 0 ? (
           <div className="gallery-page-empty">
             <i className="fas fa-images"></i>
             <p>No designs in this category yet.</p>
@@ -214,7 +192,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Lightbox */}
-      {lightboxOpen && (
+      {lightboxOpen && filteredImages[currentIndex] && (
         <div className="gallery-lightbox" onClick={() => setLightboxOpen(false)}>
           <span className="gallery-lightbox-close" onClick={() => setLightboxOpen(false)}>&times;</span>
           <button className="gallery-lightbox-nav prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>&#10094;</button>
@@ -222,6 +200,7 @@ export default function GalleryPage() {
             src={filteredImages[currentIndex].url}
             alt=""
             onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }}
           />
           <button className="gallery-lightbox-nav next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>&#10095;</button>
           <div className="gallery-lightbox-actions" onClick={(e) => e.stopPropagation()}>
