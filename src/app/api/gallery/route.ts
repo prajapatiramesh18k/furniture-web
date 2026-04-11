@@ -10,7 +10,7 @@ interface CacheEntry {
   expire: number;
 }
 const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 30_000; // 30 seconds
+const CACHE_TTL = 300_000; // 5 minutes
 
 function getCacheKey(page: number, category: string) {
   return `${page}:${category}`;

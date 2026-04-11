@@ -38,6 +38,7 @@ export default function GalleryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Read category from URL on mount
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function GalleryPage() {
   useEffect(() => {
     if (!mounted) return;
     const fetchData = async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/gallery?page=${currentPage}&category=${activeCategory}`);
         const data = await res.json();
@@ -59,6 +61,8 @@ export default function GalleryPage() {
         }
       } catch (error) {
         console.error('Failed to fetch gallery:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -118,7 +122,12 @@ export default function GalleryPage() {
         </div>
 
         {/* Images Grid */}
-        {!mounted || images.length === 0 ? (
+        {loading ? (
+          <div className="gallery-page-loading">
+            <i className="fas fa-spinner fa-spin"></i>
+            <p>Loading designs...</p>
+          </div>
+        ) : !mounted || images.length === 0 ? (
           <div className="gallery-page-empty">
             <i className="fas fa-images"></i>
             <p>No designs in this category yet.</p>
