@@ -5,12 +5,12 @@ import { useCart } from '@/context/CartContext';
 import SubmitReview from '@/components/SubmitReview';
 
 const navigation = [
-  { label: 'home', href: '/' },
-  { label: 'about', href: '/about' },
-  { label: 'services', href: '/services' },
-  { label: 'products', href: '/products' },
-  { label: 'design gallery', href: '/gallery' },
-  { label: 'contact', href: '/contact' },
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '/about' },
+  { label: 'Services', href: '/services' },
+  { label: 'Products', href: '/products' },
+  { label: 'Design Gallery', href: '/gallery' },
+  { label: 'Contact', href: '/contact' },
 ];
 
 interface SearchProduct {
@@ -215,7 +215,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(true)}>
+          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(!cartOpen)}>
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
           <a id="account-btn" className="fas fa-user" href="/login"></a>
@@ -241,12 +241,12 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
   return (
     <div className="cart-items-container active" id="cart-items-container">
       <button className="cart-sidebar-close fas fa-times" onClick={onClose} aria-label="Close cart"></button>
-      <h3 className="title">Cart Items</h3>
       {cart.length === 0 ? (
         <div className="cart-empty">
           <i className="fas fa-shopping-cart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>
           <p style={{ fontSize: '1.6rem', color: 'var(--light-black)' }}>Your cart is empty</p>
           <p style={{ fontSize: '1.3rem', color: '#999', marginTop: '0.5rem' }}>Add products to get started</p>
+          <a href="/products" className="btn" style={{ marginTop: '1.5rem' }}>Shop Now</a>
         </div>
       ) : (
         <>

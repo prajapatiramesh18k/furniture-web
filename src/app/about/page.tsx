@@ -6,7 +6,7 @@ export default function AboutPage() {
   return (
     <div className="about-page">
       <AboutSection standalone />
-      <TeamSection />
+      <TeamSection standalone />
     </div>
   );
 }
