@@ -13,6 +13,7 @@
     "@ai-sdk/openai": "^3.0.52",
     "@ai-sdk/react": "^3.0.160",
     "@types/swiper": "^6.0.0",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.158",
     "groq": "^5.20.0",
     "mongoose": "^9.4.1",

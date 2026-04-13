@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import ChatBot from "@/components/ChatBot";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Ananya House of Furniture",
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body>
         <CartProvider>{children}</CartProvider>
         <ChatBot />
+        <Analytics />
       </body>
     </html>
   );
