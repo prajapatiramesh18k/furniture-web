@@ -42,16 +42,16 @@ export default function Hero() {
       if (typeof window === 'undefined') return;
 
       const Swiper = (await import('swiper')).default;
-      const { Navigation, Autoplay } = await import('swiper/modules');
+      const { Autoplay, Navigation } = await import('swiper/modules');
 
       swiper = new Swiper('.home-slider', {
-        modules: [Navigation, Autoplay],
+        modules: [Autoplay, Navigation],
         autoplay: { delay: 7500, disableOnInteraction: false },
         grabCursor: true,
         loop: true,
         navigation: {
-          nextEl: '.swiper-button-next',
-          prevEl: '.swiper-button-prev',
+          nextEl: '#hero-next',
+          prevEl: '#hero-prev',
         },
       });
     };
@@ -68,9 +68,6 @@ export default function Hero() {
 
   return (
     <section className="home" id="home">
-      <div className="swiper-button-prev"></div>
-      <div className="swiper-button-next"></div>
-
       <div className="swiper home-slider">
         <div className="swiper-wrapper">
           {sliders.map((slide) => (
@@ -85,6 +82,14 @@ export default function Hero() {
               </div>
             </div>
           ))}
+        </div>
+        <div className="hero-slider-controls">
+          <button className="hero-slider-btn prev-btn" id="hero-prev" aria-label="Previous slide">
+            <i className="fas fa-arrow-left"></i>
+          </button>
+          <button className="hero-slider-btn next-btn" id="hero-next" aria-label="Next slide">
+            <i className="fas fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </section>
