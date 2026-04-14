@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
+import { useWishlist } from '@/context/WishlistContext';
+import { useCart } from '@/context/CartContext';
 
 const categoryLabels: Record<string, string> = {
   'bedroom': 'Bedroom',
@@ -30,16 +32,25 @@ const PRODUCTS_PER_PAGE = 12;
 function ProductsPageContent() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
 
   const [products, setProducts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/products')
       .then(res => res.json())
-      .then(data => setProducts(data.products || []))
-      .catch(() => setProducts([]));
+      .then(data => {
+        setProducts(data.products || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setProducts([]);
+        setLoading(false);
+      });
   }, []);
 
   const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
@@ -95,9 +106,22 @@ function ProductsPageContent() {
         </div>
       )}
 
-      {products.length === 0 ? (
+      {loading ? (
         <div className="products-page-grid">
-          <p style={{ textAlign: 'center', color: '#999', fontSize: '1.4rem', gridColumn: '1/-1', padding: '4rem' }}>Loading products...</p>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="product-skeleton">
+              <div className="product-skeleton-img"></div>
+              <div className="product-skeleton-body">
+                <div className="product-skeleton-line short"></div>
+                <div className="product-skeleton-line"></div>
+                <div className="product-skeleton-line medium"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="products-page-grid">
+          <p style={{ textAlign: 'center', color: '#999', fontSize: '1.4rem', gridColumn: '1/-1', padding: '4rem' }}>No products found.</p>
         </div>
       ) : (
         <>
@@ -119,16 +143,26 @@ function ProductsPageContent() {
               <p style={{ textAlign: 'center', color: '#999', fontSize: '1.4rem', gridColumn: '1/-1', padding: '4rem' }}>No products in this category.</p>
             ) : (
               filteredProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.slug || product.id}`} className="products-page-card">
+                <div key={product.id} className="products-page-card">
                   <div className="products-page-card-img">
-                    <img src={product.image} alt={product.name} />
-                    <div className="products-page-card-overlay">
-                      <span>View Details</span>
-                    </div>
+                    <button
+                      className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
+                      onClick={() => toggleWishlist({ id: product.id, name: product.name, image: product.image, price: product.price, slug: product.slug })}
+                    >
+                      <i className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`}></i>
+                    </button>
+                    <Link href={`/products/${product.slug || product.id}`}>
+                      <img src={product.image} alt={product.name} />
+                      <div className="products-page-card-overlay">
+                        <span>View Details</span>
+                      </div>
+                    </Link>
                   </div>
                   <div className="products-page-card-body">
-                    <p className="products-page-card-category">{categoryLabels[product.category] || product.category}</p>
-                    <h2>{product.name}</h2>
+                    <Link href={`/products/${product.slug || product.id}`}>
+                      <p className="products-page-card-category">{categoryLabels[product.category] || product.category}</p>
+                      <h2>{product.name}</h2>
+                    </Link>
                     <div className="products-page-card-price">
                       <span className="pp-price-current">Rs.{Number(product.price).toLocaleString()}</span>
                       {Number(product.originalPrice) > Number(product.price) && (
@@ -136,7 +170,7 @@ function ProductsPageContent() {
                       )}
                     </div>
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>

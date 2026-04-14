@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useWishlist } from '@/context/WishlistContext';
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<any[]>([]);
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     fetch('/api/products')
@@ -33,13 +35,23 @@ export default function FeaturedProducts() {
       <h1 className="heading">our <span>products</span></h1>
       <div className="featured-products-grid">
         {products.map((product) => (
-          <Link key={product.id} href={`/products/${product.slug || product.id}`} className="featured-product-card">
+          <div key={product.id} className="featured-product-card">
             <div className="fp-card-img">
-              <img src={product.image} alt={product.name} />
+              <button
+                className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
+                onClick={() => toggleWishlist({ id: product.id, name: product.name, image: product.image, price: product.price, slug: product.slug })}
+              >
+                <i className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`}></i>
+              </button>
+              <Link href={`/products/${product.slug || product.id}`}>
+                <img src={product.image} alt={product.name} />
+              </Link>
             </div>
             <div className="fp-card-info">
-              <p className="fp-category">{(product.category || '').replace(/-/g, ' ')}</p>
-              <h3>{product.name}</h3>
+              <Link href={`/products/${product.slug || product.id}`}>
+                <p className="fp-category">{(product.category || '').replace(/-/g, ' ')}</p>
+                <h3>{product.name}</h3>
+              </Link>
               <div className="fp-rating">
                 {renderStars(Number(product.rating))}
                 <span className="fp-rating-text">({Number(product.rating).toFixed(1)})</span>
@@ -51,7 +63,7 @@ export default function FeaturedProducts() {
                 )}
               </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
       <div className="fp-view-all">

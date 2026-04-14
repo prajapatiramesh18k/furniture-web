@@ -123,9 +123,12 @@ export default function GalleryPage() {
 
         {/* Images Grid */}
         {loading ? (
-          <div className="gallery-page-loading">
-            <i className="fas fa-spinner fa-spin"></i>
-            <p>Loading designs...</p>
+          <div className="gallery-page-grid">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="gallery-skeleton">
+                <div className="gallery-skeleton-img"></div>
+              </div>
+            ))}
           </div>
         ) : !mounted || images.length === 0 ? (
           <div className="gallery-page-empty">

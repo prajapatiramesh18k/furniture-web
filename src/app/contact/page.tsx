@@ -28,10 +28,12 @@ export default function ContactPage() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', projectType: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(false);
 
     try {
       const formData = new FormData();
@@ -41,14 +43,18 @@ export default function ContactPage() {
       formData.append('project-type', form.projectType);
       formData.append('message', form.message);
 
-      await fetch('https://script.google.com/macros/s/AKfycbzx8c0Uz_wWEjQTKsriT6HUw2amjdnMVTJDiLQMjXhNqFNE1GALPuQepEjoSGmN5bYaSA/exec', {
+      const response = await fetch('https://script.google.com/macros/s/AKfycbzx8c0Uz_wWEjQTKsriT6HUw2amjdnMVTJDiLQMjXhNqFNE1GALPuQepEjoSGmN5bYaSA/exec', {
         method: 'POST',
         body: formData,
       });
 
-      setSubmitted(true);
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        setError(true);
+      }
     } catch {
-      setSubmitted(true);
+      setError(true);
     }
     setSubmitting(false);
   };
@@ -206,6 +212,13 @@ export default function ContactPage() {
                     required
                   />
                 </div>
+
+                {error && (
+                  <div className="cpf-error">
+                    <i className="fas fa-exclamation-circle"></i>
+                    Something went wrong. Please try again or contact us directly.
+                  </div>
+                )}
 
                 <button type="submit" className="cpf-submit" disabled={submitting}>
                   {submitting ? (

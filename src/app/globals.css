@@ -426,13 +426,45 @@ input, textarea, select {
     cursor: pointer;
     font-size: 1.7rem;
     color: #2c2420;
-    margin-right: 10rem;
+    margin-right: 1.8rem;
     transition: color 0.2s;
     text-decoration: none;
 }
 
 #account-btn:hover {
     color: #a27341;
+}
+
+#wishlist-btn {
+    cursor: pointer;
+    font-size: 1.7rem;
+    color: #2c2420;
+    margin-right: 1.8rem;
+    transition: color 0.2s;
+    text-decoration: none;
+    position: relative;
+}
+
+#wishlist-btn:hover {
+    color: #a27341;
+}
+
+#wishlist-btn span,
+#cart-btn span {
+    position: absolute;
+    top: -0.8rem;
+    right: -1rem;
+    background: #a27341;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    min-width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.3rem;
 }
 
 .header .icons div {
@@ -2450,6 +2482,160 @@ input, textarea, select {
 /* Wishlist icon */
 .wishlist-btn.active {
     color: #e74c3c !important;
+}
+
+/* ============================================ */
+/* WISHLIST PAGE STYLES */
+/* ============================================ */
+
+.wishlist-page {
+    min-height: 100vh;
+    padding: 2rem 9%;
+    padding-top: 10rem;
+}
+
+.wishlist-page-hero {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.wishlist-page-hero h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.wishlist-page-hero p {
+    color: #666;
+    font-size: 1.6rem;
+}
+
+.wishlist-empty {
+    text-align: center;
+    padding: 6rem 2rem;
+}
+
+.wishlist-empty-icon {
+    font-size: 8rem;
+    color: #ddd;
+    margin-bottom: 2rem;
+}
+
+.wishlist-empty h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #2c2420;
+}
+
+.wishlist-empty p {
+    color: #666;
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+    gap: 2.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.wishlist-card {
+    background: #fff;
+    border-radius: 1.2rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.wishlist-card:hover {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    transform: translateY(-4px);
+}
+
+.wishlist-card-img {
+    position: relative;
+    height: 22rem;
+    overflow: hidden;
+}
+
+.wishlist-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wishlist-remove {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #e74c3c;
+    transition: background 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.wishlist-remove:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.wishlist-card-body {
+    padding: 1.5rem;
+}
+
+.wishlist-card-body h3 {
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    color: #2c2420;
+}
+
+.wishlist-price {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #a27341;
+    margin-bottom: 1rem;
+}
+
+.wishlist-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.wishlist-actions .btn {
+    flex: 1;
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.wishlist-actions .btn-outline {
+    flex: 1;
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    border: 1px solid #a27341;
+    border-radius: 0.8rem;
+    color: #a27341;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.wishlist-actions .btn-outline:hover {
+    background: #a27341;
+    color: #fff;
 }
 
 /* Product actions */
@@ -7739,6 +7925,7 @@ input, textarea, select {
   height: 22rem;
   overflow: hidden;
   border-radius: 10px 10px 0 0;
+  position: relative;
 }
 
 .fp-card-img img {
@@ -7942,6 +8129,43 @@ input, textarea, select {
   padding: 4rem;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.product-skeleton {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.product-skeleton-img {
+  height: 20rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.product-skeleton-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.product-skeleton-line {
+  height: 1.4rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.product-skeleton-line.short { width: 40%; }
+.product-skeleton-line.medium { width: 60%; }
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .products-page-card {
@@ -8620,13 +8844,21 @@ input, textarea, select {
   cursor: not-allowed;
 }
 
-.cpf-spinner {
-  width: 1.4rem;
-  height: 1.4rem;
-  border: 2.5px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: cpf-spin 0.7s linear infinite;
+.cpf-error {
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #dc2626;
+  padding: 1rem 1.5rem;
+  border-radius: 0.8rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.cpf-error i {
+  color: #ef4444;
 }
 
 @keyframes cpf-spin {
@@ -8792,6 +9024,20 @@ input, textarea, select {
 
 @media (max-width: 1200px) {
   .gallery-page-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.gallery-skeleton {
+  height: 24rem;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.gallery-skeleton-img {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
 }
 
 .gallery-page-item {

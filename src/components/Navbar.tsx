@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import SubmitReview from '@/components/SubmitReview';
 
 const navigation = [
@@ -25,6 +26,7 @@ interface SearchProduct {
 export default function Navbar() {
   const router = useRouter();
   const { getCartCount } = useCart();
+  const { getWishlistCount } = useWishlist();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -36,18 +38,20 @@ export default function Navbar() {
   const [showResults, setShowResults] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Wait for client mount before rendering cart count
+  // Wait for client mount before rendering cart/wishlist count
   useEffect(() => {
     setMounted(true);
     setCartCount(getCartCount());
+    setWishlistCount(getWishlistCount());
     const loggedIn = localStorage.getItem('adminLoggedIn');
     if (loggedIn === 'true') setAdminLoggedIn(true);
     const closed = sessionStorage.getItem('bannerClosed');
     if (closed === 'true') setBannerVisible(false);
-  }, [getCartCount]);
+  }, [getCartCount, getWishlistCount]);
 
   useEffect(() => {
     const handleScroll = () => setMenuOpen(false);
@@ -218,6 +222,9 @@ export default function Navbar() {
           <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(!cartOpen)}>
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
+          <a id="wishlist-btn" className="fas fa-heart" href="/wishlist">
+            <span style={{ display: mounted && wishlistCount > 0 ? 'flex' : 'none' }}>{wishlistCount}</span>
+          </a>
           <a id="account-btn" className="fas fa-user" href="/login"></a>
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
         </div>
