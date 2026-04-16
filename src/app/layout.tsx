@@ -6,26 +6,41 @@ import ChatBot from "@/components/ChatBot";
 import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
-  title: "Ananya House of Furniture",
+  title: "Ananya House of Furniture | Custom Furniture Thane, Maharashtra",
   description:
-    "Custom furniture designed to match your style. Best quality at affordable prices.",
+    "Ananya House of Furniture - Custom furniture manufacturer in Thane, Maharashtra. Best quality wooden furniture at factory-direct prices. 12+ years experience, 5000+ happy customers.",
+  keywords: "custom furniture, furniture manufacturer, Thane, Maharashtra, wooden furniture, Mumbai, online furniture",
   openGraph: {
-    title: "Ananya House of Furniture",
-    description: "Custom furniture designed to match your style. Best quality at affordable prices.",
+    title: "Ananya House of Furniture | Custom Furniture Thane",
+    description: "Custom furniture designed to match your style. Best quality at affordable prices. 12+ years experience.",
     url: "https://ananyahouseoffurniture.com",
     siteName: "Ananya House of Furniture",
     locale: "en_IN",
     type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Ananya House of Furniture",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Ananya House of Furniture",
     description: "Custom furniture designed to match your style. Best quality at affordable prices.",
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
+  metadataBase: new URL("https://ananyahouseoffurniture.com"),
 };
 
 export default function RootLayout({
@@ -43,6 +58,31 @@ export default function RootLayout({
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FurnitureStore",
+              name: "Ananya House of Furniture",
+              description: "Custom furniture designed to match your style. Best quality at affordable prices.",
+              url: "https://ananyahouseoffurniture.com",
+              telephone: "+91-9321812823",
+              email: "contact@ananyahouseoffurniture.com",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Diva-Shil Road, Khardipada",
+                addressLocality: "Thane",
+                addressRegion: "Maharashtra",
+                postalCode: "400612",
+                addressCountry: "IN",
+              },
+              priceRange: "₹₹",
+              image: "https://ananyahouseoffurniture.com/og-image.jpg",
+              openingHours: "Mo-Sa 09:00-19:00",
+            }),
+          }}
         />
       </head>
       <body>

@@ -36,6 +36,7 @@ export default function ContactPage() {
     setError(false);
 
     try {
+      // Send to Google Sheets
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('number', form.phone);
@@ -43,12 +44,25 @@ export default function ContactPage() {
       formData.append('project-type', form.projectType);
       formData.append('message', form.message);
 
-      const response = await fetch('https://script.google.com/macros/s/AKfycbzx8c0Uz_wWEjQTKsriT6HUw2amjdnMVTJDiLQMjXhNqFNE1GALPuQepEjoSGmN5bYaSA/exec', {
+      const sheetResponse = await fetch('https://script.google.com/macros/s/AKfycbzx8c0Uz_wWEjQTKsriT6HUw2amjdnMVTJDiLQMjXhNqFNE1GALPuQepEjoSGmN5bYaSA/exec', {
         method: 'POST',
         body: formData,
       });
 
-      if (response.ok) {
+      // Send WhatsApp notification
+      await fetch('/api/contact-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          projectType: form.projectType,
+          message: form.message,
+        }),
+      });
+
+      if (sheetResponse.ok) {
         setSubmitted(true);
       } else {
         setError(true);

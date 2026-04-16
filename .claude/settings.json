@@ -8,7 +8,8 @@
       "Bash(vercel protection:*)",
       "Bash(vercel --help)",
       "Bash(vercel api:*)",
-      "Bash(grep -n \"chatbot\\\\|ChatBot\\\\|chat-fab\\\\|chatbot\" src/components/*.tsx src/app/globals.css --include=\"*.tsx\" --include=\"*.css\" -ri)"
+      "Bash(grep -n \"chatbot\\\\|ChatBot\\\\|chat-fab\\\\|chatbot\" src/components/*.tsx src/app/globals.css --include=\"*.tsx\" --include=\"*.css\" -ri)",
+      "Read(//home/artem/**)"
     ]
   }
 }
