@@ -45,11 +45,6 @@ const blogData = [
   },
 ];
 
-export const metadata = {
-  title: 'Blog | Ananya House of Furniture',
-  description: 'Read our latest articles on furniture buying guides, maintenance tips, and interior design ideas.',
-};
-
 export default function BlogPage() {
   useEffect(() => {
     document.title = 'Ananya House of Furniture | Blog';
