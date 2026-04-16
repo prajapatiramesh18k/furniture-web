@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Ananya House of Furniture | Custom Furniture Thane",
     description: "Custom furniture designed to match your style. Best quality at affordable prices. 12+ years experience.",
-    url: "https://ananyahouseoffurniture.com",
+    url: "https://ananyahouseoffurniture.in",
     siteName: "Ananya House of Furniture",
     locale: "en_IN",
     type: "website",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
-  metadataBase: new URL("https://ananyahouseoffurniture.com"),
+  metadataBase: new URL("https://ananyahouseoffurniture.in"),
 };
 
 export default function RootLayout({
@@ -68,7 +68,7 @@ export default function RootLayout({
               "@type": "FurnitureStore",
               name: "Ananya House of Furniture",
               description: "Custom furniture designed to match your style. Best quality at affordable prices.",
-              url: "https://ananyahouseoffurniture.com",
+              url: "https://ananyahouseoffurniture.in",
               telephone: "+91-9321812823",
               email: "contact@ananyahouseoffurniture.com",
               address: {
@@ -80,7 +80,7 @@ export default function RootLayout({
                 addressCountry: "IN",
               },
               priceRange: "₹₹",
-              image: "https://ananyahouseoffurniture.com/og-image.jpg",
+              image: "https://ananyahouseoffurniture.in/og-image.jpg",
               openingHours: "Mo-Sa 09:00-19:00",
             }),
           }}
