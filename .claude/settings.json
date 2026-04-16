@@ -9,7 +9,10 @@
       "Bash(vercel --help)",
       "Bash(vercel api:*)",
       "Bash(grep -n \"chatbot\\\\|ChatBot\\\\|chat-fab\\\\|chatbot\" src/components/*.tsx src/app/globals.css --include=\"*.tsx\" --include=\"*.css\" -ri)",
-      "Read(//home/artem/**)"
+      "Read(//home/artem/**)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm list:*)",
+      "Bash(ls -la \"/home/artem/ramesh docs/file/furniture-next/public/google\"*)"
     ]
   }
 }
