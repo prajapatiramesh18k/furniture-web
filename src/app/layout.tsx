@@ -51,6 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="google-site-verification" content="aDEB0fLtHFpcrTyE1-6C6KP6wK4VHImgKtZpABLHUJA" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" //css
