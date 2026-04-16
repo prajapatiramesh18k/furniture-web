@@ -1,8 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SubmitReviewPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Submit Review';
+  }, []);
+
+
   const router = useRouter();
   const [form, setForm] = useState({ name: '', location: '', rating: 5, text: '' });
   const [photo, setPhoto] = useState<string>('');

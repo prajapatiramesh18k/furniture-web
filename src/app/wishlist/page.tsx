@@ -1,10 +1,15 @@
 'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useWishlist } from '@/context/WishlistContext';
 import { useCart } from '@/context/CartContext';
 import CloseButton from '@/components/CloseButton';
 
 export default function WishlistPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Wishlist';
+  }, []);
+
   const { wishlist, removeFromWishlist, getWishlistCount } = useWishlist();
   const { addToCart } = useCart();
   const count = getWishlistCount();

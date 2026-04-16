@@ -30,6 +30,10 @@ const filterCategories = [
 const PRODUCTS_PER_PAGE = 12;
 
 function ProductsPageContent() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Products';
+  }, []);
+
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const { isInWishlist, toggleWishlist } = useWishlist();

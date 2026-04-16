@@ -37,12 +37,15 @@ const sliders = [
 export default function Hero() {
   useEffect(() => {
     let swiper: any = null;
+    let destroyed = false;
 
     const initSwiper = async () => {
       if (typeof window === 'undefined') return;
 
       const Swiper = (await import('swiper')).default;
       const { Autoplay, Navigation } = await import('swiper/modules');
+
+      if (destroyed) return;
 
       swiper = new Swiper('.home-slider', {
         modules: [Autoplay, Navigation],
@@ -59,7 +62,8 @@ export default function Hero() {
     initSwiper();
 
     return () => {
-      if (swiper) {
+      destroyed = true;
+      if (swiper && typeof swiper.destroy === 'function') {
         swiper.destroy(true, true);
         swiper = null;
       }

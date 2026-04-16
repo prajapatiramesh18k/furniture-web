@@ -1,9 +1,14 @@
 'use client';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import CloseButton from '@/components/CloseButton';
 import { services } from '@/lib/services-data';
 
 export default function ServicesPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Services';
+  }, []);
+
   return (
     <div className="services-page">
       <div className="services-page-hero">

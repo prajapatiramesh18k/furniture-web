@@ -1,10 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import NavbarWrapper from '@/components/NavbarWrapper';
 
 function OrderConfirmationContent() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Order Confirmed';
+  }, []);
+
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId') || 'N/A';
   const name = searchParams.get('name') || 'Customer';

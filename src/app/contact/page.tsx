@@ -1,6 +1,6 @@
 'use client';
 import CloseButton from '@/components/CloseButton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const contactInfo = {
   phone: '+91-9321812823',
@@ -25,6 +25,10 @@ const projectTypes = [
 ];
 
 export default function ContactPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Contact';
+  }, []);
+
   const [form, setForm] = useState({ name: '', phone: '', email: '', projectType: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

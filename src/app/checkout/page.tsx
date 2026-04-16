@@ -22,6 +22,10 @@ interface CustomerInfo {
 }
 
 export default function CheckoutPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Checkout';
+  }, []);
+
   const router = useRouter();
   const { cart, getCartTotal, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);

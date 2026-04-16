@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import SubmitReview from '@/components/SubmitReview';
@@ -49,8 +50,9 @@ export default function Navbar() {
     setWishlistCount(getWishlistCount());
     const loggedIn = localStorage.getItem('adminLoggedIn');
     if (loggedIn === 'true') setAdminLoggedIn(true);
-    const closed = sessionStorage.getItem('bannerClosed');
-    if (closed === 'true') setBannerVisible(false);
+    if (sessionStorage.getItem('bannerClosed') === 'true') {
+      setBannerVisible(false);
+    }
   }, [getCartCount, getWishlistCount]);
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function Navbar() {
 
   return (
     <>
-      {bannerVisible && (
+      {mounted && bannerVisible && (
         <div className="delivery-banner">
           <div className="delivery-content">
             <i className="fas fa-truck"></i>
@@ -129,7 +131,7 @@ export default function Navbar() {
       )}
 
       <header className="header">
-        <a href="/" className="logo">
+        <Link href="/" className="logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="5" fill="#a27341"/>
             <path d="M7 21V11.5L14 8.5L21 11.5V21" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
@@ -140,25 +142,25 @@ export default function Navbar() {
             <span className="logo-main">ANANYA</span>
             <span className="logo-sub">House of Furniture</span>
           </span>
-        </a>
+        </Link>
         <nav className={`navbar ${menuOpen ? 'active' : ''}`} id="navbar">
           {navigation.map((item) => (
-            <a
+            <Link
               key={item.label}
               href={item.href}
               suppressHydrationWarning
               onClick={() => setMenuOpen(false)}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
           {adminLoggedIn ? (
             <>
-              <a href="/admin">Admin</a>
-              <a href="#" onClick={handleLogout}>Logout</a>
+              <Link href="/admin">Admin</Link>
+              <button onClick={handleLogout}>Logout</button>
             </>
           ) : (
-            <a href="/login" suppressHydrationWarning>Login</a>
+            <Link href="/login" suppressHydrationWarning>Login</Link>
           )}
         </nav>
         <div className="icons">
@@ -185,7 +187,7 @@ export default function Navbar() {
                 ) : searchResults.length > 0 ? (
                   <>
                     {searchResults.map((product) => (
-                      <a
+                      <Link
                         key={product.id}
                         href={`/products/${product.slug}`}
                         className="nav-search-item"
@@ -199,9 +201,9 @@ export default function Navbar() {
                           <span className="nav-search-item-name">{product.name}</span>
                           <span className="nav-search-item-price">Rs.{product.price.toLocaleString()}</span>
                         </div>
-                      </a>
+                      </Link>
                     ))}
-                    <a
+                    <Link
                       href={`/products?q=${encodeURIComponent(searchQuery)}`}
                       className="nav-search-viewall"
                       onClick={() => {
@@ -210,7 +212,7 @@ export default function Navbar() {
                       }}
                     >
                       View all results for "{searchQuery}"
-                    </a>
+                    </Link>
                   </>
                 ) : (
                   <div className="nav-search-hint">No products found</div>
@@ -222,10 +224,10 @@ export default function Navbar() {
           <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(!cartOpen)}>
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
-          <a id="wishlist-btn" className="fas fa-heart" href="/wishlist">
+          <Link id="wishlist-btn" className="fas fa-heart" href="/wishlist">
             <span style={{ display: mounted && wishlistCount > 0 ? 'flex' : 'none' }}>{wishlistCount}</span>
-          </a>
-          <a id="account-btn" className="fas fa-user" href="/login"></a>
+          </Link>
+          <Link id="account-btn" className="fas fa-user" href="/login"></Link>
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
         </div>
       </header>
@@ -253,7 +255,7 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
           <i className="fas fa-shopping-cart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>
           <p style={{ fontSize: '1.6rem', color: 'var(--light-black)' }}>Your cart is empty</p>
           <p style={{ fontSize: '1.3rem', color: '#999', marginTop: '0.5rem' }}>Add products to get started</p>
-          <a href="/products" className="btn" style={{ marginTop: '1.5rem' }}>Shop Now</a>
+          <Link href="/products" className="btn" style={{ marginTop: '1.5rem' }}>Shop Now</Link>
         </div>
       ) : (
         <>

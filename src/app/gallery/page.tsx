@@ -31,6 +31,10 @@ const allCategories = [
 ];
 
 export default function GalleryPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Design Gallery';
+  }, []);
+
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);

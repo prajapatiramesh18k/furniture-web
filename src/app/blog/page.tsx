@@ -1,3 +1,5 @@
+'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import NavbarWrapper from '@/components/NavbarWrapper';
 import Footer from '@/components/Footer';
@@ -49,6 +51,9 @@ export const metadata = {
 };
 
 export default function BlogPage() {
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Blog';
+  }, []);
   return (
     <>
       <NavbarWrapper />

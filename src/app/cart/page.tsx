@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CloseButton from '@/components/CloseButton';
@@ -25,6 +26,10 @@ const categoryLabels: Record<string, string> = {
 export default function CartPage() {
   const router = useRouter();
   const { cart, removeFromCart, updateQuantity, getCartTotal } = useCart();
+
+  useEffect(() => {
+    document.title = 'Ananya House of Furniture | Cart';
+  }, []);
 
   const subtotal = getCartTotal();
   const deliveryCharge = subtotal >= 5000 ? 0 : 500;
