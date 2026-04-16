@@ -30,8 +30,10 @@ export default function Navbar() {
   const { getWishlistCount } = useWishlist();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
@@ -154,14 +156,6 @@ export default function Navbar() {
               {item.label}
             </Link>
           ))}
-          {adminLoggedIn ? (
-            <>
-              <Link href="/admin">Admin</Link>
-              <button onClick={handleLogout}>Logout</button>
-            </>
-          ) : (
-            <Link href="/login" suppressHydrationWarning>Login</Link>
-          )}
         </nav>
         <div className="icons">
           {/* Inline Search Box */}
@@ -221,19 +215,38 @@ export default function Navbar() {
             )}
           </div>
 
-          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => setCartOpen(!cartOpen)}>
+          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => { setCartOpen(!cartOpen); setAccountOpen(false); setWishlistOpen(false); }}>
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
-          <Link id="wishlist-btn" className="fas fa-heart" href="/wishlist">
-            <span style={{ display: mounted && wishlistCount > 0 ? 'flex' : 'none' }}>{wishlistCount}</span>
-          </Link>
-          <Link id="account-btn" className="fas fa-user" href="/login"></Link>
+          <button
+            id="account-btn"
+            className="fas fa-user"
+            onClick={() => { setAccountOpen(!accountOpen); setCartOpen(false); setWishlistOpen(false); }}
+            aria-label="Account"
+          />
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
         </div>
       </header>
 
       {reviewOpen && <SubmitReview onClose={() => setReviewOpen(false)} />}
-      {cartOpen && <CartSidebar onClose={() => setCartOpen(false)} />}
+      {cartOpen && (
+        <>
+          <div className="sidebar-backdrop" onClick={() => setCartOpen(false)} />
+          <CartSidebar onClose={() => setCartOpen(false)} />
+        </>
+      )}
+      {wishlistOpen && (
+        <>
+          <div className="sidebar-backdrop" onClick={() => setWishlistOpen(false)} />
+          <WishlistSidebar onClose={() => setWishlistOpen(false)} />
+        </>
+      )}
+      {accountOpen && (
+        <>
+          <div className="sidebar-backdrop" onClick={() => setAccountOpen(false)} />
+          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} />
+        </>
+      )}
     </>
   );
 }
@@ -248,8 +261,7 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="cart-items-container active" id="cart-items-container">
-      <button className="cart-sidebar-close fas fa-times" onClick={onClose} aria-label="Close cart"></button>
+    <div className="cart-items-container active sidebar-panel" id="cart-items-container">
       {cart.length === 0 ? (
         <div className="cart-empty">
           <i className="fas fa-shopping-cart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>
@@ -291,6 +303,146 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
           </div>
           <button className="btn checkout-btn" onClick={handleCheckout}>
             <i className="fas fa-lock"></i> Proceed to Checkout
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
+  onClose: () => void;
+  onOpenCart: () => void;
+  onOpenWishlist: () => void;
+}) {
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    setAdminLoggedIn(localStorage.getItem('adminLoggedIn') === 'true');
+    setAdminUsername(localStorage.getItem('adminUsername') || '');
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminUsername');
+    onClose();
+    router.push('/');
+  };
+
+  const handleWishlist = () => {
+    onClose();
+    onOpenWishlist();
+  };
+
+  const handleCart = () => {
+    onClose();
+    onOpenCart();
+  };
+
+  const navigateTo = (path: string) => {
+    onClose();
+    router.push(path);
+  };
+
+  return (
+    <div className="account-sidebar sidebar-panel active">
+      <div className="account-sidebar-content">
+        <div className="account-avatar">
+          <i className="fas fa-user-circle"></i>
+        </div>
+
+        {adminLoggedIn ? (
+          <>
+            <h3 className="account-greeting">Welcome Back!</h3>
+            <p className="account-email">{adminUsername}</p>
+            <button className="btn account-action-btn" onClick={() => navigateTo('/admin')}>
+              <i className="fas fa-user-shield"></i> Admin Panel
+            </button>
+            <button
+              className="btn account-action-btn logout-btn"
+              onClick={handleLogout}
+            >
+              <i className="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <h3 className="account-greeting">Welcome, Guest!</h3>
+            <p className="account-subtext">Sign in to access your account</p>
+            <button className="btn account-action-btn" onClick={() => navigateTo('/login')}>
+              <i className="fas fa-sign-in-alt"></i> Login / Sign Up
+            </button>
+          </>
+        )}
+
+        <div className="account-divider"></div>
+
+        <div className="account-links">
+          <button className="account-link-item" onClick={() => navigateTo('/orders')}>
+            <i className="fas fa-box"></i> My Orders
+          </button>
+          <button className="account-link-item" onClick={handleWishlist}>
+            <i className="fas fa-heart"></i> Wishlist
+          </button>
+          <button className="account-link-item" onClick={handleCart}>
+            <i className="fas fa-shopping-cart"></i> Cart
+          </button>
+          <button className="account-link-item" onClick={() => navigateTo('/contact')}>
+            <i className="fas fa-headset"></i> Help & Support
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WishlistSidebar({ onClose }: { onClose: () => void }) {
+  const { wishlist, removeFromWishlist, getWishlistCount } = useWishlist();
+  const { addToCart } = useCart();
+  const router = useRouter();
+
+  const handleAddToCart = (item: any) => {
+    addToCart({ ...item, quantity: 1 });
+    removeFromWishlist(item.id);
+  };
+
+  return (
+    <div className="cart-items-container active sidebar-panel" id="wishlist-sidebar">
+      {wishlist.length === 0 ? (
+        <div className="cart-empty">
+          <i className="fas fa-heart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>
+          <p style={{ fontSize: '1.6rem', color: 'var(--light-black)' }}>Your wishlist is empty</p>
+          <p style={{ fontSize: '1.3rem', color: '#999', marginTop: '0.5rem' }}>Save items you love here</p>
+          <button className="btn" style={{ marginTop: '1.5rem' }} onClick={() => { onClose(); router.push('/products'); }}>
+            Browse Products
+          </button>
+        </div>
+      ) : (
+        <>
+          <h2 style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '1rem' }}>
+            My Wishlist ({getWishlistCount()})
+          </h2>
+          <div className="cart-items-list">
+            {wishlist.map((item) => (
+              <div key={item.id} className="cart-item">
+                <img src={item.image} alt={item.name} />
+                <div className="content">
+                  <h3>{item.name}</h3>
+                  <span className="cart-item-price">Rs.{item.price.toLocaleString()}</span>
+                </div>
+                <div className="wishlist-actions">
+                  <button className="qty-btn" onClick={() => handleAddToCart(item)} title="Add to cart">
+                    <i className="fas fa-shopping-cart"></i>
+                  </button>
+                  <button className="cart-remove fas fa-times" onClick={() => removeFromWishlist(item.id)}></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="btn checkout-btn" onClick={() => { onClose(); router.push('/wishlist'); }}>
+            View Full Wishlist
           </button>
         </>
       )}

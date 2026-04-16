@@ -515,6 +515,146 @@ input, textarea, select {
     pointer-events: auto;
 }
 
+/* Sidebar Backdrop */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3000;
+    cursor: pointer;
+}
+
+/* Account Sidebar */
+.account-sidebar {
+    position: fixed;
+    top: 0;
+    right: -40rem;
+    width: 36rem;
+    background: var(--white);
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+    z-index: 3001;
+    padding: 0;
+    overflow-y: auto;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.account-sidebar.active {
+    right: 0;
+    box-shadow: 0 0 0 100vw rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+.account-sidebar.active .account-sidebar-content {
+    pointer-events: auto;
+}
+
+.account-sidebar-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+}
+
+.account-avatar {
+    font-size: 6rem;
+    color: var(--primary-color);
+    padding-top: 4rem;
+}
+
+.account-greeting {
+    font-size: 2rem;
+    color: var(--black);
+    font-weight: 700;
+}
+
+.account-subtext,
+.account-email {
+    font-size: 1.4rem;
+    color: #666;
+    word-break: break-all;
+}
+
+.account-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.account-divider {
+    height: 0.1rem;
+    background: #eee;
+    margin: 0.5rem 0;
+}
+
+.account-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.account-link-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    font-size: 1.4rem;
+    color: var(--black);
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+}
+
+.account-link-item:hover {
+    background: #f5f5f5;
+}
+
+.account-link-item i {
+    width: 2rem;
+    color: var(--primary-color);
+}
+
+.logout-btn {
+    background: #fee;
+    color: #c00;
+}
+
+/* Mobile responsive for account sidebar */
+@media (max-width: 480px) {
+    .account-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+
+    .account-sidebar.active {
+        box-shadow: none;
+    }
+
+    .account-sidebar-content {
+        padding: 1.5rem;
+    }
+
+    .account-avatar {
+        font-size: 5rem;
+        padding-top: 3rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .account-sidebar {
+        width: 85%;
+    }
+}
+
 .cart-sidebar-close{
     position: absolute;
     top: 1.5rem;
