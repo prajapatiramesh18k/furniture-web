@@ -32,7 +32,8 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
   const [accountOpen, setAccountOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,12 +51,35 @@ export default function Navbar() {
     setMounted(true);
     setCartCount(getCartCount());
     setWishlistCount(getWishlistCount());
-    const loggedIn = localStorage.getItem('adminLoggedIn');
-    if (loggedIn === 'true') setAdminLoggedIn(true);
     if (sessionStorage.getItem('bannerClosed') === 'true') {
       setBannerVisible(false);
     }
   }, [getCartCount, getWishlistCount]);
+
+  // Check auth status on mount and listen for auth changes
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user) {
+          setUserLoggedIn(true);
+          setUserName(data.user.name || '');
+        } else {
+          setUserLoggedIn(false);
+          setUserName('');
+        }
+      } catch (err) {
+        setUserLoggedIn(false);
+        setUserName('');
+      }
+    };
+    checkAuth();
+
+    const handleAuthChange = () => checkAuth();
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setMenuOpen(false);
@@ -107,10 +131,15 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
-    setAdminLoggedIn(false);
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.log('Logout failed');
+    }
+    setUserLoggedIn(false);
+    setUserName('');
+    window.dispatchEvent(new Event('auth-change'));
     window.location.href = '/';
   };
 
@@ -315,18 +344,51 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
   onOpenCart: () => void;
   onOpenWishlist: () => void;
 }) {
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminUsername, setAdminUsername] = useState('');
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    setAdminLoggedIn(localStorage.getItem('adminLoggedIn') === 'true');
-    setAdminUsername(localStorage.getItem('adminUsername') || '');
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user) {
+          setUserLoggedIn(true);
+          setUserName(data.user.name || '');
+          setUserEmail(data.user.email || '');
+          setIsAdmin(data.user.isAdmin || false);
+        } else {
+          setUserLoggedIn(false);
+          setUserName('');
+          setUserEmail('');
+          setIsAdmin(false);
+        }
+      } catch (err) {
+        setUserLoggedIn(false);
+        setIsAdmin(false);
+      }
+    };
+    checkAuth();
+
+    const handleAuthChange = () => checkAuth();
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.log('Logout failed');
+    }
+    setUserLoggedIn(false);
+    setUserName('');
+    setUserEmail('');
+    setIsAdmin(false);
+    window.dispatchEvent(new Event('auth-change'));
     onClose();
     router.push('/');
   };
@@ -348,52 +410,113 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
 
   return (
     <div className="account-sidebar sidebar-panel active">
-      <div className="account-sidebar-content">
-        <div className="account-avatar">
-          <i className="fas fa-user-circle"></i>
-        </div>
-
-        {adminLoggedIn ? (
-          <>
-            <h3 className="account-greeting">Welcome Back!</h3>
-            <p className="account-email">{adminUsername}</p>
-            <button className="btn account-action-btn" onClick={() => navigateTo('/admin')}>
-              <i className="fas fa-user-shield"></i> Admin Panel
-            </button>
-            <button
-              className="btn account-action-btn logout-btn"
-              onClick={handleLogout}
-            >
-              <i className="fas fa-sign-out-alt"></i> Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <h3 className="account-greeting">Welcome, Guest!</h3>
-            <p className="account-subtext">Sign in to access your account</p>
-            <button className="btn account-action-btn" onClick={() => navigateTo('/login')}>
-              <i className="fas fa-sign-in-alt"></i> Login / Sign Up
-            </button>
-          </>
-        )}
-
-        <div className="account-divider"></div>
-
-        <div className="account-links">
-          <button className="account-link-item" onClick={() => navigateTo('/orders')}>
-            <i className="fas fa-box"></i> My Orders
-          </button>
-          <button className="account-link-item" onClick={handleWishlist}>
-            <i className="fas fa-heart"></i> Wishlist
-          </button>
-          <button className="account-link-item" onClick={handleCart}>
-            <i className="fas fa-shopping-cart"></i> Cart
-          </button>
-          <button className="account-link-item" onClick={() => navigateTo('/contact')}>
-            <i className="fas fa-headset"></i> Help & Support
-          </button>
-        </div>
+      <div className="account-sidebar-header">
+        <h3>My Account</h3>
+        <button className="account-sidebar-close" onClick={onClose}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
+
+      {userLoggedIn ? (
+        <>
+          <div className="account-user-info">
+            <div className="account-avatar">
+              <i className="fas fa-user-circle"></i>
+            </div>
+            <div className="account-user-details">
+              <h4>{userName || 'User'}</h4>
+              <p>{userEmail}</p>
+            </div>
+          </div>
+
+          <div className="account-menu">
+            {isAdmin && (
+              <button className="account-menu-item" onClick={() => navigateTo('/admin')}>
+                <div className="account-menu-icon">
+                  <i className="fas fa-shield-alt"></i>
+                </div>
+                <span>Admin Panel</span>
+                <i className="fas fa-chevron-right account-menu-arrow"></i>
+              </button>
+            )}
+            <button className="account-menu-item" onClick={() => navigateTo('/orders')}>
+              <div className="account-menu-icon">
+                <i className="fas fa-box"></i>
+              </div>
+              <span>My Orders</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+            <button className="account-menu-item" onClick={handleWishlist}>
+              <div className="account-menu-icon">
+                <i className="fas fa-heart"></i>
+              </div>
+              <span>Wishlist</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+            <button className="account-menu-item" onClick={handleCart}>
+              <div className="account-menu-icon">
+                <i className="fas fa-shopping-cart"></i>
+              </div>
+              <span>Cart</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+            <button className="account-menu-item" onClick={() => navigateTo('/contact')}>
+              <div className="account-menu-icon">
+                <i className="fas fa-headset"></i>
+              </div>
+              <span>Help & Support</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+          </div>
+
+          <div className="account-footer">
+            <button className="account-logout-btn" onClick={handleLogout}>
+              <i className="fas fa-sign-out-alt"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="account-guest-content">
+            <div className="account-avatar account-avatar-guest">
+              <i className="fas fa-user-circle"></i>
+            </div>
+            <h4>Welcome, Guest!</h4>
+            <p>Sign in to access your orders and preferences</p>
+            <button className="account-login-btn" onClick={() => navigateTo('/login')}>
+              <i className="fas fa-sign-in-alt"></i>
+              Login / Sign Up
+            </button>
+          </div>
+
+          <div className="account-menu">
+            <button className="account-menu-item" onClick={handleCart}>
+              <div className="account-menu-icon">
+                <i className="fas fa-shopping-cart"></i>
+              </div>
+              <span>Cart</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+            <button className="account-menu-item" onClick={handleWishlist}>
+              <div className="account-menu-icon">
+                <i className="fas fa-heart"></i>
+              </div>
+              <span>Wishlist</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+            <button className="account-menu-item" onClick={() => navigateTo('/contact')}>
+              <div className="account-menu-icon">
+                <i className="fas fa-headset"></i>
+              </div>
+              <span>Help & Support</span>
+              <i className="fas fa-chevron-right account-menu-arrow"></i>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

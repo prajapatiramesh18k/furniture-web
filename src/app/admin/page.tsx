@@ -79,6 +79,7 @@ const productCategories = [
 
 export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('reviews');
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -86,7 +87,6 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('pooja-unit');
-  // Product form state
   const [productForm, setProductForm] = useState({
     name: '',
     price: '',
@@ -117,16 +117,27 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const logged = localStorage.getItem('adminLoggedIn');
-    if (logged === 'true') setLoggedIn(true);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user) {
+          setLoggedIn(true);
+          setIsAdmin(data.user.isAdmin || false);
+        }
+      } catch (err) {
+        console.log('Auth check failed');
+      }
+    };
+    checkAuth();
     setMounted(true);
   }, []);
 
   // Fetch data only for the active tab
   useEffect(() => {
-    if (!loggedIn) return;
+    if (!loggedIn || !isAdmin) return;
     fetchTabData();
-  }, [loggedIn, activeTab]);
+  }, [loggedIn, activeTab, isAdmin]);
 
   const fetchTabData = async () => {
     try {
@@ -169,18 +180,29 @@ export default function AdminPage() {
       body: JSON.stringify({ email, password }),
     });
 
+    const data = await res.json();
+
     if (res.ok) {
-      localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminUsername', email);
+      window.dispatchEvent(new Event('auth-change'));
       setLoggedIn(true);
+      setIsAdmin(data.user?.isAdmin || false);
+      if (!data.user?.isAdmin) {
+        setLoginError('You do not have admin access');
+        await fetch('/api/auth/logout', { method: 'POST' });
+        setLoggedIn(false);
+      }
     } else {
-      setLoginError('Invalid email or password');
+      setLoginError(data.error || 'Invalid email or password');
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.log('Logout failed');
+    }
+    window.dispatchEvent(new Event('auth-change'));
     window.location.replace('/');
   };
 
@@ -341,6 +363,25 @@ export default function AdminPage() {
             {loginError && <p style={{ color: 'red', fontSize: '1.3rem', margin: '0.5rem 0' }}>{loginError}</p>}
             <button type="submit" className="btn">Login</button>
           </form>
+          <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666', fontSize: '1.2rem' }}>
+            <a href="/login" style={{ color: '#a27341' }}>Login here</a> if you have an account
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loggedIn && !isAdmin) {
+    return (
+      <div className="login-container">
+        <div className="login-box">
+          <h1><i className="fas fa-lock"></i> Access Denied</h1>
+          <p style={{ textAlign: 'center', color: '#666', margin: '1rem 0' }}>
+            You do not have admin privileges to access this page.
+          </p>
+          <p style={{ textAlign: 'center', color: '#666', fontSize: '1.2rem' }}>
+            <a href="/" style={{ color: '#a27341' }}>Go back to homepage</a>
+          </p>
         </div>
       </div>
     );
