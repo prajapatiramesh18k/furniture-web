@@ -9,11 +9,11 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 export const metadata: Metadata = {
   title: "Ananya House of Furniture | Custom Furniture Thane, Maharashtra",
   description:
-    "Ananya House of Furniture - Custom furniture manufacturer in Thane, Maharashtra. Best quality wooden furniture at factory-direct prices. 12+ years experience, 5000+ happy customers.",
+    "Ananya House of Furniture - Custom furniture manufacturer in Thane, Maharashtra. Best quality wooden furniture at factory-direct prices. 14+ years experience, 5000+ happy customers.",
   keywords: "custom furniture, furniture manufacturer, Thane, Maharashtra, wooden furniture, Mumbai, online furniture",
   openGraph: {
     title: "Ananya House of Furniture | Custom Furniture Thane",
-    description: "Custom furniture designed to match your style. Best quality at affordable prices. 12+ years experience.",
+    description: "Custom furniture designed to match your style. Best quality at affordable prices. 14+ years experience.",
     url: "https://ananyahouseoffurniture.in",
     siteName: "Ananya House of Furniture",
     locale: "en_IN",
