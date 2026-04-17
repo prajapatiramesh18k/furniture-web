@@ -40,21 +40,7 @@ export default function ContactPage() {
     setError(false);
 
     try {
-      // Send to Google Sheets
-      const formData = new FormData();
-      formData.append('name', form.name);
-      formData.append('number', form.phone);
-      formData.append('email', form.email);
-      formData.append('project-type', form.projectType);
-      formData.append('message', form.message);
-
-      const sheetResponse = await fetch('https://script.google.com/macros/s/AKfycbzx8c0Uz_wWEjQTKsriT6HUw2amjdnMVTJDiLQMjXhNqFNE1GALPuQepEjoSGmN5bYaSA/exec', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Send WhatsApp notification
-      await fetch('/api/contact-notify', {
+      const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -66,7 +52,7 @@ export default function ContactPage() {
         }),
       });
 
-      if (sheetResponse.ok) {
+      if (response.ok) {
         setSubmitted(true);
       } else {
         setError(true);

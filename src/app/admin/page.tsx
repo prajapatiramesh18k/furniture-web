@@ -45,6 +45,17 @@ interface Product {
   image: string;
 }
 
+interface Contact {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string;
+  projectType: string;
+  message: string;
+  status: string;
+  createdAt: string;
+}
+
 const galleryCategories = [
   { id: 'pooja-unit', name: 'Pooja Unit' },
   { id: 'tv-unit', name: 'TV Unit' },
@@ -86,6 +97,7 @@ export default function AdminPage() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('pooja-unit');
   const [productForm, setProductForm] = useState({
     name: '',
@@ -161,6 +173,11 @@ export default function AdminPage() {
         const data = await res.json();
         const productsArray = Array.isArray(data) ? data : (data.products || []);
         setProducts(productsArray);
+      } else if (activeTab === 'contacts') {
+        const res = await fetch('/api/contacts');
+        const data = await res.json();
+        const contactsArray = Array.isArray(data) ? data : (data.contacts || []);
+        setContacts(contactsArray);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -418,6 +435,9 @@ export default function AdminPage() {
         </button>
         <button className={activeTab === 'orders' ? 'active' : ''} onClick={() => setActiveTab('orders')}>
           <i className="fas fa-shopping-cart"></i> Orders ({orders.length})
+        </button>
+        <button className={activeTab === 'contacts' ? 'active' : ''} onClick={() => setActiveTab('contacts')}>
+          <i className="fas fa-envelope"></i> Contacts ({contacts.length})
         </button>
       </div>
 
@@ -697,6 +717,47 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'contacts' && (
+          <div className="contacts-section">
+            <h2>Contact Form Submissions</h2>
+            {contacts.length === 0 ? (
+              <p className="empty-msg">No contact submissions yet</p>
+            ) : (
+              <div className="contacts-list">
+                {contacts.map(contact => (
+                  <div key={contact._id} className="contact-admin-card">
+                    <div className="contact-admin-header">
+                      <div className="contact-admin-info">
+                        <h3>{contact.name}</h3>
+                        <span className={`contact-status ${contact.status || 'new'}`}>
+                          {contact.status || 'new'}
+                        </span>
+                      </div>
+                      <span className="contact-date">{new Date(contact.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="contact-admin-details">
+                      <p><i className="fas fa-phone"></i> {contact.phone}</p>
+                      <p><i className="fas fa-envelope"></i> {contact.email}</p>
+                      <p><i className="fas fa-tag"></i> {contact.projectType}</p>
+                    </div>
+                    <div className="contact-admin-message">
+                      <p>{contact.message}</p>
+                    </div>
+                    <div className="contact-admin-actions">
+                      <a href={`tel:${contact.phone}`} className="btn-call">
+                        <i className="fas fa-phone"></i> Call
+                      </a>
+                      <a href={`mailto:${contact.email}`} className="btn-email">
+                        <i className="fas fa-envelope"></i> Email
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

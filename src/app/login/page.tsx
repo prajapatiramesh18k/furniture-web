@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   useEffect(() => {
@@ -219,7 +220,7 @@ export default function LoginPage() {
                   <input type="checkbox" />
                   <span>Remember me</span>
                 </label>
-                <a href="#">Forgot password?</a>
+                <Link href="/forgot-password">Forgot password?</Link>
               </div>
             )}
 
