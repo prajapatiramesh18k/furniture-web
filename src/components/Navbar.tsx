@@ -344,6 +344,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
   onOpenCart: () => void;
   onOpenWishlist: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -351,6 +352,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
   const router = useRouter();
 
   useEffect(() => {
+    setMounted(true);
     const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth/me');
@@ -419,7 +421,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
         </button>
       </div>
 
-      {userLoggedIn ? (
+      {!mounted ? null : userLoggedIn ? (
         <>
           <div className="account-user-info">
             <div className="account-avatar">
