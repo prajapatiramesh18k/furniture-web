@@ -35,8 +35,10 @@ export default function ServicesPage() {
       </div>
 
       <div className="services-cta">
-        <h2>Need Help Choosing the Right Service?</h2>
-        <p>Our team is ready to assist you with custom designs, free consultations, and expert advice.</p>
+        <div className="services-cta-text">
+          <h2>Need Help Choosing the Right Service?</h2>
+          <p>Our team is ready to assist you with custom designs, free consultations, and expert advice.</p>
+        </div>
         <Link href="/contact" className="btn">Contact Us</Link>
       </div>
     </div>

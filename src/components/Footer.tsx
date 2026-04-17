@@ -16,13 +16,6 @@ const contactInfo = {
   addressLink: 'https://maps.app.goo.gl/3wAw79stEiGNyeWa9',
 };
 
-const socialLinks = {
-  facebook: '#',
-  twitter: '#',
-  instagram: '#',
-  linkedin: '#',
-};
-
 export default function Footer() {
   return (
     <section className="footer">
@@ -56,16 +49,16 @@ export default function Footer() {
         </div>
         <div className="box">
           <h3>follow us</h3>
-          <a href={socialLinks.facebook}>
+          <a href="https://www.facebook.com/share/18eDGjuM47/" target="_blank" rel="noopener noreferrer">
             <i className="fab fa-facebook-f"></i>facebook
           </a>
-          <a href={socialLinks.twitter}>
+          <a href="#">
             <i className="fab fa-twitter"></i>twitter
           </a>
-          <a href={socialLinks.instagram}>
+          <a href="https://www.instagram.com/ananyahouseoffurniture" target="_blank" rel="noopener noreferrer">
             <i className="fab fa-instagram"></i>instagram
           </a>
-          <a href={socialLinks.linkedin}>
+          <a href="#">
             <i className="fab fa-linkedin"></i>linkedin
           </a>
         </div>

@@ -12354,3 +12354,57 @@ input, textarea, select {
     bottom: 1.2rem;
   }
 }
+/* Services CTA - Desktop split layout */
+.services-cta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4rem;
+  padding: 5rem 4rem;
+  background: linear-gradient(135deg, #f8f5f2 0%, #fff 100%);
+  max-width: 1400px;
+  margin: 3rem auto;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.services-cta-text {
+  text-align: left;
+}
+
+.services-cta h2 {
+  font-size: 2.8rem;
+  color: #2c2420;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.services-cta p {
+  font-size: 1.5rem;
+  color: #666;
+  line-height: 1.7;
+  max-width: none;
+  margin: 0;
+}
+
+.services-cta .btn {
+  background: linear-gradient(135deg, #a27341, #8B5A2B);
+  color: #fff;
+  padding: 1.5rem 4rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  border-radius: 50px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(162, 115, 65, 0.3);
+  white-space: nowrap;
+}
+
+.services-cta .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(162, 115, 65, 0.4);
+  background: linear-gradient(135deg, #8B5A2B, #a27341);
+}
