@@ -4,6 +4,7 @@ import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import ChatBot from "@/components/ChatBot";
 import { Analytics } from "@vercel/analytics/react";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
   title: "Ananya House of Furniture | Custom Furniture Thane, Maharashtra",
@@ -92,6 +93,7 @@ export default function RootLayout({
         </CartProvider>
         <ChatBot />
         <Analytics />
+        <GoogleAnalytics gaId={process.env.GA_MEASUREMENT_ID || ""} />
       </body>
     </html>
   );
