@@ -17,9 +17,9 @@ const contactInfo = {
 };
 
 const socialLinks = {
-  facebook: '#',
+  facebook: 'https://www.facebook.com/share/18eDGjuM47/',
   twitter: '#',
-  instagram: '#',
+  instagram: 'https://www.instagram.com/ananyahouseoffurniture',
   linkedin: '#',
 };
 
