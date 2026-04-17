@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { Resend } from 'resend';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +45,8 @@ export async function POST(request: NextRequest) {
     // Send email if RESEND_API_KEY is configured
     if (process.env.RESEND_API_KEY) {
       try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
         const { data, error } = await resend.emails.send({
           from: 'Ananya Furniture <onboarding@resend.dev>',
           to: email,
