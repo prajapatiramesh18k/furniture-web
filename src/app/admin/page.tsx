@@ -10,6 +10,9 @@ interface Review {
   photo?: string;
   date: string;
   approved: boolean;
+  propertyType?: string;
+  services?: string[];
+  completedDate?: string;
 }
 
 interface GalleryImage {
@@ -416,6 +419,20 @@ export default function AdminPage() {
                         <span className="review-location"><i className="fas fa-map-marker-alt"></i> {review.location}</span>
                         <span className="review-date"><i className="fas fa-calendar"></i> {review.date}</span>
                       </div>
+                      {review.propertyType && (
+                        <div className="review-project-info">
+                          <span className="review-property-badge">
+                            <i className="fas fa-home"></i> {review.propertyType?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {review.services && review.services.length > 0 && (
+                        <div className="review-services">
+                          {review.services.map((service, idx) => (
+                            <span key={idx} className="review-service-tag">{service}</span>
+                          ))}
+                        </div>
+                      )}
                       <div className="review-admin-stars">
                         {[1,2,3,4,5].map(i => (
                           <i key={i} className={`fas fa-star ${i <= review.rating ? 'filled' : 'empty'}`}></i>

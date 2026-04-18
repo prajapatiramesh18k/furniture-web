@@ -9,6 +9,9 @@ export interface IReview extends Document {
   date: string;
   approved: boolean;
   createdAt: Date;
+  propertyType: string;
+  services: string[];
+  completedDate?: string;
 }
 
 const ReviewSchema = new Schema<IReview>({
@@ -20,6 +23,9 @@ const ReviewSchema = new Schema<IReview>({
   date: { type: String, required: true },
   approved: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
+  propertyType: { type: String, required: true },
+  services: [{ type: String }],
+  completedDate: { type: String },
 });
 
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

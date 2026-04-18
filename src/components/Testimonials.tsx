@@ -9,6 +9,8 @@ interface Review {
   text: string;
   photo?: string;
   date: string;
+  propertyType?: string;
+  services?: string[];
 }
 
 const fallbackReviews: Review[] = [
@@ -17,54 +19,66 @@ const fallbackReviews: Review[] = [
     name: 'Priya Sharma',
     location: 'Thane, Mumbai',
     rating: 5,
-    text: 'Absolutely love the custom dining table we ordered! The quality is exceptional and the delivery was on time. Highly recommend Ananya House of Furniture!',
+    text: 'Got our complete 2BHK done with modular kitchen, wardrobes, and TV unit. The quality is exceptional and the delivery was on time. Highly recommend!',
     photo: 'images/team-1.png',
     date: 'Dec 2024',
+    propertyType: '2bhk',
+    services: ['Modular Kitchen', 'Wardrobes', 'TV Units'],
   },
   {
     _id: '2',
     name: 'Rajesh Patel',
     location: 'Mira Road, Mumbai',
     rating: 5,
-    text: 'Got my bedroom set from here and it\'s stunning! The craftsmanship is top-notch. The team was very helpful throughout the process.',
+    text: 'Transformed our 3BHK bedroom with custom wardrobes and bed panelling. The craftsmanship is top-notch. The team was very helpful throughout!',
     photo: 'images/team-3.png',
     date: 'Nov 2024',
+    propertyType: '3bhk',
+    services: ['Wardrobes', 'Bed Panelling', 'Modular Bed'],
   },
   {
     _id: '3',
     name: 'Anita Desai',
     location: 'Andheri, Mumbai',
     rating: 5,
-    text: 'Best furniture shop in Thane! I ordered a modular kitchen and it\'s perfect. Great quality at reasonable prices.',
+    text: 'Ordered a modular kitchen and it\'s perfect! Best decision for our home. Great quality at reasonable prices. The pooja unit they made is beautiful too.',
     photo: 'images/team-3.png',
     date: 'Oct 2024',
+    propertyType: '1bhk',
+    services: ['Modular Kitchen', 'Pooja Unit'],
   },
   {
     _id: '4',
     name: 'Meera Singh',
     location: 'Mulund, Mumbai',
     rating: 5,
-    text: 'Amazing service and beautiful furniture. The custom sofa we ordered fits perfectly in our living room. Will definitely order again!',
+    text: 'Amazing service! Got a complete kids room setup with wardrobe and study table. Beautiful furniture that fits perfectly. Will definitely order again!',
     photo: 'images/team-4.png',
     date: 'Sep 2024',
+    propertyType: '2bhk',
+    services: ['Wardrobes', 'Kids Furniture', 'Bookshelf'],
   },
   {
     _id: '5',
     name: 'Vikram Joshi',
     location: 'Bandra, Mumbai',
     rating: 5,
-    text: 'I ordered furniture for my new home and everything exceeded my expectations. Professional service and premium quality products.',
+    text: 'Got our new office space furnished with workstations and meeting room furniture. Everything exceeded expectations. Professional service!',
     photo: 'images/team-5.png',
     date: 'Aug 2024',
+    propertyType: 'office',
+    services: ['Office Furniture', 'Complete Interior'],
   },
   {
     _id: '6',
     name: 'Sunil Kumar',
     location: 'Dadar, Mumbai',
     rating: 4.5,
-    text: 'Great experience! The team understood our requirements perfectly and delivered exactly what we wanted. Worth every rupee!',
+    text: 'Great experience! Complete living room makeover with TV unit, crockery unit, and shoe rack. The team understood our requirements perfectly!',
     photo: 'images/team-6.png',
     date: 'Jul 2024',
+    propertyType: '4bhk',
+    services: ['TV Units', 'Crockery Unit', 'Shoe Rack'],
   },
 ];
 
@@ -137,7 +151,7 @@ export default function Testimonials() {
 
   return (
     <section className="testimonials" id="testimonials">
-      <h1 className="heading">What Our <span>Customers Say</span></h1>
+      <h1 className="heading">What Our <span>Clients Say</span></h1>
       <div className="testimonials-slider swiper">
         <div className="swiper-wrapper">
           {reviews.map(review => (
@@ -154,6 +168,17 @@ export default function Testimonials() {
                 <p className="testimonial-location">
                   <i className="fas fa-map-marker-alt"></i> {review.location}
                 </p>
+                {review.propertyType && (
+                  <div className="testimonial-project-info">
+                    <span className="testimonial-property">{review.propertyType?.toUpperCase()}</span>
+                    {review.services && review.services.length > 0 && (
+                      <span className="testimonial-services">
+                        {review.services.slice(0, 2).join(' • ')}
+                        {review.services.length > 2 && ` +${review.services.length - 2}`}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="testimonial-stars" style={{ color: '#ffc107' }}>
                   {renderStars(review.rating)}
                 </div>

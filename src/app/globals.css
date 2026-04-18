@@ -5100,6 +5100,30 @@ input, textarea, select {
     font-style: italic;
 }
 
+.testimonial-project-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    background: linear-gradient(135deg, rgba(162, 115, 65, 0.08), rgba(162, 115, 65, 0.03));
+    border-radius: 10px;
+}
+
+.testimonial-property {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.5px;
+}
+
+.testimonial-services {
+    font-size: 1.1rem;
+    color: var(--light-black);
+    text-align: center;
+}
+
 /* ============================================
    FAQ Section
    ============================================ */
@@ -7209,6 +7233,47 @@ input, textarea, select {
     border-radius: 0.8rem;
     border-left: 0.3rem solid var(--main-color);
 }
+.review-project-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+.review-property-badge,
+.review-project-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    border-radius: 2rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+.review-property-badge {
+    background: linear-gradient(135deg, var(--primary-color), #c49a6c);
+    color: white;
+}
+.review-property-badge i {
+    font-size: 1rem;
+}
+.review-project-badge {
+    background: rgba(162, 115, 65, 0.1);
+    color: var(--primary-color);
+    text-transform: capitalize;
+}
+.review-services {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.review-service-tag {
+    padding: 0.3rem 0.8rem;
+    background: var(--light-bg);
+    color: var(--light-black);
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+}
 .review-admin-actions {
     display: flex;
     flex-direction: column;
@@ -7834,6 +7899,7 @@ input, textarea, select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
+  position: relative;
 }
 
 /* ---- Left Panel ---- */
@@ -7844,6 +7910,40 @@ input, textarea, select {
   flex-direction: column;
   padding: 4rem 4rem 4rem 5rem;
   overflow: hidden;
+}
+
+/* Close button in submit review page */
+.sr-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  color: #666;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.sr-close-btn:hover {
+  background: rgba(0,0,0,0.2);
+  color: #333;
+}
+
+/* Left panel close button - light colored for dark background */
+.sr-left .sr-close-btn {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
+
+.sr-left .sr-close-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
 }
 
 /* Decorative background element */
@@ -7998,6 +8098,44 @@ input, textarea, select {
   margin-top: 0.1rem;
 }
 
+/* Project Highlights */
+.sr-project-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 2rem;
+  animation: sr-fade-in 0.8s 0.6s both;
+}
+
+.sr-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 0.8rem;
+}
+
+.sr-highlight-icon {
+  font-size: 1.8rem;
+}
+
+.sr-highlight-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-highlight-item strong {
+  color: rgba(255,255,255,0.9);
+  font-size: 0.95rem;
+}
+
+.sr-highlight-item span {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.8rem;
+}
+
 /* ---- Right Panel ---- */
 .sr-right {
   display: flex;
@@ -8092,6 +8230,121 @@ input, textarea, select {
   color: #a8998a;
   text-align: right;
   margin-top: 0.2rem;
+}
+
+/* Property Type Grid */
+.sr-property-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.sr-property-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0.5rem;
+  background: var(--light-bg);
+  border: 2px solid transparent;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.2rem;
+  color: var(--light-black);
+}
+
+.sr-property-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.sr-property-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), #c49a6c);
+  color: white;
+  border-color: transparent;
+}
+
+.sr-property-icon {
+  font-size: 1.6rem;
+}
+
+/* Project Type Grid */
+.sr-project-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.sr-project-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0.5rem;
+  background: var(--light-bg);
+  border: 2px solid transparent;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.1rem;
+  color: var(--light-black);
+}
+
+.sr-project-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.sr-project-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), #c49a6c);
+  color: white;
+  border-color: transparent;
+}
+
+.sr-project-icon {
+  font-size: 1.4rem;
+}
+
+/* Services Grid */
+.sr-services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.sr-service-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--light-bg);
+  border: 1px solid #e0dbd5;
+  border-radius: 2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.1rem;
+  color: var(--light-black);
+  text-align: left;
+}
+
+.sr-service-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.sr-service-btn.active {
+  background: rgba(162, 115, 65, 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.sr-service-btn i {
+  font-size: 0.8rem;
+  color: var(--primary-color);
 }
 
 /* Stars */

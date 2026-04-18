@@ -2,19 +2,65 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+const propertyTypes = [
+  { id: '1bhk', name: '1BHK', icon: '🏠' },
+  { id: '2bhk', name: '2BHK', icon: '🏡' },
+  { id: '3bhk', name: '3BHK', icon: '🏘️' },
+  { id: '4bhk', name: '4BHK', icon: '🏛️' },
+  { id: 'villa', name: 'Villa', icon: '🏰' },
+  { id: 'penthouse', name: 'Penthouse', icon: '🌆' },
+  { id: 'office', name: 'Office', icon: '🏢' },
+  { id: 'commercial', name: 'Commercial', icon: '🏬' },
+];
+
+
+const services = [
+  'Modular Kitchen',
+  'Wardrobes',
+  'TV Units',
+  'Modular Bed',
+  'False Ceiling',
+  'Pooja Unit',
+  'Shoe Rack',
+  'Crockery Unit',
+  'Bookshelf',
+  'Office Furniture',
+  'Kids Furniture',
+  'Dining Table',
+  'Door & Windows',
+  'Bed Panelling',
+  'Storage Solutions',
+  'Complete Interior',
+];
+
 export default function SubmitReviewPage() {
   useEffect(() => {
     document.title = 'Ananya House of Furniture | Submit Review';
   }, []);
 
-
   const router = useRouter();
-  const [form, setForm] = useState({ name: '', location: '', rating: 5, text: '' });
+  const [form, setForm] = useState({
+    name: '',
+    location: '',
+    rating: 5,
+    text: '',
+    propertyType: '',
+    completedDate: '',
+  });
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [photo, setPhoto] = useState<string>('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+
+  const toggleService = (service: string) => {
+    if (selectedServices.includes(service)) {
+      setSelectedServices(selectedServices.filter(s => s !== service));
+    } else {
+      setSelectedServices([...selectedServices, service]);
+    }
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,7 +73,7 @@ export default function SubmitReviewPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.text) return;
+    if (!form.name || !form.text || !form.propertyType) return;
     setLoading(true);
     try {
       await fetch('/api/reviews', {
@@ -35,12 +81,15 @@ export default function SubmitReviewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          location: form.location || 'India',
+          location: form.location || 'Belapur, Navi Mumbai',
           rating: form.rating,
           text: form.text,
           photo,
           date: new Date().toLocaleDateString(),
           approved: false,
+          propertyType: form.propertyType,
+          services: selectedServices,
+          completedDate: form.completedDate || new Date().toLocaleDateString(),
         }),
       });
       setSubmitted(true);
@@ -63,8 +112,8 @@ export default function SubmitReviewPage() {
             </svg>
           </div>
           <span className="sr-success-label">Thank you</span>
-          <h2>Your review has been submitted</h2>
-          <p>It will appear on the website after our team reviews and approves it.</p>
+          <h2>Your review has been submitted!</h2>
+          <p>We appreciate you sharing your experience. Your review will appear after our team reviews and approves it.</p>
           <button className="sr-btn-primary" onClick={() => router.push('/')}>
             Back to Home
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -83,12 +132,6 @@ export default function SubmitReviewPage() {
       <div className="sr-layout">
         {/* Left panel */}
         <div className="sr-left">
-          <a href="/" className="close-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </a>
-
           <div className="sr-left-content">
             <div className="sr-brand-mark">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -101,21 +144,29 @@ export default function SubmitReviewPage() {
 
             <div className="sr-headline-block">
               <h1>Share your<br />experience</h1>
-              <p>Your words help other families discover furniture crafted with care. Every review is a story of a home being made.</p>
+              <p>Your words help other families discover furniture crafted with care. Tell us about your home transformation!</p>
             </div>
 
-            <div className="sr-testimonial-preview">
-              <div className="sr-tp-quote">
-                <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
-                  <path d="M0 20V12.267C0 5.333 4.267 1.333 12.8 0l1.067 2.133C10.133 3.067 8 5.067 7.733 7.733H9.6V20H0ZM14.4 20V12.267c0-6.934 4.267-10.934 12.8-12.267L28.267 4C23.467 5.067 21.333 7.067 21.067 9.733H22.933V20H14.4Z" fill="#a27341" fillOpacity="0.15"/>
-                </svg>
-                <p>The quality of their pooja unit exceeded our expectations. Truly a piece of art.</p>
-              </div>
-              <div className="sr-tp-author">
-                <div className="sr-tp-avatar">PS</div>
+            <div className="sr-project-highlights">
+              <div className="sr-highlight-item">
+                <span className="sr-highlight-icon">🏠</span>
                 <div>
-                  <strong>Priya S.</strong>
-                  <span>Mumbai</span>
+                  <strong>2BHK Complete Home</strong>
+                  <span>Modular Kitchen + Wardrobes + TV Unit</span>
+                </div>
+              </div>
+              <div className="sr-highlight-item">
+                <span className="sr-highlight-icon">⭐</span>
+                <div>
+                  <strong>4.8/5 Average Rating</strong>
+                  <span>From 500+ Happy Clients</span>
+                </div>
+              </div>
+              <div className="sr-highlight-item">
+                <span className="sr-highlight-icon">🛠️</span>
+                <div>
+                  <strong>14+ Years Experience</strong>
+                  <span>Trusted Since 2012</span>
                 </div>
               </div>
             </div>
@@ -124,10 +175,15 @@ export default function SubmitReviewPage() {
 
         {/* Right panel - Form */}
         <div className="sr-right">
+          <a href="/" className="close-btn sr-close-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </a>
           <form className="sr-form" onSubmit={handleSubmit}>
             {/* Name */}
             <div className="sr-field">
-              <label className="sr-label">Your Name</label>
+              <label className="sr-label">Your Name *</label>
               <input
                 type="text"
                 className="sr-input"
@@ -150,9 +206,57 @@ export default function SubmitReviewPage() {
               />
             </div>
 
+            {/* Property Type */}
+            <div className="sr-field">
+              <label className="sr-label">Property Type *</label>
+              <div className="sr-property-grid">
+                {propertyTypes.map(pt => (
+                  <button
+                    key={pt.id}
+                    type="button"
+                    className={`sr-property-btn ${form.propertyType === pt.id ? 'active' : ''}`}
+                    onClick={() => setForm({ ...form, propertyType: pt.id })}
+                  >
+                    <span className="sr-property-icon">{pt.icon}</span>
+                    <span>{pt.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Services Completed */}
+            <div className="sr-field">
+              <label className="sr-label">Furniture & Services Done <span className="sr-optional">(select all that apply)</span></label>
+              <div className="sr-services-grid">
+                {services.map(service => (
+                  <button
+                    key={service}
+                    type="button"
+                    className={`sr-service-btn ${selectedServices.includes(service) ? 'active' : ''}`}
+                    onClick={() => toggleService(service)}
+                  >
+                    {selectedServices.includes(service) && <i className="fas fa-check"></i>}
+                    <span>{service}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Completed Date */}
+            <div className="sr-field">
+              <label className="sr-label">When was it completed? <span className="sr-optional">(optional)</span></label>
+              <input
+                type="date"
+                className="sr-input"
+                value={form.completedDate}
+                onChange={e => setForm({ ...form, completedDate: e.target.value })}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
             {/* Star Rating */}
             <div className="sr-field">
-              <label className="sr-label">Your Rating</label>
+              <label className="sr-label">Your Rating *</label>
               <div className="sr-stars">
                 {[1, 2, 3, 4, 5].map(star => (
                   <button
@@ -184,10 +288,10 @@ export default function SubmitReviewPage() {
 
             {/* Review */}
             <div className="sr-field">
-              <label className="sr-label">Your Review</label>
+              <label className="sr-label">Your Review *</label>
               <textarea
                 className="sr-textarea"
-                placeholder="Tell us about your experience — what you loved, how it fits your home, the quality of craftsmanship..."
+                placeholder="Share your experience — how was the quality, design, installation, and our team's service? What furniture did you get done?"
                 rows={5}
                 value={form.text}
                 onChange={e => setForm({ ...form, text: e.target.value })}
@@ -217,7 +321,7 @@ export default function SubmitReviewPage() {
                       <path d="M21 15l-5-5L5 21"/>
                     </svg>
                   </div>
-                  <span>Click to upload a photo of your furniture</span>
+                  <span>Upload a photo of yourself</span>
                   <span className="sr-photo-hint">JPG, PNG up to 5MB</span>
                   <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                 </label>
@@ -225,7 +329,7 @@ export default function SubmitReviewPage() {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="sr-submit" disabled={loading}>
+            <button type="submit" className="sr-submit" disabled={loading || !form.propertyType}>
               {loading ? (
                 <>
                   <span className="sr-spinner" />

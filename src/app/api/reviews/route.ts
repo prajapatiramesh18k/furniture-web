@@ -24,10 +24,14 @@ export async function POST(request: NextRequest) {
       photo: body.photo || '',
       date: body.date || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
       approved: false,
+      propertyType: body.propertyType || '',
+      services: body.services || [],
+      completedDate: body.completedDate || '',
     });
     await review.save();
     return NextResponse.json(review, { status: 201 });
   } catch (error) {
+    console.error('Review save error:', error);
     return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 });
   }
 }
