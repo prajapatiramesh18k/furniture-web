@@ -6,6 +6,10 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import SubmitReview from '@/components/SubmitReview';
 
+// Module-level variables - persist across component remounts
+let authChecked = false;
+let cachedAuthUser: { name: string; email: string; isAdmin: boolean } | null | undefined = undefined;
+
 const navigation = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
@@ -34,6 +38,8 @@ export default function Navbar() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
+  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [accountOpen, setAccountOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,24 +65,57 @@ export default function Navbar() {
   // Check auth status on mount and listen for auth changes
   useEffect(() => {
     const checkAuth = async () => {
+      // Use cached data if available
+      if (cachedAuthUser !== undefined) {
+        if (cachedAuthUser) {
+          setUserLoggedIn(true);
+          setUserName(cachedAuthUser.name || '');
+          setAuthUser(cachedAuthUser);
+        } else {
+          setUserLoggedIn(false);
+          setUserName('');
+          setAuthUser(null);
+        }
+        setAuthLoading(false);
+        return;
+      }
+
+      // Skip if already checking
+      if (authChecked) return;
+      authChecked = true;
+
       try {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
         if (data.user) {
+          cachedAuthUser = { name: data.user.name || '', email: data.user.email || '', isAdmin: data.user.isAdmin || false };
           setUserLoggedIn(true);
           setUserName(data.user.name || '');
+          setAuthUser(cachedAuthUser);
         } else {
+          cachedAuthUser = null;
           setUserLoggedIn(false);
           setUserName('');
+          setAuthUser(null);
         }
       } catch (err) {
+        cachedAuthUser = null;
         setUserLoggedIn(false);
         setUserName('');
+        setAuthUser(null);
+      } finally {
+        setAuthLoading(false);
       }
     };
+
     checkAuth();
 
-    const handleAuthChange = () => checkAuth();
+    const handleAuthChange = () => {
+      // Reset cache on login/logout
+      authChecked = false;
+      cachedAuthUser = undefined;
+      checkAuth();
+    };
     window.addEventListener('auth-change', handleAuthChange);
     return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
@@ -273,7 +312,7 @@ export default function Navbar() {
       {accountOpen && (
         <>
           <div className="sidebar-backdrop" onClick={() => setAccountOpen(false)} />
-          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} />
+          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} user={authUser} authLoading={authLoading} userLoggedIn={userLoggedIn} />
         </>
       )}
     </>
@@ -339,49 +378,15 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
   );
 }
 
-function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
+function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, authLoading, userLoggedIn }: {
   onClose: () => void;
   onOpenCart: () => void;
   onOpenWishlist: () => void;
+  user: { name: string; email: string; isAdmin: boolean } | null;
+  authLoading: boolean;
+  userLoggedIn: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
-  const [userLoggedIn, setUserLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (data.user) {
-          setUserLoggedIn(true);
-          setUserName(data.user.name || '');
-          setUserEmail(data.user.email || '');
-          setIsAdmin(data.user.isAdmin || false);
-        } else {
-          setUserLoggedIn(false);
-          setUserName('');
-          setUserEmail('');
-          setIsAdmin(false);
-        }
-      } catch (err) {
-        setUserLoggedIn(false);
-        setIsAdmin(false);
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-    checkAuth();
-
-    const handleAuthChange = () => checkAuth();
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => window.removeEventListener('auth-change', handleAuthChange);
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -389,10 +394,6 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
     } catch (err) {
       console.log('Logout failed');
     }
-    setUserLoggedIn(false);
-    setUserName('');
-    setUserEmail('');
-    setIsAdmin(false);
     window.dispatchEvent(new Event('auth-change'));
     onClose();
     router.push('/');
@@ -424,20 +425,29 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
         </button>
       </div>
 
-      {!mounted || authLoading ? null : userLoggedIn ? (
+      {authLoading ? (
+        <div className="account-loading">
+          <div className="account-skeleton avatar-skeleton"></div>
+          <div className="account-skeleton text-skeleton"></div>
+          <div className="account-skeleton text-skeleton short"></div>
+          <div className="account-skeleton btn-skeleton"></div>
+          <div className="account-skeleton btn-skeleton"></div>
+          <div className="account-skeleton btn-skeleton"></div>
+        </div>
+      ) : userLoggedIn && user ? (
         <>
           <div className="account-user-info">
             <div className="account-avatar">
               <i className="fas fa-user-circle"></i>
             </div>
             <div className="account-user-details">
-              <h4>{userName || 'User'}</h4>
-              <p>{userEmail}</p>
+              <h4>{user.name || 'User'}</h4>
+              <p>{user.email}</p>
             </div>
           </div>
 
           <div className="account-menu">
-            {isAdmin && (
+            {user.isAdmin && (
               <button className="account-menu-item" onClick={() => navigateTo('/admin')}>
                 <div className="account-menu-icon">
                   <i className="fas fa-shield-alt"></i>

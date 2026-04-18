@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null });
     }
 
+    // Only return what's needed for display - no user ID exposed
     return NextResponse.json({
       user: {
-        id: user._id,
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
