@@ -97,7 +97,7 @@ function HeroSlider() {
               <div className="hero-content-wrapper">
                 <div className="hero-badge">
                   <span className="hero-badge-icon">🏆</span>
-                  <span>2BHK & 3BHK Interior Specialists • Since 2012</span>
+                  <span>Handcrafted Furniture Experts • Since 2012</span>
                 </div>
                 <h3 className="hero-heading">{slide.heading}</h3>
                 <div className="hero-tagline">
@@ -114,22 +114,6 @@ function HeroSlider() {
                     <i className="fas fa-arrow-right"></i>
                   </a>
                 </div>
-                <div className="hero-stats">
-                  <div className="hero-stat">
-                    <span className="hero-stat-number">14+</span>
-                    <span className="hero-stat-label">Years Experience</span>
-                  </div>
-                  <div className="hero-stat-divider"></div>
-                  <div className="hero-stat">
-                    <span className="hero-stat-number">500+</span>
-                    <span className="hero-stat-label">Happy Clients</span>
-                  </div>
-                  <div className="hero-stat-divider"></div>
-                  <div className="hero-stat">
-                    <span className="hero-stat-number">100+</span>
-                    <span className="hero-stat-label">Projects Done</span>
-                  </div>
-                </div>
               </div>
             </div>
           ))}
@@ -138,11 +122,6 @@ function HeroSlider() {
           <button className="hero-slider-btn prev-btn" id="hero-prev" aria-label="Previous slide">
             <i className="fas fa-chevron-left"></i>
           </button>
-          <div className="hero-pagination-dots">
-            {sliders.map((_, index) => (
-              <span key={index} className={`hero-dot ${currentSlide === index ? 'active' : ''}`}></span>
-            ))}
-          </div>
           <button className="hero-slider-btn next-btn" id="hero-next" aria-label="Next slide">
             <i className="fas fa-chevron-right"></i>
           </button>
