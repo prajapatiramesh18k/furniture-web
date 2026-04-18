@@ -44,6 +44,10 @@ function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     let swiper: any = null;
 
     const initSwiper = async () => {
@@ -123,4 +127,4 @@ function HeroSlider() {
   );
 }
 
-export default dynamic(() => Promise.resolve(HeroSlider), { ssr: false });
+export default dynamic(() => Promise.resolve(HeroSlider), { ssr: true });
