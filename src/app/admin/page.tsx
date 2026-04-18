@@ -89,9 +89,8 @@ const productCategories = [
 ];
 
 export default function AdminPage() {
-  const [loggedIn, setLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('reviews');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
@@ -111,7 +110,6 @@ export default function AdminPage() {
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [uploadingProduct, setUploadingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [loginError, setLoginError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -127,29 +125,6 @@ export default function AdminPage() {
     setConfirmAction(() => onConfirm);
     setConfirmOpen(true);
   };
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (data.user) {
-          setLoggedIn(true);
-          setIsAdmin(data.user.isAdmin || false);
-        }
-      } catch (err) {
-        console.log('Auth check failed');
-      }
-    };
-    checkAuth();
-    setMounted(true);
-  }, []);
-
-  // Fetch data only for the active tab
-  useEffect(() => {
-    if (!loggedIn || !isAdmin) return;
-    fetchTabData();
-  }, [loggedIn, activeTab, isAdmin]);
 
   const fetchTabData = async () => {
     try {
@@ -184,34 +159,28 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoginError('');
-    const form = e.currentTarget;
-    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      window.dispatchEvent(new Event('auth-change'));
-      setLoggedIn(true);
-      setIsAdmin(data.user?.isAdmin || false);
-      if (!data.user?.isAdmin) {
-        setLoginError('You do not have admin access');
-        await fetch('/api/auth/logout', { method: 'POST' });
-        setLoggedIn(false);
+  // Check if user is admin
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user?.isAdmin) {
+          setIsAdmin(true);
+        }
+      } catch (err) {
+        console.log('Auth check failed');
       }
-    } else {
-      setLoginError(data.error || 'Invalid email or password');
-    }
-  };
+      setLoading(false);
+    };
+    checkAuth();
+  }, []);
+
+  // Fetch data only for the active tab
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchTabData();
+  }, [activeTab, isAdmin]);
 
   const logout = async () => {
     try {
@@ -219,7 +188,6 @@ export default function AdminPage() {
     } catch (err) {
       console.log('Logout failed');
     }
-    window.dispatchEvent(new Event('auth-change'));
     window.location.replace('/');
   };
 
@@ -358,7 +326,10 @@ export default function AdminPage() {
     setProductImageFile(null);
   };
 
-  if (!mounted) {
+  const filteredImages = galleryImages.filter(img => img.category === selectedCategory);
+  const pendingReviews = reviews.filter(r => !r.approved);
+
+  if (loading) {
     return (
       <div className="login-container">
         <div className="login-box">
@@ -369,26 +340,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!loggedIn) {
-    return (
-      <div className="login-container">
-        <div className="login-box">
-          <h1><i className="fas fa-chair"></i> Ananya Admin</h1>
-          <form onSubmit={handleLogin}>
-            <input type="email" name="email" placeholder="Email" className="box" required />
-            <input type="password" name="password" placeholder="Password" className="box" required />
-            {loginError && <p style={{ color: 'red', fontSize: '1.3rem', margin: '0.5rem 0' }}>{loginError}</p>}
-            <button type="submit" className="btn">Login</button>
-          </form>
-          <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666', fontSize: '1.2rem' }}>
-            <a href="/login" style={{ color: '#a27341' }}>Login here</a> if you have an account
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loggedIn && !isAdmin) {
+  if (!isAdmin) {
     return (
       <div className="login-container">
         <div className="login-box">
@@ -404,11 +356,8 @@ export default function AdminPage() {
     );
   }
 
-  const filteredImages = galleryImages.filter(img => img.category === selectedCategory);
-  const pendingReviews = reviews.filter(r => !r.approved);
-
   return (
-    <div className="admin-container" style={{ display: loggedIn ? 'block' : 'none' }}>
+    <div className="admin-container">
       {/* Toast Notification */}
       {toast && (
         <div className="admin-toast">
