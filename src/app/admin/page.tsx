@@ -131,35 +131,30 @@ export default function AdminPage() {
       if (activeTab === 'reviews') {
         const res = await fetch('/api/admin/reviews');
         const data = await res.json();
-        const reviewsArray = Array.isArray(data) ? data : (data.reviews || []);
-        setReviews(reviewsArray);
+        setReviews(Array.isArray(data) ? data : (data.reviews || []));
       } else if (activeTab === 'gallery') {
         const res = await fetch('/api/admin/gallery');
         const data = await res.json();
-        const galleryArray = Array.isArray(data) ? data : (data.images || []);
-        setGalleryImages(galleryArray);
+        setGalleryImages(Array.isArray(data) ? data : (data.images || []));
       } else if (activeTab === 'orders') {
         const res = await fetch('/api/orders');
         const data = await res.json();
-        const ordersArray = Array.isArray(data) ? data : (data.orders || []);
-        setOrders(ordersArray);
+        setOrders(Array.isArray(data) ? data : (data.orders || []));
       } else if (activeTab === 'products') {
         const res = await fetch('/api/admin/products');
         const data = await res.json();
-        const productsArray = Array.isArray(data) ? data : (data.products || []);
-        setProducts(productsArray);
+        setProducts(Array.isArray(data) ? data : (data.products || []));
       } else if (activeTab === 'contacts') {
         const res = await fetch('/api/contacts');
         const data = await res.json();
-        const contactsArray = Array.isArray(data) ? data : (data.contacts || []);
-        setContacts(contactsArray);
+        setContacts(Array.isArray(data) ? data : (data.contacts || []));
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
   };
 
-  // Check if user is admin
+  // Check if user is admin and load all data
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -176,7 +171,7 @@ export default function AdminPage() {
     checkAuth();
   }, []);
 
-  // Fetch data only for the active tab
+  // Fetch data when tab changes
   useEffect(() => {
     if (!isAdmin) return;
     fetchTabData();

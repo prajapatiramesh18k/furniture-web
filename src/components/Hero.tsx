@@ -118,14 +118,6 @@ function HeroSlider() {
             </div>
           ))}
         </div>
-        <div className="hero-slider-controls">
-          <button className="hero-slider-btn prev-btn" id="hero-prev" aria-label="Previous slide">
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <button className="hero-slider-btn next-btn" id="hero-next" aria-label="Next slide">
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </div>
       </div>
     </section>
   );
