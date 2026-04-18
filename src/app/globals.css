@@ -490,7 +490,7 @@ input, textarea, select {
     position: fixed;
     top: 0;
     right: -105%;
-    width: 35rem;
+    width: 30rem;
     background: var(--white);
     display: flex;
     flex-flow: column;
@@ -532,8 +532,8 @@ input, textarea, select {
 .account-sidebar {
     position: fixed;
     top: 0;
-    right: -40rem;
-    width: 38rem;
+    right: -30rem;
+    width: 30rem;
     background: #fff;
     height: 100%;
     z-index: 3001;
@@ -739,9 +739,10 @@ input, textarea, select {
 
 /* Mobile responsive for account sidebar */
 @media (max-width: 480px) {
-    .account-sidebar {
-        width: 100%;
-        right: -100%;
+    .account-sidebar,
+    .cart-items-container {
+        width: 80%;
+        right: -80%;
     }
 
     .account-sidebar.active {
@@ -754,8 +755,9 @@ input, textarea, select {
 }
 
 @media (max-width: 768px) {
-    .account-sidebar {
-        width: 85%;
+    .account-sidebar,
+    .cart-items-container {
+        width: 80%;
     }
 }
 
