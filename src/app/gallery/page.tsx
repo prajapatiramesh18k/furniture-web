@@ -130,7 +130,13 @@ export default function GalleryPage() {
           <div className="gallery-page-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="gallery-skeleton">
-                <div className="gallery-skeleton-img"></div>
+                <div className="gallery-skeleton-img">
+                  <div className="skeleton-shimmer"></div>
+                </div>
+                <div className="gallery-skeleton-content">
+                  <div className="skeleton-line title"></div>
+                  <div className="skeleton-line subtitle"></div>
+                </div>
               </div>
             ))}
           </div>
