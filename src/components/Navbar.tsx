@@ -349,6 +349,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -371,6 +372,8 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
       } catch (err) {
         setUserLoggedIn(false);
         setIsAdmin(false);
+      } finally {
+        setAuthLoading(false);
       }
     };
     checkAuth();
@@ -421,7 +424,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist }: {
         </button>
       </div>
 
-      {!mounted ? null : userLoggedIn ? (
+      {!mounted || authLoading ? null : userLoggedIn ? (
         <>
           <div className="account-user-info">
             <div className="account-avatar">
