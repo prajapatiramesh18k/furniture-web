@@ -28,12 +28,21 @@ export async function GET() {
   }
 }
 
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    + '-' + Date.now();
+}
+
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
     const product = new Product({
       name: body.name,
+      slug: generateSlug(body.name || 'product'),
       price: body.price,
       originalPrice: body.originalPrice || body.price,
       rating: body.rating || 4.0,
@@ -43,8 +52,9 @@ export async function POST(request: NextRequest) {
     });
     await product.save();
     return NextResponse.json(product, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Product creation error:', error?.message, error?.errors);
+    return NextResponse.json({ error: 'Failed to create product', details: error?.message }, { status: 500 });
   }
 }
 

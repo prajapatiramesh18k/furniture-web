@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface Review {
   _id: string;
@@ -79,17 +79,90 @@ const galleryCategories = [
   { id: 'kids-room', name: 'Kids Room' },
 ];
 
-const productCategories = [
-  { id: 'pooja-unit', name: 'Pooja Unit' },
-  { id: 'tv-unit', name: 'TV Unit' },
-  { id: 'bedroom', name: 'Bedroom' },
-  { id: 'living-room', name: 'Living Room' },
-  { id: 'dining-room', name: 'Dining Room' },
-  { id: 'kitchen', name: 'Kitchen' },
-  { id: 'office', name: 'Office' },
-  { id: 'entryway', name: 'Entryway' },
-  { id: 'kids-room', name: 'Kids Room' },
+const roomCategories = [
+  { id: 'bedroom', name: 'Bedroom', icon: 'fa-bed' },
+  { id: 'living-room', name: 'Living Room', icon: 'fa-couch' },
+  { id: 'dining-room', name: 'Dining Room', icon: 'fa-utensils' },
+  { id: 'kitchen', name: 'Kitchen', icon: 'fa-hat-chef' },
+  { id: 'office', name: 'Office', icon: 'fa-briefcase' },
+  { id: 'entryway', name: 'Entryway', icon: 'fa-door-open' },
+  { id: 'kids-room', name: 'Kids Room', icon: 'fa-child' },
+  { id: 'pooja-room', name: 'Pooja Room', icon: 'fa-praying-hands' },
+  { id: 'outdoor', name: 'Outdoor', icon: 'fa-tree' },
+  { id: 'decor', name: 'Decor', icon: 'fa-spa' },
 ];
+
+const subCategories: Record<string, { id: string; name: string }[]> = {
+  bedroom: [
+    { id: 'beds', name: 'Beds' },
+    { id: 'wardrobes', name: 'Wardrobes' },
+    { id: 'mattresses', name: 'Mattresses' },
+    { id: 'bedside-tables', name: 'Bedside Tables' },
+    { id: 'dressers', name: 'Dressers & Mirrors' },
+    { id: 'bedroom benches', name: 'Benches' },
+  ],
+  'living-room': [
+    { id: 'sofas', name: 'Sofas' },
+    { id: 'sofa-cum-beds', name: 'Sofa Cum Beds' },
+    { id: 'coffee-tables', name: 'Coffee Tables' },
+    { id: 'tv-cabinets', name: 'TV Cabinets' },
+    { id: 'recliners', name: 'Recliners' },
+    { id: 'bookshelves', name: 'Bookshelves' },
+    { id: 'living-room benches', name: 'Benches' },
+    { id: 'side-tables', name: 'Side Tables' },
+  ],
+  'dining-room': [
+    { id: 'dining-tables', name: 'Dining Tables' },
+    { id: 'dining-chairs', name: 'Dining Chairs' },
+    { id: 'bar-units', name: 'Bar Units' },
+    { id: 'crockery-units', name: 'Crockery Units' },
+    { id: 'dining-room benches', name: 'Benches' },
+  ],
+  kitchen: [
+    { id: 'kitchen-cabinets', name: 'Kitchen Cabinets' },
+    { id: 'kitchen-tables', name: 'Kitchen Tables' },
+    { id: 'kitchen-chairs', name: 'Kitchen Chairs' },
+    { id: 'storage-units', name: 'Storage Units' },
+    { id: 'kitchen-trolleys', name: 'Trolleys' },
+  ],
+  office: [
+    { id: 'office-tables', name: 'Office Tables' },
+    { id: 'office-chairs', name: 'Office Chairs' },
+    { id: 'filing-cabinets', name: 'Filing Cabinets' },
+    { id: 'study-tables', name: 'Study Tables' },
+    { id: 'bookshelves', name: 'Bookshelves' },
+    { id: 'office-storage', name: 'Storage Cabinets' },
+  ],
+  entryway: [
+    { id: 'shoe-racks', name: 'Shoe Racks' },
+    { id: 'console-tables', name: 'Console Tables' },
+    { id: 'coat-racks', name: 'Coat Racks' },
+    { id: 'benches', name: 'Entryway Benches' },
+  ],
+  'kids-room': [
+    { id: 'kids-beds', name: 'Kids Beds' },
+    { id: 'study-desks', name: 'Study Desks' },
+    { id: 'toy-storage', name: 'Toy Storage' },
+    { id: 'kids-chairs', name: 'Kids Chairs' },
+    { id: 'bookshelves', name: 'Bookshelves' },
+  ],
+  'pooja-room': [
+    { id: 'pooja-units', name: 'Pooja Units' },
+    { id: 'temple-cabinets', name: 'Temple Cabinets' },
+  ],
+  outdoor: [
+    { id: 'garden-chairs', name: 'Garden Chairs' },
+    { id: 'balcony-sets', name: 'Balcony Sets' },
+    { id: 'outdoor-tables', name: 'Outdoor Tables' },
+    { id: 'swing-chairs', name: 'Swing Chairs' },
+  ],
+  decor: [
+    { id: 'mirrors', name: 'Mirrors' },
+    { id: 'wall-shelves', name: 'Wall Shelves' },
+    { id: 'home-decor', name: 'Home Decor Items' },
+    { id: 'plant-stands', name: 'Plant Stands' },
+  ],
+};
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -100,15 +173,19 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('pooja-unit');
+  const [selectedCategory, setSelectedCategory] = useState('pooja-room');
   const [productForm, setProductForm] = useState({
     name: '',
     price: '',
     originalPrice: '',
     rating: '4.0',
-    category: 'pooja-unit',
+    category: 'pooja-units',
     description: '',
   });
+  const [selectedRoom, setSelectedRoom] = useState('pooja-room');
+  const [roomDropdownOpen, setRoomDropdownOpen] = useState(false);
+  const [subDropdownOpen, setSubDropdownOpen] = useState(false);
+  const roomDropdownRef = useRef<HTMLDivElement>(null);
   const [productImage, setProductImage] = useState<string>('');
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [uploadingProduct, setUploadingProduct] = useState(false);
@@ -172,6 +249,18 @@ export default function AdminPage() {
       setLoading(false);
     };
     checkAuth();
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (roomDropdownRef.current && !roomDropdownRef.current.contains(e.target as Node)) {
+        setRoomDropdownOpen(false);
+        setSubDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
   // Fetch data when tab changes
@@ -239,6 +328,10 @@ export default function AdminPage() {
   const handleProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert('Image is too large. Please select an image under 4MB.');
+      return;
+    }
     setProductImageFile(file);
     const reader = new FileReader();
     reader.onload = () => setProductImage(reader.result as string);
@@ -247,7 +340,17 @@ export default function AdminPage() {
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productImage && !productImageFile) {
+
+    let imageData = productImage;
+    if (!imageData && productImageFile) {
+      imageData = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(productImageFile);
+      });
+    }
+
+    if (!imageData) {
       alert('Please select a product image');
       return;
     }
@@ -261,15 +364,10 @@ export default function AdminPage() {
         rating: Number(productForm.rating),
         category: productForm.category,
         description: productForm.description,
+        image: imageData,
       };
 
-      if (productImage) {
-        body.image = productImage;
-      }
-
-      const url = editingProduct
-        ? '/api/admin/products'
-        : '/api/admin/products';
+      const url = '/api/admin/products';
       const method = editingProduct ? 'PUT' : 'POST';
 
       if (editingProduct) {
@@ -282,15 +380,19 @@ export default function AdminPage() {
         body: JSON.stringify(body),
       });
 
+      const data = await res.json();
       if (res.ok) {
-        setProductForm({ name: '', price: '', originalPrice: '', rating: '4.0', category: 'pooja-unit', description: '' });
+        setProductForm({ name: '', price: '', originalPrice: '', rating: '4.0', category: subCategories[selectedRoom][0].id, description: '' });
         setProductImage('');
         setProductImageFile(null);
         setEditingProduct(null);
         fetchTabData();
+        showToast(editingProduct ? 'Product updated successfully!' : 'Product created successfully!');
       } else {
-        alert('Failed to save product');
+        alert(data.details || data.error || 'Failed to save product');
       }
+    } catch {
+      alert('Failed to save product. Please try again.');
     } finally {
       setUploadingProduct(false);
     }
@@ -315,13 +417,19 @@ export default function AdminPage() {
       description: product.description || '',
     });
     setProductImage(product.image);
+    // Find which room this subcategory belongs to
+    const foundRoom = roomCategories.find(room =>
+      subCategories[room.id]?.some(sub => sub.id === product.category)
+    );
+    setSelectedRoom(foundRoom?.id || roomCategories[0].id);
   };
 
   const cancelEdit = () => {
     setEditingProduct(null);
-    setProductForm({ name: '', price: '', originalPrice: '', rating: '4.0', category: 'pooja-unit', description: '' });
+    setProductForm({ name: '', price: '', originalPrice: '', rating: '4.0', category: subCategories['pooja-room'][0].id, description: '' });
     setProductImage('');
     setProductImageFile(null);
+    setSelectedRoom('pooja-room');
   };
 
   const filteredImages = galleryImages.filter(img => img.category === selectedCategory);
@@ -494,90 +602,178 @@ export default function AdminPage() {
 
         {activeTab === 'products' && (
           <div className="products-section">
-            <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
             <form className="product-upload-form" onSubmit={handleProductSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Product Name *</label>
-                  <input
-                    type="text"
-                    className="box"
-                    placeholder="e.g. Pooja Unit Premium"
-                    value={productForm.name}
-                    onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                    required
-                  />
+
+              {/* Header */}
+              <h2>
+                <i className="fas fa-plus-circle"></i>
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h2>
+
+              {/* Basic Info Section */}
+              <div className="form-section">
+                <div className="form-section-title">
+                  <i className="fas fa-info-circle"></i>
+                  Basic Information
                 </div>
-                <div className="form-group">
-                  <label>Category *</label>
-                  <select
-                    className="box"
-                    value={productForm.category}
-                    onChange={e => setProductForm({ ...productForm, category: e.target.value })}
-                    required
-                  >
-                    {productCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Product Name *</label>
+                    <input
+                      type="text"
+                      className="box"
+                      placeholder="e.g. Premium Pooja Unit"
+                      value={productForm.name}
+                      onChange={e => setProductForm({ ...productForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Rating (out of 5)</label>
+                    <input
+                      type="number"
+                      className="box"
+                      placeholder="4.5"
+                      value={productForm.rating}
+                      onChange={e => setProductForm({ ...productForm, rating: e.target.value })}
+                      min="0"
+                      max="5"
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      className="box"
+                      placeholder="Describe the product features, material, dimensions..."
+                      value={productForm.description}
+                      onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Selling Price (₹) *</label>
-                  <input
-                    type="number"
-                    className="box"
-                    placeholder="9999"
-                    value={productForm.price}
-                    onChange={e => setProductForm({ ...productForm, price: e.target.value })}
-                    required
-                    min="0"
-                  />
+              {/* Category Section */}
+              <div className="form-section">
+                <div className="form-section-title">
+                  <i className="fas fa-tag"></i>
+                  Category & Pricing
                 </div>
-                <div className="form-group">
-                  <label>Original Price (₹)</label>
-                  <input
-                    type="number"
-                    className="box"
-                    placeholder="13999"
-                    value={productForm.originalPrice}
-                    onChange={e => setProductForm({ ...productForm, originalPrice: e.target.value })}
-                    min="0"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Rating</label>
-                  <input
-                    type="number"
-                    className="box"
-                    placeholder="4.5"
-                    value={productForm.rating}
-                    onChange={e => setProductForm({ ...productForm, rating: e.target.value })}
-                    min="0"
-                    max="5"
-                    step="0.1"
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Category *</label>
+                    <div className="room-sub-picker" ref={roomDropdownRef}>
+                      <div className="cat-stack">
+                        <div className="cat-row">
+                          <span className="cat-label">Category</span>
+                          <button
+                            type="button"
+                            className={`room-btn ${roomDropdownOpen ? 'active' : ''}`}
+                            onClick={() => { setRoomDropdownOpen(o => !o); setSubDropdownOpen(false); }}
+                          >
+                            <i className={`fas ${roomCategories.find(r => r.id === selectedRoom)?.icon || 'fa-home'}`}></i>
+                            <span>{roomCategories.find(r => r.id === selectedRoom)?.name || 'Select Category'}</span>
+                            <i className={`fas fa-chevron-down chevron ${roomDropdownOpen ? 'open' : ''}`}></i>
+                          </button>
+                        </div>
+
+                        {roomDropdownOpen && (
+                          <div className="room-panel">
+                            {roomCategories.map(room => (
+                              <button
+                                key={room.id}
+                                type="button"
+                                className={`room-option ${selectedRoom === room.id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSelectedRoom(room.id);
+                                  setProductForm(f => ({
+                                    ...f,
+                                    category: subCategories[room.id]?.[0]?.id || room.id,
+                                  }));
+                                  setRoomDropdownOpen(false);
+                                }}
+                              >
+                                <i className={`fas ${room.icon}`}></i>
+                                <span>{room.name}</span>
+                                {selectedRoom === room.id && <i className="fas fa-check check"></i>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="cat-row">
+                          <span className="cat-label">Subcategory</span>
+                          <button
+                            type="button"
+                            className={`room-btn sub-btn ${subDropdownOpen ? 'active' : ''}`}
+                            onClick={() => { setSubDropdownOpen(o => !o); setRoomDropdownOpen(false); }}
+                          >
+                            <i className="fas fa-th-large"></i>
+                            <span>{subCategories[selectedRoom]?.find(s => s.id === productForm.category)?.name || 'Select Subcategory'}</span>
+                            <i className={`fas fa-chevron-down chevron ${subDropdownOpen ? 'open' : ''}`}></i>
+                          </button>
+                        </div>
+
+                        {subDropdownOpen && (
+                          <div className="room-panel sub">
+                            {subCategories[selectedRoom]?.map(sub => (
+                              <button
+                                key={sub.id}
+                                type="button"
+                                className={`room-option ${productForm.category === sub.id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setProductForm(f => ({ ...f, category: sub.id }));
+                                  setSubDropdownOpen(false);
+                                }}
+                              >
+                                <span>{sub.name}</span>
+                                {productForm.category === sub.id && <i className="fas fa-check check"></i>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Selling Price (₹) *</label>
+                    <input
+                      type="number"
+                      className="box"
+                      placeholder="9999"
+                      value={productForm.price}
+                      onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                      required
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Original Price (₹)</label>
+                    <input
+                      type="number"
+                      className="box"
+                      placeholder="13999"
+                      value={productForm.originalPrice}
+                      onChange={e => setProductForm({ ...productForm, originalPrice: e.target.value })}
+                      min="0"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  className="box"
-                  placeholder="Product description..."
-                  rows={3}
-                  value={productForm.description}
-                  onChange={e => setProductForm({ ...productForm, description: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Product Image *</label>
+              {/* Image Section */}
+              <div className="form-section">
+                <div className="form-section-title">
+                  <i className="fas fa-image"></i>
+                  Product Image
+                </div>
                 <div className="image-upload-area">
                   <label className="upload-btn">
-                    <i className="fas fa-image"></i> {productImage ? 'Change Image' : 'Select Image'}
+                    <i className="fas fa-cloud-upload-alt"></i>
+                    {productImage ? 'Change Image' : 'Select Image'}
                     <input
                       type="file"
                       accept="image/*"
@@ -601,47 +797,55 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Actions */}
               <div className="form-actions">
-                <button type="submit" className="btn" disabled={uploadingProduct}>
-                  {uploadingProduct ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product'}
-                </button>
                 {editingProduct && (
                   <button type="button" className="btn-cancel" onClick={cancelEdit}>
                     Cancel
                   </button>
                 )}
+                <button type="submit" className="btn" disabled={uploadingProduct}>
+                  {uploadingProduct ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Saving...</>
+                  ) : (
+                    <><i className="fas fa-check"></i> {editingProduct ? 'Update Product' : 'Add Product'}</>
+                  )}
+                </button>
               </div>
             </form>
 
-            <h2 style={{ marginTop: '3rem' }}>Existing Products ({products.length})</h2>
-            {products.length === 0 ? (
-              <p className="empty-msg">No products yet</p>
-            ) : (
-              <div className="products-grid-admin">
-                {products.map(product => (
-                  <div key={product._id} className="product-card-admin">
-                    <img src={product.image} alt={product.name} />
-                    <div className="product-card-info">
-                      <h3>{product.name}</h3>
-                      <p className="product-category">{product.category}</p>
-                      <p className="product-price">
-                        <span className="current-price">₹{product.price.toLocaleString()}</span>
-                        {product.originalPrice > product.price && (
-                          <span className="original-price">₹{product.originalPrice.toLocaleString()}</span>
-                        )}
-                      </p>
+            {/* Product List */}
+            {products.length > 0 && (
+              <>
+                <h2 style={{ marginTop: '3rem', marginBottom: '1rem' }}>
+                  <i className="fas fa-list"></i> Product List ({products.length})
+                </h2>
+                <div className="product-cards-admin">
+                  {products.map(product => (
+                    <div key={product._id} className="product-card-admin">
+                      <img src={product.image} alt={product.name} />
+                      <div className="product-card-info">
+                        <h3>{product.name}</h3>
+                        <p className="product-category">{product.category}</p>
+                        <p className="product-price">
+                          <span className="current-price">₹{product.price.toLocaleString()}</span>
+                          {product.originalPrice > product.price && (
+                            <span className="original-price">₹{product.originalPrice.toLocaleString()}</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="product-card-actions">
+                        <button className="btn-edit" onClick={() => startEditProduct(product)}>
+                          <i className="fas fa-edit"></i> Edit
+                        </button>
+                        <button className="btn-delete" onClick={() => deleteProduct(product._id)}>
+                          <i className="fas fa-trash"></i> Delete
+                        </button>
+                      </div>
                     </div>
-                    <div className="product-card-actions">
-                      <button className="btn-edit" onClick={() => startEditProduct(product)}>
-                        <i className="fas fa-edit"></i> Edit
-                      </button>
-                      <button className="btn-delete" onClick={() => deleteProduct(product._id)}>
-                        <i className="fas fa-trash"></i> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
