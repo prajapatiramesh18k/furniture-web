@@ -196,8 +196,10 @@ export default function Navbar() {
     } catch (err) {
       console.log('Logout failed');
     }
+    setSessionAuth(null);
     setUserLoggedIn(false);
     setUserName('');
+    cachedAuthUser = null;
     window.dispatchEvent(new Event('auth-change'));
     window.location.href = '/';
   };
@@ -413,6 +415,9 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedI
     } catch (err) {
       console.log('Logout failed');
     }
+    try {
+      sessionStorage.removeItem('auth-user');
+    } catch {}
     window.dispatchEvent(new Event('auth-change'));
     onClose();
     router.push('/');
