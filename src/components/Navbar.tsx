@@ -312,7 +312,7 @@ export default function Navbar() {
       {accountOpen && (
         <>
           <div className="sidebar-backdrop" onClick={() => setAccountOpen(false)} />
-          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} user={authUser} authLoading={authLoading} userLoggedIn={userLoggedIn} />
+          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} user={authUser} userLoggedIn={userLoggedIn} />
         </>
       )}
     </>
@@ -378,12 +378,11 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
   );
 }
 
-function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, authLoading, userLoggedIn }: {
+function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedIn }: {
   onClose: () => void;
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   user: { name: string; email: string; isAdmin: boolean } | null;
-  authLoading: boolean;
   userLoggedIn: boolean;
 }) {
   const router = useRouter();
@@ -425,16 +424,7 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, authLoading
         </button>
       </div>
 
-      {authLoading ? (
-        <div className="account-loading">
-          <div className="account-skeleton avatar-skeleton"></div>
-          <div className="account-skeleton text-skeleton"></div>
-          <div className="account-skeleton text-skeleton short"></div>
-          <div className="account-skeleton btn-skeleton"></div>
-          <div className="account-skeleton btn-skeleton"></div>
-          <div className="account-skeleton btn-skeleton"></div>
-        </div>
-      ) : userLoggedIn && user ? (
+      {userLoggedIn && user ? (
         <>
           <div className="account-user-info">
             <div className="account-avatar">
