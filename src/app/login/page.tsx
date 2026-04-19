@@ -63,6 +63,9 @@ export default function LoginPage() {
         const data = await res.json();
 
         if (res.ok) {
+          try {
+            sessionStorage.setItem('auth-user', JSON.stringify(data.user));
+          } catch {}
           window.dispatchEvent(new Event('auth-change'));
           router.push('/');
         } else {

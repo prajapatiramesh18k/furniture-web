@@ -10,6 +10,28 @@ import SubmitReview from '@/components/SubmitReview';
 let authChecked = false;
 let cachedAuthUser: { name: string; email: string; isAdmin: boolean } | null | undefined = undefined;
 
+// Stable auth state restored from sessionStorage on first load
+function getSessionAuth(): { name: string; email: string; isAdmin: boolean } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem('auth-user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSessionAuth(user: { name: string; email: string; isAdmin: boolean } | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (user) {
+      sessionStorage.setItem('auth-user', JSON.stringify(user));
+    } else {
+      sessionStorage.removeItem('auth-user');
+    }
+  } catch {}
+}
+
 const navigation = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
@@ -36,10 +58,9 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [userLoggedIn, setUserLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean } | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [userLoggedIn, setUserLoggedIn] = useState(() => getSessionAuth() !== null);
+  const [userName, setUserName] = useState(() => getSessionAuth()?.name || '');
+  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean } | null>(() => getSessionAuth());
   const [accountOpen, setAccountOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,22 +86,7 @@ export default function Navbar() {
   // Check auth status on mount and listen for auth changes
   useEffect(() => {
     const checkAuth = async () => {
-      // Use cached data if available
-      if (cachedAuthUser !== undefined) {
-        if (cachedAuthUser) {
-          setUserLoggedIn(true);
-          setUserName(cachedAuthUser.name || '');
-          setAuthUser(cachedAuthUser);
-        } else {
-          setUserLoggedIn(false);
-          setUserName('');
-          setAuthUser(null);
-        }
-        setAuthLoading(false);
-        return;
-      }
-
-      // Skip if already checking
+      // Skip if already checking (module-level guard)
       if (authChecked) return;
       authChecked = true;
 
@@ -88,23 +94,27 @@ export default function Navbar() {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
         if (data.user) {
-          cachedAuthUser = { name: data.user.name || '', email: data.user.email || '', isAdmin: data.user.isAdmin || false };
+          const user = { name: data.user.name || '', email: data.user.email || '', isAdmin: data.user.isAdmin || false };
+          cachedAuthUser = user;
           setUserLoggedIn(true);
-          setUserName(data.user.name || '');
-          setAuthUser(cachedAuthUser);
+          setUserName(user.name);
+          setAuthUser(user);
+          setSessionAuth(user);
         } else {
           cachedAuthUser = null;
           setUserLoggedIn(false);
           setUserName('');
           setAuthUser(null);
+          setSessionAuth(null);
         }
-      } catch (err) {
-        cachedAuthUser = null;
-        setUserLoggedIn(false);
-        setUserName('');
-        setAuthUser(null);
-      } finally {
-        setAuthLoading(false);
+      } catch {
+        // On error, keep sessionStorage state — no flicker
+        if (cachedAuthUser === undefined) {
+          cachedAuthUser = null;
+          setUserLoggedIn(false);
+          setUserName('');
+          setAuthUser(null);
+        }
       }
     };
 
@@ -114,7 +124,17 @@ export default function Navbar() {
       // Reset cache on login/logout
       authChecked = false;
       cachedAuthUser = undefined;
-      checkAuth();
+      // Use sessionStorage directly — no API call needed after login/logout
+      const sessionUser = getSessionAuth();
+      if (sessionUser) {
+        setUserLoggedIn(true);
+        setUserName(sessionUser.name);
+        setAuthUser(sessionUser);
+      } else {
+        setUserLoggedIn(false);
+        setUserName('');
+        setAuthUser(null);
+      }
     };
     window.addEventListener('auth-change', handleAuthChange);
     return () => window.removeEventListener('auth-change', handleAuthChange);
