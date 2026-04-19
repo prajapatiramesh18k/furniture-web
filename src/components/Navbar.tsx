@@ -6,10 +6,6 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import SubmitReview from '@/components/SubmitReview';
 
-// Module-level variables - persist across component remounts
-let authChecked = false;
-let cachedAuthUser: { name: string; email: string; isAdmin: boolean } | null | undefined = undefined;
-
 // Stable auth state restored from sessionStorage on first load
 function getSessionAuth(): { name: string; email: string; isAdmin: boolean } | null {
   if (typeof window === 'undefined') return null;
@@ -83,48 +79,9 @@ export default function Navbar() {
     }
   }, [getCartCount, getWishlistCount]);
 
-  // Check auth status on mount and listen for auth changes
+  // Listen for auth changes (login/logout) — auth state is already initialized from sessionStorage
   useEffect(() => {
-    const checkAuth = async () => {
-      // Skip if already checking (module-level guard)
-      if (authChecked) return;
-      authChecked = true;
-
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (data.user) {
-          const user = { name: data.user.name || '', email: data.user.email || '', isAdmin: data.user.isAdmin || false };
-          cachedAuthUser = user;
-          setUserLoggedIn(true);
-          setUserName(user.name);
-          setAuthUser(user);
-          setSessionAuth(user);
-        } else {
-          cachedAuthUser = null;
-          setUserLoggedIn(false);
-          setUserName('');
-          setAuthUser(null);
-          setSessionAuth(null);
-        }
-      } catch {
-        // On error, keep sessionStorage state — no flicker
-        if (cachedAuthUser === undefined) {
-          cachedAuthUser = null;
-          setUserLoggedIn(false);
-          setUserName('');
-          setAuthUser(null);
-        }
-      }
-    };
-
-    checkAuth();
-
     const handleAuthChange = () => {
-      // Reset cache on login/logout
-      authChecked = false;
-      cachedAuthUser = undefined;
-      // Use sessionStorage directly — no API call needed after login/logout
       const sessionUser = getSessionAuth();
       if (sessionUser) {
         setUserLoggedIn(true);
@@ -199,7 +156,6 @@ export default function Navbar() {
     setSessionAuth(null);
     setUserLoggedIn(false);
     setUserName('');
-    cachedAuthUser = null;
     window.dispatchEvent(new Event('auth-change'));
     window.location.href = '/';
   };
