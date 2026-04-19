@@ -4,6 +4,20 @@ import GalleryImage from '@/lib/models/GalleryImage';
 
 const IMAGES_PER_PAGE = 12;
 
+// Room → subcategory IDs mapping (matches gallery/page.tsx subCategories)
+const roomSubMap: Record<string, string[]> = {
+  'living-room': ['sofas','sofa-cum-beds','coffee-tables','tv-cabinets','tv-unit','recliners','bookshelves','almirah','mirrors'],
+  'bedroom': ['beds','wardrobes','mattresses','bedside-tables','dressers','bed-panelling','almirah','mirrors'],
+  'dining-room': ['dining-tables','dining-table','dining-chairs','bar-units','bar-unit','crockery-units','crockery-unit'],
+  'kitchen': ['kitchen-cabinets','storage-units','storage-solution'],
+  'pooja-room': ['pooja-units','pooja-unit'],
+  'office': ['office-tables','office-chairs','filing-cabinets','study-tables','bookshelves'],
+  'entryway': ['shoe-racks','shoe-rack','console-tables','coat-racks'],
+  'kids-room': ['kids-beds','study-desks','toy-storage','kids-chairs'],
+  'outdoor': ['garden-chairs','balcony-sets','outdoor-tables','swing-chairs'],
+  'decor': ['mirrors','wall-shelves','home-decor','plant-stands','ceiling','door'],
+};
+
 // In-memory cache with TTL
 interface CacheEntry {
   data: unknown;
@@ -21,10 +35,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const category = searchParams.get('category') || 'all';
+    const room = searchParams.get('room') || '';
     const limit = parseInt(searchParams.get('limit') || String(IMAGES_PER_PAGE));
 
     // Check cache
-    const cacheKey = getCacheKey(page, category);
+    const cacheKey = getCacheKey(page, `${category}:${room}`);
     const cached = cache.get(cacheKey);
     if (cached && cached.expire > Date.now()) {
       return NextResponse.json(cached.data, {
@@ -33,7 +48,12 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    const filter = category !== 'all' ? { category } : {};
+    let filter: Record<string, unknown> = {};
+    if (category !== 'all') {
+      filter.category = category;
+    } else if (room && room !== 'all') {
+      filter.category = { $in: roomSubMap[room] || [] };
+    }
 
     const [images, total] = await Promise.all([
       GalleryImage.find(filter)

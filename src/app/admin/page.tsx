@@ -60,23 +60,65 @@ interface Contact {
 }
 
 const galleryCategories = [
-  { id: 'pooja-unit', name: 'Pooja Unit' },
-  { id: 'tv-unit', name: 'TV Unit' },
-  { id: 'bed-panelling', name: 'Bed Panelling' },
-  { id: 'dining-table', name: 'Dining Table' },
-  { id: 'bar-unit', name: 'Bar Unit' },
-  { id: 'almirah', name: 'Almirah' },
-  { id: 'crockery-unit', name: 'Crockery Unit' },
-  { id: 'shoe-rack', name: 'Shoe Rack' },
-  { id: 'ceiling', name: 'Ceiling' },
-  { id: 'door', name: 'Door' },
-  { id: 'office', name: 'Office' },
-  { id: 'living-room', name: 'Living Room' },
-  { id: 'bedroom', name: 'Bedroom' },
-  { id: 'dining-room', name: 'Dining Room' },
-  { id: 'kitchen', name: 'Kitchen' },
-  { id: 'entryway', name: 'Entryway' },
-  { id: 'kids-room', name: 'Kids Room' },
+  { id: 'living-room', name: 'Living Room', icon: 'fa-couch' },
+  { id: 'bedroom', name: 'Bedroom', icon: 'fa-bed' },
+  { id: 'dining-room', name: 'Dining Room', icon: 'fa-utensils' },
+  { id: 'kitchen', name: 'Kitchen', icon: 'fa-hat-chef' },
+  { id: 'pooja-room', name: 'Pooja Room', icon: 'fa-praying-hands' },
+  { id: 'office', name: 'Office', icon: 'fa-briefcase' },
+  { id: 'entryway', name: 'Entryway', icon: 'fa-door-open' },
+  { id: 'kids-room', name: 'Kids Room', icon: 'fa-child' },
+  { id: 'outdoor', name: 'Outdoor', icon: 'fa-tree' },
+  { id: 'decor', name: 'Decor', icon: 'fa-spa' },
+  // Subcategories - original gallery names
+  { id: 'sofas', name: 'Sofas', icon: 'fa-couch' },
+  { id: 'sofa-cum-beds', name: 'Sofa Cum Beds', icon: 'fa-bed' },
+  { id: 'coffee-tables', name: 'Coffee Tables', icon: 'fa-mug-hot' },
+  { id: 'tv-cabinets', name: 'TV Cabinets', icon: 'fa-tv' },
+  { id: 'tv-unit', name: 'TV Unit', icon: 'fa-tv' },
+  { id: 'recliners', name: 'Recliners', icon: 'fa-chair' },
+  { id: 'bookshelves', name: 'Bookshelves', icon: 'fa-book' },
+  { id: 'almirah', name: 'Almirah', icon: 'fa-door-open' },
+  { id: 'mirrors', name: 'Mirrors', icon: 'fa-mirror' },
+  { id: 'beds', name: 'Beds', icon: 'fa-bed' },
+  { id: 'wardrobes', name: 'Wardrobes', icon: 'fa-door-open' },
+  { id: 'mattresses', name: 'Mattresses', icon: 'fa-bed' },
+  { id: 'bedside-tables', name: 'Bedside Tables', icon: 'fa-table' },
+  { id: 'dressers', name: 'Dressers & Mirrors', icon: 'fa-mirror' },
+  { id: 'bed-panelling', name: 'Bed Panelling', icon: 'fa-border-all' },
+  { id: 'dining-tables', name: 'Dining Tables', icon: 'fa-utensils' },
+  { id: 'dining-table', name: 'Dining Table', icon: 'fa-utensils' },
+  { id: 'dining-chairs', name: 'Dining Chairs', icon: 'fa-chair' },
+  { id: 'bar-units', name: 'Bar Units', icon: 'fa-glass-martini-alt' },
+  { id: 'bar-unit', name: 'Bar Unit', icon: 'fa-glass-martini-alt' },
+  { id: 'crockery-units', name: 'Crockery Units', icon: 'fa-box' },
+  { id: 'crockery-unit', name: 'Crockery Unit', icon: 'fa-box' },
+  { id: 'kitchen-cabinets', name: 'Kitchen Cabinets', icon: 'fa-cabinet-filing' },
+  { id: 'storage-units', name: 'Storage Units', icon: 'fa-archive' },
+  { id: 'storage-solution', name: 'Storage Solution', icon: 'fa-archive' },
+  { id: 'pooja-units', name: 'Pooja Units', icon: 'fa-praying-hands' },
+  { id: 'pooja-unit', name: 'Pooja Unit', icon: 'fa-praying-hands' },
+  { id: 'office-tables', name: 'Office Tables', icon: 'fa-laptop' },
+  { id: 'office-chairs', name: 'Office Chairs', icon: 'fa-chair' },
+  { id: 'filing-cabinets', name: 'Filing Cabinets', icon: 'fa-folder' },
+  { id: 'study-tables', name: 'Study Tables', icon: 'fa-book' },
+  { id: 'shoe-racks', name: 'Shoe Racks', icon: 'fa-shoe-prints' },
+  { id: 'shoe-rack', name: 'Shoe Rack', icon: 'fa-shoe-prints' },
+  { id: 'console-tables', name: 'Console Tables', icon: 'fa-table' },
+  { id: 'coat-racks', name: 'Coat Racks', icon: 'fa-tshirt' },
+  { id: 'kids-beds', name: 'Kids Beds', icon: 'fa-bed' },
+  { id: 'study-desks', name: 'Study Desks', icon: 'fa-book' },
+  { id: 'toy-storage', name: 'Toy Storage', icon: 'fa-box' },
+  { id: 'kids-chairs', name: 'Kids Chairs', icon: 'fa-chair' },
+  { id: 'garden-chairs', name: 'Garden Chairs', icon: 'fa-chair' },
+  { id: 'balcony-sets', name: 'Balcony Sets', icon: 'fa-leaf' },
+  { id: 'outdoor-tables', name: 'Outdoor Tables', icon: 'fa-table' },
+  { id: 'swing-chairs', name: 'Swing Chairs', icon: 'fa-chair' },
+  { id: 'wall-shelves', name: 'Wall Shelves', icon: 'fa-border-all' },
+  { id: 'home-decor', name: 'Home Decor', icon: 'fa-spa' },
+  { id: 'plant-stands', name: 'Plant Stands', icon: 'fa-leaf' },
+  { id: 'ceiling', name: 'Ceiling', icon: 'fa-home' },
+  { id: 'door', name: 'Door', icon: 'fa-door-open' },
 ];
 
 const roomCategories = [
@@ -174,6 +216,9 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('pooja-room');
+  const [gallerySearch, setGallerySearch] = useState('');
+  const [galleryDropdownOpen, setGalleryDropdownOpen] = useState(false);
+  const gallerySearchRef = useRef<HTMLDivElement>(null);
   const [productForm, setProductForm] = useState({
     name: '',
     price: '',
@@ -257,6 +302,7 @@ export default function AdminPage() {
       if (roomDropdownRef.current && !roomDropdownRef.current.contains(e.target as Node)) {
         setRoomDropdownOpen(false);
         setSubDropdownOpen(false);
+        setGalleryDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -433,6 +479,9 @@ export default function AdminPage() {
   };
 
   const filteredImages = galleryImages.filter(img => img.category === selectedCategory);
+  const filteredGalleryCats = galleryCategories.filter(cat =>
+    cat.name.toLowerCase().includes(gallerySearch.toLowerCase())
+  );
   const pendingReviews = reviews.filter(r => !r.approved);
 
   if (loading) {
@@ -567,35 +616,74 @@ export default function AdminPage() {
         {activeTab === 'gallery' && (
           <div className="gallery-section">
             <h2>Design Gallery</h2>
-            <div className="upload-area">
-              <label className="upload-btn">
-                <i className="fas fa-upload"></i> Upload Images
+            <div className="gallery-upload-row">
+              <div className="gallery-search-wrap">
+                <i className="fas fa-search gallery-search-icon"></i>
+                <input
+                  type="text"
+                  className="gallery-search-input"
+                  placeholder="Search category..."
+                  value={gallerySearch}
+                  onChange={e => setGallerySearch(e.target.value)}
+                  onFocus={() => setGalleryDropdownOpen(true)}
+                />
+                {galleryDropdownOpen && (
+                  <div className="gallery-search-dropdown">
+                    {filteredGalleryCats.length === 0 ? (
+                      <div className="gallery-search-empty">No category found</div>
+                    ) : (
+                      filteredGalleryCats.map(cat => (
+                        <button
+                          key={cat.id}
+                          className={`gallery-search-option ${selectedCategory === cat.id ? 'selected' : ''}`}
+                          onClick={() => {
+                            setSelectedCategory(cat.id);
+                            setGallerySearch(cat.name);
+                            setGalleryDropdownOpen(false);
+                          }}
+                        >
+                          <i className={`fas ${cat.icon}`}></i>
+                          <span>{cat.name}</span>
+                          {selectedCategory === cat.id && <i className="fas fa-check gallery-search-check"></i>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <label className="upload-btn gallery-upload-btn">
+                <i className="fas fa-cloud-upload-alt"></i> Upload Image
                 <input type="file" multiple accept="image/*" onChange={uploadImage} style={{ display: 'none' }} />
               </label>
             </div>
-            <div className="admin-category-grid">
-              {galleryCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  className={`admin-cat-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(cat.id)}
-                >
-                  {cat.name}
-                </button>
-              ))}
+
+            <div className="gallery-admin-meta">
+              <span className="gallery-admin-count">
+                <i className="fas fa-images"></i>
+                {filteredImages.length} image{filteredImages.length !== 1 ? 's' : ''}
+                in <strong>{galleryCategories.find(c => c.id === selectedCategory)?.name || selectedCategory}</strong>
+              </span>
             </div>
+
             <div className="gallery-grid-admin">
               {filteredImages.map(img => (
                 <div key={img._id} className="gallery-item-admin">
                   <img src={img.url} alt={img.category} />
-                  <button className="delete-btn" onClick={() => deleteGalleryImage(img._id)}>
-                    <i className="fas fa-trash"></i>
-                  </button>
+                  <div className="gallery-item-overlay">
+                    <span className="gallery-item-cat">{galleryCategories.find(c => c.id === img.category)?.name || img.category}</span>
+                    <button className="delete-btn" onClick={() => deleteGalleryImage(img._id)}>
+                      <i className="fas fa-trash"></i> Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
             {filteredImages.length === 0 && (
-              <p className="empty-msg">No images in this category</p>
+              <div className="gallery-empty-state">
+                <i className="fas fa-image"></i>
+                <p>No images in this category</p>
+                <span>Upload images using the button above</span>
+              </div>
             )}
           </div>
         )}
