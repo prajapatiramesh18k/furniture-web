@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CloseButton from '@/components/CloseButton';
@@ -10,6 +11,7 @@ interface Product {
   slug: string;
   name: string;
   image: string;
+  images?: string[];
   price: number;
   originalPrice: number;
   rating: number;
@@ -26,6 +28,11 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [mounted2, setMounted2] = useState(false);
+
+  useEffect(() => { setMounted2(true); }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +42,7 @@ export default function ProductDetailPage() {
         const products: Product[] = data.products || [];
         const found = products.find(p => p.slug === slug);
         setProduct(found || null);
+        setActiveImageIndex(0);
 
         if (found) {
           const related = products
@@ -49,6 +57,30 @@ export default function ProductDetailPage() {
     };
     fetchData();
   }, [slug]);
+
+  const galleryImages: string[] = product?.images && product.images.length > 0
+    ? product.images
+    : product?.image
+    ? [product.image]
+    : [];
+
+  useEffect(() => {
+    if (!zoomOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoomOpen(false);
+      else if (e.key === 'ArrowRight') {
+        setActiveImageIndex((i) => (i + 1) % galleryImages.length);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length);
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [zoomOpen, galleryImages.length]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -102,9 +134,40 @@ export default function ProductDetailPage() {
 
       <div className="product-detail-hero">
         <div className="product-detail-gallery">
-          <img src={product.image} alt={product.name} className="product-detail-main-img" />
-          {discount && (
-            <span className="product-detail-discount">-{discount}% OFF</span>
+          <div
+            className="product-detail-main-img-wrap"
+            onClick={() => setZoomOpen(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setZoomOpen(true); }}
+          >
+            <img
+              src={galleryImages[activeImageIndex]}
+              alt={product.name}
+              className="product-detail-main-img"
+            />
+            <span className="product-detail-zoom-hint">
+              <i className="fas fa-search-plus"></i> Click to zoom
+            </span>
+            {discount && (
+              <span className="product-detail-discount">-{discount}% OFF</span>
+            )}
+          </div>
+
+          {galleryImages.length > 1 && (
+            <div className="product-detail-thumbnails">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={`${img}-${idx}`}
+                  type="button"
+                  className={`product-detail-thumb${idx === activeImageIndex ? ' active' : ''}`}
+                  onClick={() => setActiveImageIndex(idx)}
+                  aria-label={`View image ${idx + 1}`}
+                >
+                  <img src={img} alt={`${product.name} view ${idx + 1}`} />
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -206,6 +269,45 @@ export default function ProductDetailPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {mounted2 && zoomOpen && galleryImages.length > 0 && createPortal(
+        <div
+          className="product-zoom-overlay"
+          onClick={() => setZoomOpen(false)}
+        >
+          {galleryImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="product-zoom-nav prev"
+                onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length); }}
+                aria-label="Previous image"
+              >
+                <i className="fas fa-chevron-left"></i>
+              </button>
+              <button
+                type="button"
+                className="product-zoom-nav next"
+                onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i + 1) % galleryImages.length); }}
+                aria-label="Next image"
+              >
+                <i className="fas fa-chevron-right"></i>
+              </button>
+            </>
+          )}
+          <img
+            src={galleryImages[activeImageIndex]}
+            alt={product.name}
+            className="product-zoom-img"
+          />
+          {galleryImages.length > 1 && (
+            <div className="product-zoom-counter">
+              {activeImageIndex + 1} / {galleryImages.length}
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </div>
   );
