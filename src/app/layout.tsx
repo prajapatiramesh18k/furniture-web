@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import ChatBot from "@/components/ChatBot";
+import ScrollRestoration from "@/components/ScrollRestoration";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
@@ -50,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <meta name="google-site-verification" content="aDEB0fLtHFpcrTyE1-6C6KP6wK4VHImgKtZpABLHUJA" />
         <link
@@ -92,6 +93,7 @@ export default function RootLayout({
           <WishlistProvider>{children}</WishlistProvider>
         </CartProvider>
         <ChatBot />
+        <ScrollRestoration />
         <Analytics />
         <GoogleAnalytics gaId={process.env.GA_MEASUREMENT_ID || ""} />
       </body>

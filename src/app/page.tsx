@@ -1,5 +1,10 @@
 import NavbarWrapper from '@/components/NavbarWrapper';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import Hero from '@/components/Hero';
+import ProjectTypes from '@/components/ProjectTypes';
+import HowItWorks from '@/components/HowItWorks';
+import ProjectPricing from '@/components/ProjectPricing';
+import Branches from '@/components/Branches';
 import AboutSection from '@/components/AboutSection';
 import FeaturedProducts from '@/components/FeaturedProducts';
 import FeaturedGallery from '@/components/FeaturedGallery';
@@ -14,8 +19,12 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 export default function Home() {
   return (
     <>
+      <AnnouncementBar />
       <NavbarWrapper />
       <Hero />
+      <ProjectTypes />
+      <HowItWorks />
+      <ProjectPricing />
       <AboutSection />
       <FeaturedProducts />
       <FeaturedGallery />
@@ -24,6 +33,7 @@ export default function Home() {
       <FAQ />
       <Testimonials />
       <Contact />
+      <Branches />
       <Footer />
       <WhatsAppFloat />
     </>

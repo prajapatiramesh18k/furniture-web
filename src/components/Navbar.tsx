@@ -58,7 +58,6 @@ export default function Navbar() {
   const [userName, setUserName] = useState(() => getSessionAuth()?.name || '');
   const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean } | null>(() => getSessionAuth());
   const [accountOpen, setAccountOpen] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -74,9 +73,6 @@ export default function Navbar() {
     setMounted(true);
     setCartCount(getCartCount());
     setWishlistCount(getWishlistCount());
-    if (sessionStorage.getItem('bannerClosed') === 'true') {
-      setBannerVisible(false);
-    }
   }, [getCartCount, getWishlistCount]);
 
   // Listen for auth changes (login/logout) — auth state is already initialized from sessionStorage
@@ -160,24 +156,8 @@ export default function Navbar() {
     window.location.href = '/';
   };
 
-  const closeBanner = () => {
-    setBannerVisible(false);
-    sessionStorage.setItem('bannerClosed', 'true');
-  };
-
   return (
     <>
-      {mounted && bannerVisible && (
-        <div className="delivery-banner">
-          <div className="delivery-content">
-            <i className="fas fa-truck"></i>
-            <span>Free Delivery on Orders Above ₹5,000 | Pan-India Shipping Available</span>
-            <a href="tel:+919321812823"><i className="fas fa-phone"></i> Call Now</a>
-          </div>
-          <button className="banner-close" onClick={closeBanner}>&times;</button>
-        </div>
-      )}
-
       <header className="header">
         <Link href="/" className="logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -188,7 +168,7 @@ export default function Navbar() {
           </svg>
           <span className="logo-text">
             <span className="logo-main">ANANYA</span>
-            <span className="logo-sub">House of Furniture</span>
+            <span className="logo-sub">House of Furniture Pvt Ltd.</span>
           </span>
         </Link>
         <nav className={`navbar ${menuOpen ? 'active' : ''}`} id="navbar">

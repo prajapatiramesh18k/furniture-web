@@ -6,37 +6,37 @@ const sliders = [
   {
     id: 1,
     image: 'images/home-slide1.jpg',
-    heading: 'Complete 2BHK & 3BHK Interior Solutions',
+    heading: 'Complete Home Interior Solutions — 1BHK to 4BHK',
     tagline: 'Custom Furniture for Your Dream Home',
-    subtext: 'Modular Kitchens • Wardrobes • TV Units • Beds & More',
+    subtext: 'Modular Kitchens • Wardrobes • TV Units • Beds • Pooja Units & More',
   },
   {
     id: 2,
     image: 'images/home-slide2.jpg',
-    heading: 'Transform Your Space with Custom Furniture',
-    tagline: 'Free Design Consultation • Since 2012',
-    subtext: 'Pooja Units, TV Units, Wardrobes & More',
+    heading: 'Office, Shop & Commercial Interiors',
+    tagline: 'Custom Furniture for Every Business',
+    subtext: 'Workstations • Counters • Display Units • Storage • Complete Fit-outs',
   },
   {
     id: 3,
     image: 'images/home-slide3.jpg',
-    heading: 'Expert Furniture Solutions for Your Home',
-    tagline: 'Trusted by 500+ Happy Clients',
-    subtext: 'Custom Designs • Premium Quality • On-Time Delivery',
+    heading: 'Trusted by 2,500+ Families Since 2012',
+    tagline: 'Factory-Direct Custom Furniture',
+    subtext: 'In-house Manufacturing • Free Design • 5-Year Warranty',
   },
   {
     id: 4,
     image: 'images/home-slide4.jpg',
-    heading: 'Your Dream Home Starts Here',
+    heading: 'Your Dream Home, Designed & Built by Us',
     tagline: 'Bespoke Furniture • 14+ Years of Trust',
-    subtext: 'Living Room, Bedroom, Kitchen & Office',
+    subtext: 'Living Room • Bedroom • Kitchen • Office • Pooja Room',
   },
   {
     id: 5,
     image: 'images/home-slide5.jpg',
-    heading: 'Ready-Made Furniture Collection',
-    tagline: '14+ Years of Excellence • Since 2012',
-    subtext: 'Premium Furniture • Shop Now',
+    heading: 'Free Site Visit & 3D Design Consultation',
+    tagline: 'See Your Home Before We Build It',
+    subtext: 'Book a free consultation • No commitment required',
   },
 ];
 
@@ -110,11 +110,11 @@ function HeroSlider() {
                 <p className="hero-subtext">{slide.subtext}</p>
                 <div className="hero-cta-group">
                   <a href="/contact" className="hero-cta-primary">
-                    <span>Get Free Consultation</span>
-                    <i className="fas fa-phone"></i>
+                    <span>Get Free Quote</span>
+                    <i className="fas fa-paper-plane"></i>
                   </a>
-                  <a href="/products" className="hero-cta-secondary">
-                    <span>Shop Products</span>
+                  <a href="/projects" className="hero-cta-secondary">
+                    <span>View Our Work</span>
                     <i className="fas fa-arrow-right"></i>
                   </a>
                 </div>
