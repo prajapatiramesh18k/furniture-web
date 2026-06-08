@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const body = await req.json();
-    const { name, phone, email, projectType, message } = body;
+    const { name, phone, email, address, projectType, message } = body;
 
     if (!name || !phone || !email || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       name,
       phone,
       email,
+      address: address || '',
       projectType: projectType || 'not specified',
       message,
     });

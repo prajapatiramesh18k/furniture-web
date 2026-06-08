@@ -31,6 +31,7 @@ function setSessionAuth(user: { name: string; email: string; isAdmin: boolean } 
 const navigation = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
+  { label: 'Our Packages', href: '/projects' },
   { label: 'Services', href: '/services' },
   { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },

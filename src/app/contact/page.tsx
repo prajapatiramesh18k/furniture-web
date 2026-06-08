@@ -2,37 +2,41 @@
 import CloseButton from '@/components/CloseButton';
 import { useState, useEffect } from 'react';
 
-const contactInfo = {
-  phone: '+91-9321812823',
-  phone2: '+91-8318727813',
-  email: 'contact@ananyahouseoffurniture.com',
-  address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra, India - 400612',
-  mapLink: 'https://maps.app.goo.gl/3wAw79stEiGNyeWa9',
-  hours: 'Mon - Sat: 10:00 AM - 8:00 PM',
-};
-
 const projectTypes = [
-  'Living Room Furniture',
-  'Bedroom Furniture',
-  'Dining Room Furniture',
-  'Office Furniture',
-  'Outdoor Furniture',
-  'Pooja Unit',
+  '1 BHK',
+  '2 BHK',
+  '3 BHK',
+  '4 BHK / Villa',
+  'Office',
+  'Shop / Retail',
+  'Restaurant',
+  'Showroom',
   'Modular Kitchen',
+  'Pooja Unit',
   'Custom Furniture',
-  'Repair & Restoration',
   'Other',
 ];
 
 export default function ContactPage() {
-  useEffect(() => {
-    document.title = 'Ananya House of Furniture | Contact';
-  }, []);
-
-  const [form, setForm] = useState({ name: '', phone: '', email: '', projectType: '', message: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', projectType: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Send Us a Message | Ananya House of Furniture';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('type');
+      const branch = params.get('branch');
+      if (type) {
+        setForm((f) => ({ ...f, projectType: type }));
+      }
+      if (branch) {
+        setForm((f) => ({ ...f, message: `Interested in ${branch} branch. ` + f.message }));
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +51,7 @@ export default function ContactPage() {
           name: form.name,
           phone: form.phone,
           email: form.email,
+          address: form.address,
           projectType: form.projectType,
           message: form.message,
         }),
@@ -67,70 +72,10 @@ export default function ContactPage() {
     <div className="contact-page">
       <div className="contact-page-hero">
         <CloseButton href="/" />
-        <h1>Contact <span>Us</span></h1>
-        <p>Have a question or want to start a project? We would love to hear from you.</p>
       </div>
 
-      <div className="contact-page-layout">
-        {/* Left - Image + Info */}
-        <div className="contact-page-left">
-          <div className="contact-page-img-wrap">
-            <img src="/images/contact.png" alt="Contact Ananya House of Furniture" />
-            <div className="contact-page-img-overlay">
-              <div className="contact-overlay-content">
-                <h2>Ananya House of Furniture</h2>
-                <p>Crafting homes, one piece at a time since 2012.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="contact-page-info">
-            <div className="contact-info-item">
-              <div className="contact-info-icon">
-                <i className="fas fa-map-marker-alt"></i>
-              </div>
-              <div>
-                <h4>Visit Us</h4>
-                <p>{contactInfo.address}</p>
-                <a href={contactInfo.mapLink} target="_blank" rel="noopener noreferrer">Get Directions</a>
-              </div>
-            </div>
-
-            <div className="contact-info-item">
-              <div className="contact-info-icon">
-                <i className="fas fa-phone"></i>
-              </div>
-              <div>
-                <h4>Call Us</h4>
-                <p><a href={`tel:${contactInfo.phone}`}>{contactInfo.phone}</a></p>
-                <p><a href={`tel:${contactInfo.phone2}`}>{contactInfo.phone2}</a></p>
-              </div>
-            </div>
-
-            <div className="contact-info-item">
-              <div className="contact-info-icon">
-                <i className="fas fa-envelope"></i>
-              </div>
-              <div>
-                <h4>Email Us</h4>
-                <p><a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a></p>
-              </div>
-            </div>
-
-            <div className="contact-info-item">
-              <div className="contact-info-icon">
-                <i className="fas fa-clock"></i>
-              </div>
-              <div>
-                <h4>Working Hours</h4>
-                <p>{contactInfo.hours}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right - Form */}
-        <div className="contact-page-right">
+      <div className="contact-page-layout-simple">
+        <div className="contact-page-form-wrap-simple">
           {submitted ? (
             <div className="contact-success">
               <div className="contact-success-icon">
@@ -141,47 +86,45 @@ export default function ContactPage() {
               </div>
               <h2>Message Sent!</h2>
               <p>Thank you for reaching out. Our team will contact you within 24 hours.</p>
-              <button className="btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', projectType: '', message: '' }); }}>
+              <button className="btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', address: '', projectType: '', message: '' }); }}>
                 Send Another Message
               </button>
             </div>
           ) : (
-            <div className="contact-page-form-wrap">
-              <h2>Get in Touch</h2>
-              <p className="contact-form-subtitle">Fill out the form below and we will get back to you shortly.</p>
+            <>
+              <h1>Send Us a Message</h1>
+              <p className="contact-form-subtitle">Fill in the form below and we'll get back to you within 24 hours.</p>
 
               <form className="contact-page-form" onSubmit={handleSubmit}>
-                <div className="cpf-row">
-                  <div className="cpf-field">
-                    <label>Your Name</label>
-                    <input
-                      type="text"
-                      className="cpf-input"
-                      placeholder="e.g. Rahul Sharma"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="cpf-field">
-                    <label>Phone Number</label>
-                    <input
-                      type="tel"
-                      className="cpf-input"
-                      placeholder="e.g. +91 98765 43210"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="cpf-field">
+                  <input
+                    type="text"
+                    className="cpf-input"
+                    placeholder="Enter your name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
                 </div>
 
                 <div className="cpf-field">
-                  <label>Email Address</label>
+                  <input
+                    type="tel"
+                    className="cpf-input"
+                    placeholder="Enter 10-digit mobile number"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+
+                <div className="cpf-field">
                   <input
                     type="email"
                     className="cpf-input"
-                    placeholder="e.g. rahul@example.com"
+                    placeholder="Enter email address"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
@@ -189,16 +132,26 @@ export default function ContactPage() {
                 </div>
 
                 <div className="cpf-field">
-                  <label>What are you looking for?</label>
+                  <textarea
+                    className="cpf-textarea cpf-textarea-short"
+                    placeholder="Enter your address (site location for visit)"
+                    rows={2}
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  />
+                </div>
+
+                <div className="cpf-field">
+                  <label className="cpf-label">What are you looking for?</label>
                   <select
                     className="cpf-select"
                     value={form.projectType}
                     onChange={(e) => setForm({ ...form, projectType: e.target.value })}
                     required
                   >
-                    <option value="">Select a service...</option>
+                    <option value="">Select a project type...</option>
                     {projectTypes.map((type) => (
-                      <option key={type} value={type.toLowerCase().replace(/\s+/g, '-')}>
+                      <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
                         {type}
                       </option>
                     ))}
@@ -206,10 +159,9 @@ export default function ContactPage() {
                 </div>
 
                 <div className="cpf-field">
-                  <label>Your Message</label>
                   <textarea
                     className="cpf-textarea"
-                    placeholder="Tell us about your requirements, space dimensions, preferred materials, or any questions you have..."
+                    placeholder="Tell us about your requirements, space dimensions, preferred materials, or any questions you have…"
                     rows={5}
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
@@ -237,8 +189,12 @@ export default function ContactPage() {
                     </>
                   )}
                 </button>
+
+                <p className="cpf-security">
+                  <i className="fas fa-lock"></i> Your information is secure & confidential
+                </p>
               </form>
-            </div>
+            </>
           )}
         </div>
       </div>
