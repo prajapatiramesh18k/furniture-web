@@ -17,11 +17,17 @@ const projectTypes = [
   'Other',
 ];
 
+const branches = [
+  { id: 'mumbai', name: 'Mumbai (Head Office)' },
+  { id: 'ahmedabad', name: 'Ahmedabad' },
+];
+
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', projectType: '', message: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', branch: '', projectType: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = 'Send Us a Message | Ananya House of Furniture';
@@ -33,7 +39,7 @@ export default function ContactPage() {
         setForm((f) => ({ ...f, projectType: type }));
       }
       if (branch) {
-        setForm((f) => ({ ...f, message: `Interested in ${branch} branch. ` + f.message }));
+        setForm((f) => ({ ...f, branch }));
       }
     }
   }, []);
@@ -68,134 +74,287 @@ export default function ContactPage() {
     setSubmitting(false);
   };
 
+  const isActive = (field: string) => focused === field || form[field as keyof typeof form];
+
   return (
     <div className="contact-page">
       <div className="contact-page-hero">
         <CloseButton href="/" />
+        <h1>Contact <span>Us</span></h1>
+        <p>Ready to create your dream space? Send us a message and let’s bring your vision to life.</p>
       </div>
 
-      <div className="contact-page-layout-simple">
-        <div className="contact-page-form-wrap-simple">
-          {submitted ? (
-            <div className="contact-success">
-              <div className="contact-success-icon">
-                <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="26" cy="26" r="25" stroke="#a27341" strokeWidth="2"/>
-                  <path d="M14 27L22 35L38 19" stroke="#a27341" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+      <div className="contact-page-layout-animated">
+        {/* Decorative background */}
+        <div className="contact-bg-decor">
+          <div className="contact-bg-blob blob-1"></div>
+          <div className="contact-bg-blob blob-2"></div>
+        </div>
+
+        <div className="contact-page-grid">
+          {/* Left: Info card */}
+          <div className="contact-info-card anim-fade-right" style={{ animationDelay: '0.2s' }}>
+            <div className="info-card-pattern"></div>
+
+            <div className="info-hero">
+              <div className="info-hero-img">
+                <img src="/images/contact.png" alt="Ananya House of Furniture showroom" />
+                <div className="info-hero-overlay">
+                  <span className="info-hero-badge"><i className="fas fa-star"></i> Since 2012</span>
+                </div>
+                <div className="info-hero-text">
+                  <span className="info-hero-eyebrow">Ananya Furniture</span>
+                  <span className="info-hero-tagline">Crafted With Care</span>
+                </div>
               </div>
-              <h2>Message Sent!</h2>
-              <p>Thank you for reaching out. Our team will contact you within 24 hours.</p>
-              <button className="btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', address: '', projectType: '', message: '' }); }}>
-                Send Another Message
-              </button>
             </div>
-          ) : (
-            <>
-              <h1>Send Us a Message</h1>
-              <p className="contact-form-subtitle">Fill in the form below and we'll get back to you within 24 hours.</p>
 
-              <form className="contact-page-form" onSubmit={handleSubmit}>
-                <div className="cpf-field">
-                  <input
-                    type="text"
-                    className="cpf-input"
-                    placeholder="Enter your name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
+            <h2 className="info-card-title">Crafting Your Dream Home</h2>
+            <p className="info-card-text">From the first sketch to the final polish — we make custom furniture that fits your life.</p>
+
+            <div className="info-stats">
+              <div className="info-stat anim-fade-up" style={{ animationDelay: '0.3s' }}>
+                <span className="info-stat-num">5000+</span>
+                <span className="info-stat-label">Happy Homes</span>
+              </div>
+              <div className="info-stat anim-fade-up" style={{ animationDelay: '0.4s' }}>
+                <span className="info-stat-num">14+</span>
+                <span className="info-stat-label">Years</span>
+              </div>
+              <div className="info-stat anim-fade-up" style={{ animationDelay: '0.5s' }}>
+                <span className="info-stat-num">5★</span>
+                <span className="info-stat-label">Rated</span>
+              </div>
+              <div className="info-stat anim-fade-up" style={{ animationDelay: '0.6s' }}>
+                <span className="info-stat-num">24h</span>
+                <span className="info-stat-label">Response</span>
+              </div>
+            </div>
+
+            <div className="info-divider">
+              <span>Visit Our Branches</span>
+            </div>
+
+            <div className="info-branches">
+              <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer" className="info-branch anim-fade-up" style={{ animationDelay: '0.65s' }}>
+                <div className="info-branch-icon">
+                  <i className="fas fa-map-marker-alt"></i>
                 </div>
-
-                <div className="cpf-field">
-                  <input
-                    type="tel"
-                    className="cpf-input"
-                    placeholder="Enter 10-digit mobile number"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    pattern="[0-9]{10}"
-                    maxLength={10}
-                    required
-                  />
+                <div className="info-branch-text">
+                  <strong>Mumbai HQ</strong>
+                  <span>Khardipada, Diva-Shil Road</span>
                 </div>
-
-                <div className="cpf-field">
-                  <input
-                    type="email"
-                    className="cpf-input"
-                    placeholder="Enter email address"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
-                  />
+                <span className="info-branch-cta">Get directions <i className="fas fa-chevron-right"></i></span>
+              </a>
+              <a href="https://maps.google.com/?q=Navrangpura+Ahmedabad" target="_blank" rel="noopener noreferrer" className="info-branch anim-fade-up" style={{ animationDelay: '0.75s' }}>
+                <div className="info-branch-icon info-branch-icon-gold">
+                  <i className="fas fa-map-marker-alt"></i>
                 </div>
-
-                <div className="cpf-field">
-                  <textarea
-                    className="cpf-textarea cpf-textarea-short"
-                    placeholder="Enter your address (site location for visit)"
-                    rows={2}
-                    value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  />
+                <div className="info-branch-text">
+                  <strong>Ahmedabad</strong>
+                  <span>TRP Mall, Bopal</span>
                 </div>
+                <span className="info-branch-cta">Get directions <i className="fas fa-chevron-right"></i></span>
+              </a>
+            </div>
 
-                <div className="cpf-field">
-                  <label className="cpf-label">What are you looking for?</label>
-                  <select
-                    className="cpf-select"
-                    value={form.projectType}
-                    onChange={(e) => setForm({ ...form, projectType: e.target.value })}
-                    required
-                  >
-                    <option value="">Select a project type...</option>
-                    {projectTypes.map((type) => (
-                      <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+            <a href="tel:+919321812823" className="info-cta-phone anim-fade-up" style={{ animationDelay: '0.85s' }}>
+              <span className="info-cta-pulse"></span>
+              <i className="fas fa-phone"></i>
+              <div>
+                <span>Or call us now</span>
+                <strong>+91 93218 12823</strong>
+              </div>
+            </a>
+          </div>
+
+          {/* Right: Form Card */}
+          <div className="contact-form-card anim-fade-left" style={{ animationDelay: '0.2s' }}>
+            {submitted ? (
+              <div className="contact-success">
+                <div className="success-circle">
+                  <svg viewBox="0 0 52 52" className="success-svg">
+                    <circle className="success-circle-path" cx="26" cy="26" r="25" fill="none" stroke="#a27341" strokeWidth="2" />
+                    <path className="success-check" fill="none" stroke="#a27341" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" d="M14 27L22 35L38 19" />
+                  </svg>
                 </div>
-
-                <div className="cpf-field">
-                  <textarea
-                    className="cpf-textarea"
-                    placeholder="Tell us about your requirements, space dimensions, preferred materials, or any questions you have…"
-                    rows={5}
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    required
-                  />
-                </div>
-
-                {error && (
-                  <div className="cpf-error">
-                    <i className="fas fa-exclamation-circle"></i>
-                    Something went wrong. Please try again or contact us directly.
-                  </div>
-                )}
-
-                <button type="submit" className="cpf-submit" disabled={submitting}>
-                  {submitting ? (
-                    <>
-                      <span className="cpf-spinner"></span>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-paper-plane"></i>
-                      Send Message
-                    </>
-                  )}
+                <h2 className="success-title">Message Sent!</h2>
+                <p className="success-text">Thank you for reaching out. Our team will contact you within 24 hours.</p>
+                <button className="cpf-submit success-btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', address: '', branch: '', projectType: '', message: '' }); }}>
+                  <i className="fas fa-paper-plane"></i> Send Another Message
                 </button>
+              </div>
+            ) : (
+              <>
+                <div className="contact-form-header anim-fade-up" style={{ animationDelay: '0.05s' }}>
+                  <h1>Send Us a Message</h1>
+                  <p>Tell us about your project — our team will respond within 24 hours.</p>
+                </div>
 
-                <p className="cpf-security">
-                  <i className="fas fa-lock"></i> Your information is secure & confidential
-                </p>
-              </form>
-            </>
-          )}
+                <form className="contact-page-form" onSubmit={handleSubmit}>
+                  <div className="cpf-section-label anim-fade-up" style={{ animationDelay: '0.1s' }}>
+                    <span>Personal Details</span>
+                  </div>
+
+                  <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.15s' }}>
+                    <div className={`floating-field ${isActive('name') ? 'active' : ''}`}>
+                      <input
+                        type="text"
+                        className="cpf-input"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onFocus={() => setFocused('name')}
+                        onBlur={() => setFocused(null)}
+                        required
+                      />
+                      <label className="floating-label">Your Name</label>
+                    </div>
+                  </div>
+
+                  <div className="cpf-row">
+                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.22s' }}>
+                      <div className={`floating-field ${isActive('phone') ? 'active' : ''}`}>
+                        <input
+                          type="tel"
+                          className="cpf-input"
+                          value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          onFocus={() => setFocused('phone')}
+                          onBlur={() => setFocused(null)}
+                          pattern="[0-9]{10}"
+                          maxLength={10}
+                          required
+                        />
+                        <label className="floating-label">Mobile Number</label>
+                      </div>
+                    </div>
+
+                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.29s' }}>
+                      <div className={`floating-field ${isActive('email') ? 'active' : ''}`}>
+                        <input
+                          type="email"
+                          className="cpf-input"
+                          value={form.email}
+                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          onFocus={() => setFocused('email')}
+                          onBlur={() => setFocused(null)}
+                          required
+                        />
+                        <label className="floating-label">Email Address</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.36s' }}>
+                    <div className={`floating-field ${isActive('address') ? 'active' : ''}`}>
+                      <textarea
+                        className="cpf-input cpf-textarea-short"
+                        rows={2}
+                        value={form.address}
+                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                        onFocus={() => setFocused('address')}
+                        onBlur={() => setFocused(null)}
+                      />
+                      <label className="floating-label">Your Address <span className="cpf-optional">(site location for visit)</span></label>
+                    </div>
+                  </div>
+
+                  <div className="cpf-section-label anim-fade-up" style={{ animationDelay: '0.4s' }}>
+                    <span>Project Information</span>
+                  </div>
+
+                  <div className="cpf-row">
+                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.43s' }}>
+                      <div className={`floating-field ${isActive('branch') ? 'active' : ''}`}>
+                        <select
+                          className="cpf-input cpf-select"
+                          value={form.branch}
+                          onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                          onFocus={() => setFocused('branch')}
+                          onBlur={() => setFocused(null)}
+                        >
+                          <option value=""></option>
+                          {branches.map((b) => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                        <label className="floating-label">Preferred Branch</label>
+                      </div>
+                    </div>
+
+                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.5s' }}>
+                      <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
+                        <select
+                          className="cpf-input cpf-select"
+                          value={form.projectType}
+                          onChange={(e) => setForm({ ...form, projectType: e.target.value })}
+                          onFocus={() => setFocused('projectType')}
+                          onBlur={() => setFocused(null)}
+                          required
+                        >
+                          <option value=""></option>
+                          {projectTypes.map((type) => (
+                            <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="floating-label">Project Type</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="cpf-section-label anim-fade-up" style={{ animationDelay: '0.54s' }}>
+                    <span>Your Message</span>
+                  </div>
+
+                  <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.57s' }}>
+                    <div className={`floating-field ${isActive('message') ? 'active' : ''}`}>
+                      <textarea
+                        className="cpf-input cpf-textarea"
+                        rows={4}
+                        value={form.message}
+                        onChange={(e) => setForm({ ...form, message: e.target.value })}
+                        onFocus={() => setFocused('message')}
+                        onBlur={() => setFocused(null)}
+                        required
+                      />
+                      <label className="floating-label floating-label-textarea">Tell us about your requirements…</label>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="cpf-error anim-fade-up">
+                      <i className="fas fa-exclamation-circle"></i>
+                      Something went wrong. Please try again or contact us directly.
+                    </div>
+                  )}
+
+                  <button type="submit" className="cpf-submit anim-fade-up" style={{ animationDelay: '0.64s' }} disabled={submitting}>
+                    <span className="submit-content">
+                      {submitting ? (
+                        <>
+                          <span className="cpf-spinner"></span>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <span>Send Message</span>
+                          <i className="fas fa-arrow-right submit-arrow"></i>
+                        </>
+                      )}
+                    </span>
+                  </button>
+
+                  <div className="cpf-footer anim-fade-up" style={{ animationDelay: '0.71s' }}>
+                    <span className="cpf-security">
+                      <i className="fas fa-lock"></i> Your information is secure & confidential
+                    </span>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

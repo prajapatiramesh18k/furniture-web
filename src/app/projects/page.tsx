@@ -5,6 +5,7 @@ import HowItWorks from '@/components/HowItWorks';
 import ProjectPricing from '@/components/ProjectPricing';
 import Footer from '@/components/Footer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
+import CloseButton from '@/components/CloseButton';
 
 export const metadata = {
   title: 'Custom Furniture Projects | Ananya House of Furniture',
@@ -14,8 +15,12 @@ export const metadata = {
 export default function ProjectsPage() {
   return (
     <>
-      <AnnouncementBar />
       <NavbarWrapper />
+      <div className="projects-page-hero">
+        <CloseButton href="/" />
+        <h1>Our <span>Packages</span></h1>
+        <p>Transparent pricing for every space — from compact 1BHKs to luxury villas and full office fit-outs.</p>
+      </div>
       <ProjectTypes />
       <HowItWorks />
       <ProjectPricing />
