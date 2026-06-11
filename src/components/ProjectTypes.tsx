@@ -9,6 +9,13 @@ const projectTypes = [
     woodenPrice: '₹3L',
     pvcPrice: '₹2.5L',
     popular: false,
+    covers: [
+      'Modular kitchen with cabinets & chimney',
+      '1 wardrobe with loft',
+      'Shoe rack & TV unit',
+      'Bed with storage & side tables',
+      'Bathroom vanity & mirror',
+    ],
   },
   {
     id: '2bhk',
@@ -18,6 +25,14 @@ const projectTypes = [
     woodenPrice: '₹5L',
     pvcPrice: '₹4L',
     popular: true,
+    covers: [
+      'Modular kitchen + chimney + hob',
+      '2 wardrobes with lofts',
+      'Shoe rack, TV unit, crockery unit',
+      '2 beds with storage & side tables',
+      'Dining table (4-seater)',
+      '2 bathroom vanities & mirrors',
+    ],
   },
   {
     id: '3bhk',
@@ -27,6 +42,15 @@ const projectTypes = [
     woodenPrice: '₹8L',
     pvcPrice: '₹6.5L',
     popular: false,
+    covers: [
+      'Premium modular kitchen + island',
+      '3 wardrobes with lofts & dressing',
+      'Shoe rack, TV unit, bar cabinet',
+      '3 beds (king/queen) with storage',
+      'Dining table (6-seater) + crockery',
+      'Study unit / work-from-home desk',
+      '3 bathroom vanities & mirrors',
+    ],
   },
   {
     id: '4bhk',
@@ -36,6 +60,15 @@ const projectTypes = [
     woodenPrice: '₹12.5L',
     pvcPrice: '₹10L',
     popular: false,
+    covers: [
+      'Luxury modular kitchen + island + pantry',
+      '4 wardrobes with walk-in dressing',
+      'Shoe rack, TV units, bar + wine cellar',
+      '4 beds (king) with luxury headboards',
+      '8-seater dining + crockery + server',
+      '2 study units + library shelving',
+      '4 bathroom vanities',
+    ],
   },
   {
     id: 'office',
@@ -45,6 +78,15 @@ const projectTypes = [
     woodenPrice: '₹4L',
     pvcPrice: '₹3.3L',
     popular: false,
+    covers: [
+      'Reception counter + logo wall',
+      'Workstations with partitions',
+      'Manager cabins with storage',
+      'Conference / meeting room table',
+      'Pantry / break-out kitchenette',
+      'Server room rack',
+      'Storage cabinets & lockers',
+    ],
   },
   {
     id: 'shop',
@@ -54,6 +96,14 @@ const projectTypes = [
     woodenPrice: '₹2.5L',
     pvcPrice: '₹2.1L',
     popular: false,
+    covers: [
+      'Billing / POS counter',
+      'Wall display shelves & racks',
+      'Center island display unit',
+      'Trial room partition',
+      'Storage / stock room shelving',
+      'Signage board & branding wall',
+    ],
   },
   {
     id: 'restaurant',
@@ -63,6 +113,14 @@ const projectTypes = [
     woodenPrice: '₹5.5L',
     pvcPrice: '₹4.5L',
     popular: false,
+    covers: [
+      'Reception & hostess counter',
+      'Dining seating (booths + chairs)',
+      'Bar counter with back bar display',
+      'Wash area & service station',
+      'Kitchen trolleys & shelves',
+      'Washroom partitions & vanities',
+    ],
   },
   {
     id: 'showroom',
@@ -72,6 +130,14 @@ const projectTypes = [
     woodenPrice: '₹4.5L',
     pvcPrice: '₹3.7L',
     popular: false,
+    covers: [
+      'Entrance display & welcome zone',
+      'Brand wall + feature display',
+      'Product display racks / podiums',
+      'Reception & consultation area',
+      'Fitting room / demo space',
+      'Storage / back-office shelving',
+    ],
   },
 ];
 
@@ -90,6 +156,20 @@ export default function ProjectTypes() {
             className={`project-type-card ${type.popular ? 'popular' : ''}`}
           >
             {type.popular && <span className="project-type-popular">Most Popular</span>}
+
+            <div className="project-type-tooltip">
+              <div className="project-type-tooltip-header">
+                <i className="fas fa-list-check"></i> What's included
+              </div>
+              <ul>
+                {type.covers.map((item, i) => (
+                  <li key={i}>
+                    <i className="fas fa-check"></i> {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             <div className="project-type-icon">
               <i className={`fas ${type.icon}`}></i>
             </div>

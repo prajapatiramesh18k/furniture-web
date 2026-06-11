@@ -3134,6 +3134,7 @@ input, textarea, select {
     margin: 8px 0;
     font-size: 15px;
     text-decoration: none;
+    text-transform: none;
     transition: color 0.3s ease;
 }
 
@@ -11111,9 +11112,9 @@ input, textarea, select {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 2rem;
-  max-width: 1320px;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 3rem;
+  max-width: 1550px;
   margin: 0 auto;
   align-items: stretch;
 }
@@ -11128,7 +11129,7 @@ input, textarea, select {
   position: relative;
   background: #fff;
   border-radius: 1.4rem;
-  padding: 1.4rem 2rem 1.5rem;
+  padding: 2.4rem 3rem 2.5rem;
   box-shadow:
     0 4px 6px rgba(44, 36, 32, 0.04),
     0 20px 50px rgba(44, 36, 32, 0.08);
@@ -11243,10 +11244,10 @@ input, textarea, select {
 
 .floating-field .cpf-input {
   width: 100%;
-  padding: 0.55rem 0.95rem 0.3rem;
+  padding: 1rem 1.2rem 0.5rem;
   border: 1.5px solid #e8e0d2;
   border-radius: 10px;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-family: inherit;
   color: #1f1812;
   background: #fbfaf7;
@@ -11348,14 +11349,14 @@ input, textarea, select {
 .cpf-textarea-short {
   resize: vertical;
   min-height: auto;
-  padding-top: 1.2rem !important;
+  padding-top: 1.8rem !important;
 }
 
 .cpf-textarea {
   resize: vertical;
-  min-height: 3rem;
+  min-height: 5.5rem;
   line-height: 1.5;
-  padding-top: 1.2rem !important;
+  padding-top: 1.8rem !important;
 }
 
 .cpf-select {
@@ -11521,7 +11522,7 @@ input, textarea, select {
 
 .info-hero {
   position: relative;
-  height: 180px;
+  height: 220px;
   overflow: hidden;
 }
 
@@ -15866,7 +15867,7 @@ input, textarea, select {
 .projects-page-hero {
   position: relative;
   text-align: center;
-  padding: 2rem 2rem 2.5rem;
+  padding: 2rem 2rem 2rem;
   background: #2c2420;
   color: #fff;
 }

@@ -11,7 +11,7 @@ const quickLinks = [
 
 const contactInfo = {
   phone: '+91-9321812823 , +91-8318727813',
-  email: 'contact@ananyahouseoffurniture.com',
+  email: 'ananyahouseoffurniture@gmail.com',
   address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra, India -[400612]',
   addressLink: 'https://maps.app.goo.gl/3wAw79stEiGNyeWa9',
 };
