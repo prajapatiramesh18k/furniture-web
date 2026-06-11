@@ -408,6 +408,15 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedI
                 <i className="fas fa-chevron-right account-menu-arrow"></i>
               </button>
             )}
+            {user.isAdmin && (
+              <button className="account-menu-item" onClick={() => navigateTo('/quotation-maker')}>
+                <div className="account-menu-icon">
+                  <i className="fas fa-file-invoice"></i>
+                </div>
+                <span>Quotation Maker</span>
+                <i className="fas fa-chevron-right account-menu-arrow"></i>
+              </button>
+            )}
             <button className="account-menu-item" onClick={() => navigateTo('/orders')}>
               <div className="account-menu-icon">
                 <i className="fas fa-box"></i>
