@@ -155,11 +155,10 @@ export default function QuotationMakerPage() {
     if (!target) return;
     setDownloading(true);
     try {
-      const [{ default: html2canvas }, jspdfMod] = await Promise.all([
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
-      const jsPDF = (jspdfMod as unknown as { jsPDF: new (opts: object) => { internal: { pageSize: { getWidth: () => number; getHeight: () => number } }; addImage: (...args: unknown[]) => void; addPage: () => void; save: (name: string) => void } }).jsPDF;
       const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
