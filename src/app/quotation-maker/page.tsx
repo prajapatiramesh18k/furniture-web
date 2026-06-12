@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 
-type LineItem = { id: number; name: string; qty: number; rate: number };
+type LineItem = { id: number; name: string; height: number; width: number; rate: number };
 
 const initialCustomer = {
   name: '',
@@ -16,7 +16,7 @@ const initialCustomer = {
 
 const initialProject = {
   type: '',
-  quoteNo: 'Q-' + Date.now().toString().slice(-6),
+  quoteNo: 'Q-000001',
   date: new Date().toISOString().split('T')[0],
   validTill: (() => {
     const d = new Date();
@@ -25,7 +25,7 @@ const initialProject = {
   })(),
 };
 
-const initialItems: LineItem[] = [{ id: 1, name: '', qty: 1, rate: 0 }];
+const initialItems: LineItem[] = [{ id: 1, name: '', height: 0, width: 0, rate: 0 }];
 
 const branches = ['Mumbai (Head Office)', 'Ahmedabad'];
 const projectTypes = [
@@ -86,7 +86,7 @@ export default function QuotationMakerPage() {
   const [project, setProject] = useState(initialProject);
   const [items, setItems] = useState<LineItem[]>(initialItems);
   const [notes, setNotes] = useState(
-    '50% advance with order, balance before delivery. Quotation valid for 15 days from date of issue. Materials and finishes as per sample approved at our showroom.'
+    '50% advance with order, balance before delivery.\nQuotation valid for 15 days from date of issue.\nMaterials and finishes as per sample approved at our showroom.'
   );
   const [includeGst, setIncludeGst] = useState(true);
   const [focused, setFocused] = useState<string | null>(null);
@@ -104,6 +104,22 @@ export default function QuotationMakerPage() {
       setAuthorized(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (authorized !== true) return;
+    let cancelled = false;
+    fetch('/api/quotation-counter')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.quoteNo) {
+          setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [authorized]);
 
   if (authorized === null) {
     return <div style={{ minHeight: '60vh' }} />;
@@ -129,12 +145,19 @@ export default function QuotationMakerPage() {
     );
   }
 
-  const subtotal = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+  const subtotal = items.reduce(
+    (s, i) =>
+      s +
+      (Number(i.height) || 0) *
+        (Number(i.width) || 0) *
+        (Number(i.rate) || 0),
+    0
+  );
   const gst = includeGst ? subtotal * 0.18 : 0;
   const total = subtotal + gst;
 
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: '', qty: 1, rate: 0 }]);
+    setItems([...items, { id: Date.now(), name: '', height: 0, width: 0, rate: 0 }]);
   };
 
   const updateItem = (id: number, field: keyof LineItem, value: string | number) => {
@@ -201,14 +224,17 @@ export default function QuotationMakerPage() {
   const handleReset = () => {
     if (window.confirm('Reset all fields? This cannot be undone.')) {
       setCustomer(initialCustomer);
-      setProject({
-        ...initialProject,
-        quoteNo: 'Q-' + Date.now().toString().slice(-6),
-      });
+      setProject({ ...initialProject });
       setItems(initialItems);
       setNotes(
         '50% advance with order, balance before delivery. Quotation valid for 15 days from date of issue.'
       );
+      fetch('/api/quotation-counter')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.quoteNo) setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
+        })
+        .catch(() => {});
     }
   };
 
@@ -361,8 +387,9 @@ export default function QuotationMakerPage() {
             <div className="quotation-items">
               <div className="quotation-items-header">
                 <span>Item Description</span>
-                <span>Qty</span>
-                <span>Rate (₹)</span>
+                <span>Height (ft)</span>
+                <span>Width (ft)</span>
+                <span>Rate (₹/sqft)</span>
                 <span>Amount</span>
                 <span></span>
               </div>
@@ -378,19 +405,32 @@ export default function QuotationMakerPage() {
                   <input
                     type="number"
                     min={0}
+                    step="0.01"
                     className="quotation-item-qty"
-                    value={it.qty}
-                    onChange={(e) => updateItem(it.id, 'qty', Number(e.target.value) || 0)}
+                    value={it.height || ''}
+                    onChange={(e) => updateItem(it.id, 'height', Number(e.target.value) || 0)}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="quotation-item-qty"
+                    value={it.width || ''}
+                    onChange={(e) => updateItem(it.id, 'width', Number(e.target.value) || 0)}
                   />
                   <input
                     type="number"
                     min={0}
                     className="quotation-item-rate"
-                    value={it.rate}
+                    value={it.rate || ''}
                     onChange={(e) => updateItem(it.id, 'rate', Number(e.target.value) || 0)}
                   />
                   <span className="quotation-item-amount">
-                    {formatINR((Number(it.qty) || 0) * (Number(it.rate) || 0))}
+                    {formatINR(
+                      (Number(it.height) || 0) *
+                        (Number(it.width) || 0) *
+                        (Number(it.rate) || 0)
+                    )}
                   </span>
                   <button
                     type="button"
@@ -488,21 +528,29 @@ export default function QuotationMakerPage() {
               <tr>
                 <th style={{ width: '5%' }}>#</th>
                 <th>Item Description</th>
-                <th style={{ width: '10%' }}>Qty</th>
-                <th style={{ width: '15%' }}>Rate</th>
+                <th style={{ width: '10%' }}>H × W (ft)</th>
+                <th style={{ width: '10%' }}>Sqft</th>
+                <th style={{ width: '13%' }}>Rate (₹/sqft)</th>
                 <th style={{ width: '18%' }}>Amount</th>
               </tr>
             </thead>
             <tbody>
-              {items.filter((it) => it.name.trim() || it.rate > 0).map((it, idx) => (
-                <tr key={it.id}>
-                  <td>{idx + 1}</td>
-                  <td>{it.name || '—'}</td>
-                  <td>{it.qty}</td>
-                  <td>{formatINR(it.rate)}</td>
-                  <td>{formatINR((Number(it.qty) || 0) * (Number(it.rate) || 0))}</td>
-                </tr>
-              ))}
+              {items.filter((it) => it.name.trim() || it.rate > 0 || it.height > 0 || it.width > 0).map((it, idx) => {
+                const sqft = (Number(it.height) || 0) * (Number(it.width) || 0);
+                const amount = sqft * (Number(it.rate) || 0);
+                return (
+                  <tr key={it.id}>
+                    <td>{idx + 1}</td>
+                    <td>{it.name || '—'}</td>
+                    <td>
+                      {Number(it.height) || 0} × {Number(it.width) || 0}
+                    </td>
+                    <td>{sqft.toLocaleString('en-IN')}</td>
+                    <td>{formatINR(it.rate)}</td>
+                    <td>{formatINR(amount)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
