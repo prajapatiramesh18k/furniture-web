@@ -4,7 +4,38 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 
-type LineItem = { id: number; name: string; material: string; height: number; width: number; rate: number };
+type LineItem = { id: number; name: string; material: string; height: number; width: number; quantity: number; rate: number };
+
+const lineAmount = (item: Pick<LineItem, 'height' | 'width' | 'quantity' | 'rate'>) => {
+  const height = Number(item.height) || 0;
+  const width = Number(item.width) || 0;
+  const qty = Number(item.quantity) || 0;
+  const rate = Number(item.rate) || 0;
+  if (height > 0 && width > 0) {
+    return height * width * rate * qty;
+  }
+  return rate * qty;
+};
+
+const hasDimensions = (item: Pick<LineItem, 'height' | 'width'>) => {
+  const height = Number(item.height) || 0;
+  const width = Number(item.width) || 0;
+  return height > 0 && width > 0;
+};
+
+const normalizeQtyText = (text: string) => {
+  const digits = text.replace(/\D/g, '');
+  if (!digits || Number(digits) < 1) return { text: '1', qty: 1 };
+  return { text: digits, qty: Number(digits) };
+};
+
+const defaultTerms = [
+  '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
+  'This quotation is valid for 30 days from the date of issue.',
+  'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
+  'Materials and finishes will be provided as specified in this quotation and as mutually agreed before execution of the work.',
+  'Any additional work or changes requested after approval of the quotation will be charged separately.',
+].join('\n');
 
 const materialOptions = [
   '',
@@ -139,10 +170,8 @@ const standardInclusions = [
   'Soft-close hinges (Hettich / Ebco) on all doors and drawers',
   'Premium-quality hardware, handles, channels, screws, and fittings',
   'High-quality laminate finish as per selected design',
-  'Standard internal shelves and hanging provisions',
   'Professional installation and on-site fitting',
   'Free site measurement and consultation',
-  'Basic customization as per site dimensions',
   'Thorough quality check before handover',
   'Site cleaning after installation',
   '1-year workmanship warranty on all furniture',
@@ -167,16 +196,15 @@ const initialProject = {
   })(),
 };
 
+type BranchContact = { name: string; phone: string };
 type BranchInfo = {
   key: string;
   label: string;
   short: string;
   address: string;
-  phones: string[];
+  contacts: BranchContact[];
   email: string;
   website: string;
-  contactPerson: string;
-  contactPhone: string;
   established: string;
 };
 
@@ -186,11 +214,12 @@ const branches: BranchInfo[] = [
     label: 'Mumbai (Head Office)',
     short: 'Mumbai',
     address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra - 400612',
-    phones: ['+91 93218 12823'],
+    contacts: [
+      { name: 'Mahesh Prajapati', phone: '+91 83187 27813' },
+      { name: 'Ramesh Prajapati', phone: '+91 93218 12823' },
+    ],
     email: 'ananyahouseoffurniture@gmail.com',
     website: 'www.ananyahouseoffurnite.in',
-    contactPerson: 'Mahesh Prajapati',
-    contactPhone: '+91 83187 27813',
     established: '2012',
   },
   {
@@ -198,11 +227,12 @@ const branches: BranchInfo[] = [
     label: 'Ahmedabad',
     short: 'Ahmedabad',
     address: 'West Court, 2nd Floor, TRP Mall, Bopal, Ahmedabad, Gujarat - 380059',
-    phones: ['+91 93218 12823'],
+    contacts: [
+      { name: 'Dhruvil Patel', phone: '+91 93169 92909' },
+      { name: 'Ramesh Prajapati', phone: '+91 93218 12823' },
+    ],
     email: 'ananyahouseoffurniture@gmail.com',
     website: 'www.ananyahouseoffurnite.in',
-    contactPerson: 'Dhruvil Patel',
-    contactPhone: '+91 93169 92909',
     established: '2026',
   },
 ];
@@ -273,12 +303,11 @@ export default function QuotationMakerPage() {
     material: '',
     height: 0,
     width: 0,
+    quantity: 1,
     rate: 0,
   });
   const [inclusionsText, setInclusionsText] = useState<string>('');
-  const [notes, setNotes] = useState(
-    '50% advance with order, balance before delivery.\nQuotation valid for 15 days from date of issue.\nMaterials and finishes as per sample approved at our showroom.'
-  );
+  const [notes, setNotes] = useState(defaultTerms);
   const [includeGst, setIncludeGst] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -286,6 +315,8 @@ export default function QuotationMakerPage() {
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
   const [activeVariant, setActiveVariant] = useState<'pvc' | 'plywood' | null>(null);
   const [activePresetLabel, setActivePresetLabel] = useState<string | null>(null);
+  const [draftQtyText, setDraftQtyText] = useState('1');
+  const [listQtyTexts, setListQtyTexts] = useState<Record<number, string>>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -301,14 +332,32 @@ export default function QuotationMakerPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (!cancelled) setLogoSrc('/images/logo-circle.svg');
+    const toDataUrl = (url: string): Promise<string> =>
+      fetch(url)
+        .then((r) => r.blob())
+        .then(
+          (blob) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            })
+        );
+    const tryLoad = async (primary: string, fallback: string) => {
+      try {
+        const dataUrl = await toDataUrl(primary);
+        if (!cancelled) setLogoSrc(dataUrl);
+      } catch {
+        try {
+          const dataUrl = await toDataUrl(fallback);
+          if (!cancelled) setLogoSrc(dataUrl);
+        } catch {
+          if (!cancelled) setLogoSrc(fallback);
+        }
+      }
     };
-    img.onerror = () => {
-      if (!cancelled) setLogoSrc(null);
-    };
-    img.src = '/images/logo-circle.svg';
+    tryLoad('/images/companylogo-with-bg.png', '/images/company-logo.png');
     return () => {
       cancelled = true;
     };
@@ -360,29 +409,26 @@ export default function QuotationMakerPage() {
     );
   }
 
-  const subtotal = items.reduce(
-    (s, i) =>
-      s +
-      (Number(i.height) || 0) *
-        (Number(i.width) || 0) *
-        (Number(i.rate) || 0),
-    0
-  );
+  const subtotal = items.reduce((s, i) => s + lineAmount(i), 0);
   const gst = includeGst ? subtotal * 0.18 : 0;
   const total = subtotal + gst;
 
   const addItem = () => {
     if (!draft.name.trim()) return;
-    const newItem: LineItem = { ...draft, id: Date.now() };
+    const qty = draft.quantity > 0 ? draft.quantity : 1;
+    const newItem: LineItem = { ...draft, quantity: qty, id: Date.now() };
     setItems([...items, newItem]);
-    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, rate: 0 });
+    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, quantity: 1, rate: 0 });
+    setDraftQtyText('1');
     setEditingId(null);
   };
 
   const startEdit = (id: number) => {
     const target = items.find((it) => it.id === id);
     if (!target) return;
-    setDraft({ ...target });
+    const qty = target.quantity || 1;
+    setDraft({ ...target, quantity: qty });
+    setDraftQtyText(String(qty));
     setEditingId(id);
     setTimeout(() => {
       const el = document.getElementById('line-items-form-anchor');
@@ -392,7 +438,8 @@ export default function QuotationMakerPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, rate: 0 });
+    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, quantity: 1, rate: 0 });
+    setDraftQtyText('1');
   };
 
   const updateDraft = (field: keyof LineItem, value: string | number) => {
@@ -409,6 +456,11 @@ export default function QuotationMakerPage() {
 
   const removeItem = (id: number) => {
     setItems(items.filter((it) => it.id !== id));
+    setListQtyTexts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     if (editingId === id) cancelEdit();
   };
 
@@ -423,9 +475,11 @@ export default function QuotationMakerPage() {
       material: override ? override.material : it.material,
       height: it.height,
       width: it.width,
+      quantity: 1,
       rate: override ? override.rate : it.rate,
     }));
     setItems(newItems);
+    setListQtyTexts({});
     setProject((p) => ({ ...p, type: preset.projectType }));
     setActiveVariant(variant);
     setActivePresetLabel(variant ? preset.label : null);
@@ -454,15 +508,31 @@ export default function QuotationMakerPage() {
         import('html2canvas'),
         import('jspdf'),
       ]);
+      const logoImg = target.querySelector('.qp-logo-img-wrap img') as HTMLImageElement | null;
+      if (logoImg && logoSrc && !logoImg.src.startsWith('data:')) {
+        logoImg.src = logoSrc;
+      }
+      await Promise.all(
+        Array.from(target.querySelectorAll('img')).map(
+          (img) =>
+            img.complete && img.naturalWidth > 0
+              ? Promise.resolve()
+              : new Promise<void>((resolve) => {
+                  const onDone = () => resolve();
+                  img.addEventListener('load', onDone, { once: true });
+                  img.addEventListener('error', onDone, { once: true });
+                  setTimeout(onDone, 5000);
+                })
+        )
+      );
       const canvas = await html2canvas(target, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         windowWidth: target.scrollWidth,
         windowHeight: target.scrollHeight,
       });
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -474,12 +544,32 @@ export default function QuotationMakerPage() {
       const margin = 4;
       const maxW = pageWidth - margin * 2;
       const maxH = pageHeight - margin * 2;
-      const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+      const ratio = maxW / canvas.width;
       const renderW = canvas.width * ratio;
-      const renderH = canvas.height * ratio;
-      const offsetX = (pageWidth - renderW) / 2;
-      const offsetY = margin;
-      pdf.addImage(imgData, 'PNG', offsetX, offsetY, renderW, renderH, undefined, 'FAST');
+      const fullRenderH = canvas.height * ratio;
+
+      const totalPages = Math.ceil(fullRenderH / maxH);
+      for (let i = 0; i < totalPages; i++) {
+        const srcYCanvas = (i * maxH) / ratio;
+        const srcHCanvas = Math.min(maxH / ratio, canvas.height - srcYCanvas);
+        if (srcHCanvas <= 0) break;
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = Math.ceil(srcHCanvas);
+        const sctx = sliceCanvas.getContext('2d');
+        if (!sctx) break;
+        sctx.fillStyle = '#ffffff';
+        sctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+        sctx.drawImage(
+          canvas as unknown as HTMLCanvasElement,
+          0, srcYCanvas, canvas.width, srcHCanvas,
+          0, 0, canvas.width, srcHCanvas
+        );
+        const sliceImg = sliceCanvas.toDataURL('image/png');
+        const sliceRenderH = srcHCanvas * ratio;
+        if (i > 0) pdf.addPage();
+        pdf.addImage(sliceImg, 'PNG', margin, margin, renderW, sliceRenderH, undefined, 'FAST');
+      }
       const safeQuote = (project.quoteNo || 'quotation').replace(/[^\w-]/g, '_');
       pdf.save(`${safeQuote}.pdf`);
     } catch (err) {
@@ -497,9 +587,7 @@ export default function QuotationMakerPage() {
       setProject({ ...initialProject });
       setItems([]);
       setInclusionsText('');
-      setNotes(
-        '50% advance with order, balance before delivery. Quotation valid for 15 days from date of issue.'
-      );
+      setNotes(defaultTerms);
       fetch('/api/quotation-counter')
         .then((r) => r.json())
         .then((data) => {
@@ -688,6 +776,7 @@ export default function QuotationMakerPage() {
                 <span>Item Description</span>
                 <span>Height (ft)</span>
                 <span>Width (ft)</span>
+                <span>Qty</span>
                 <span>Rate (₹/sqft)</span>
                 <span>Amount</span>
                 <span></span>
@@ -735,6 +824,22 @@ export default function QuotationMakerPage() {
                     onChange={(e) => updateDraft('width', Number(e.target.value) || 0)}
                   />
                   <input
+                    type="text"
+                    inputMode="numeric"
+                    className="quotation-item-qty"
+                    value={draftQtyText}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '');
+                      setDraftQtyText(v);
+                      updateDraft('quantity', v === '' ? 0 : Number(v));
+                    }}
+                    onBlur={() => {
+                      const { text, qty } = normalizeQtyText(draftQtyText);
+                      setDraftQtyText(text);
+                      updateDraft('quantity', qty);
+                    }}
+                  />
+                  <input
                     type="number"
                     min={0}
                     className="quotation-item-rate"
@@ -742,11 +847,7 @@ export default function QuotationMakerPage() {
                     onChange={(e) => updateDraft('rate', Number(e.target.value) || 0)}
                   />
                   <span className="quotation-item-amount">
-                    {formatINR(
-                      (Number(draft.height) || 0) *
-                        (Number(draft.width) || 0) *
-                        (Number(draft.rate) || 0)
-                    )}
+                    {formatINR(lineAmount(draft))}
                   </span>
                   <span></span>
                 </div>
@@ -815,6 +916,7 @@ export default function QuotationMakerPage() {
                   <span>Material</span>
                   <span>Height (ft)</span>
                   <span>Width (ft)</span>
+                  <span>Qty</span>
                   <span>Rate (₹/sqft)</span>
                   <span>Amount</span>
                   <span>Update</span>
@@ -823,7 +925,7 @@ export default function QuotationMakerPage() {
                 {items
                   .filter((it) => it.name.trim() !== '')
                   .map((it) => {
-                    const amount = (Number(it.height) || 0) * (Number(it.width) || 0) * (Number(it.rate) || 0);
+                    const amount = lineAmount(it);
                     return (
                       <div className="quotation-items-list-row" key={it.id}>
                         <div className="quotation-items-list-name-cell">
@@ -838,6 +940,18 @@ export default function QuotationMakerPage() {
                         </div>
                         <div className="quotation-items-list-num">{it.height || 0}</div>
                         <div className="quotation-items-list-num">{it.width || 0}</div>
+                        <div className="quotation-items-list-num">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="quotation-items-list-qty-input"
+                            value={it.quantity || 1}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^\d]/g, '');
+                              updateItem(it.id, 'quantity', raw === '' ? 1 : Math.max(1, parseInt(raw, 10)));
+                            }}
+                          />
+                        </div>
                         <div className="quotation-items-list-num">{formatINR(Number(it.rate) || 0)}</div>
                         <div className="quotation-items-list-num quotation-items-list-amt">{formatINR(amount)}</div>
                         <div className="quotation-items-list-action-cell">
@@ -977,22 +1091,23 @@ export default function QuotationMakerPage() {
                   {logoSrc ? (
                     <img src={logoSrc} alt="Ananya" />
                   ) : (
-                    <div className="qp-logo-fallback">A</div>
+                    <div className="qp-logo-fallback">AHF</div>
                   )}
                 </div>
-                <h2>Ananya House of Furniture Pvt Ltd.</h2>
+                <h2>Ananya House of Furniture.</h2>
               </div>
               <h3 className="qp-branch-title">{getBranch(customer.branch).label}</h3>
               <p className="qp-branch-address">
                 <i className="fas fa-map-marker-alt"></i> {getBranch(customer.branch).address}
               </p>
-              <p className="qp-branch-contact">
-                <i className="fas fa-user"></i> {getBranch(customer.branch).contactPerson}
-                <span className="qp-branch-phone"> · {getBranch(customer.branch).contactPhone}</span>
-              </p>
-              <p className="qp-branch-phones">
-                <i className="fas fa-phone"></i> {getBranch(customer.branch).phones.join(' | ')}
-              </p>
+              <div className="qp-branch-contact">
+                {getBranch(customer.branch).contacts.map((c, i) => (
+                  <p key={`${c.name}-${i}`} style={{ margin: '2px 0' }}>
+                    <i className="fas fa-user"></i> {c.name}
+                    <span className="qp-branch-phone"> · {c.phone}</span>
+                  </p>
+                ))}
+              </div>
               <p className="qp-branch-email">
                 <i className="fas fa-envelope"></i> <span className="qp-lowercase">{getBranch(customer.branch).email}</span>
               </p>
@@ -1026,15 +1141,17 @@ export default function QuotationMakerPage() {
                 <th style={{ width: '4%' }}>#</th>
                 <th>Item Description &amp; Material</th>
                 <th style={{ width: '11%' }}>H × W (ft)</th>
+                <th style={{ width: '6%' }}>Qty</th>
                 <th style={{ width: '8%' }}>Sqft</th>
-                <th style={{ width: '12%' }}>Rate (₹/sqft)</th>
-                <th style={{ width: '16%' }}>Amount</th>
+                <th style={{ width: '11%' }}>Rate (₹/sqft)</th>
+                <th style={{ width: '14%' }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {items.filter((it) => it.name.trim() || it.rate > 0 || it.height > 0 || it.width > 0).map((it, idx) => {
-                const sqft = (Number(it.height) || 0) * (Number(it.width) || 0);
-                const amount = sqft * (Number(it.rate) || 0);
+                const sqft = hasDimensions(it) ? (Number(it.height) || 0) * (Number(it.width) || 0) : 0;
+                const qty = Number(it.quantity) || 1;
+                const amount = lineAmount(it);
                 return (
                   <tr key={it.id}>
                     <td>{idx + 1}</td>
@@ -1043,9 +1160,12 @@ export default function QuotationMakerPage() {
                       {it.material && <div className="qp-item-material">{it.material}</div>}
                     </td>
                     <td>
-                      {Number(it.height) || 0} × {Number(it.width) || 0}
+                      {hasDimensions(it)
+                        ? `${Number(it.height) || 0} × ${Number(it.width) || 0}`
+                        : '—'}
                     </td>
-                    <td>{sqft.toLocaleString('en-IN')}</td>
+                    <td>{qty}</td>
+                    <td>{hasDimensions(it) ? sqft.toLocaleString('en-IN') : '—'}</td>
                     <td>{formatINR(it.rate)}</td>
                     <td>{formatINR(amount)}</td>
                   </tr>
@@ -1066,7 +1186,15 @@ export default function QuotationMakerPage() {
           {notes && (
             <div className="qp-notes">
               <h4>Terms &amp; Conditions</h4>
-              <p>{notes}</p>
+              <ol className="qp-notes-list">
+                {notes
+                  .split('\n')
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line, idx) => (
+                    <li key={idx}>{line}</li>
+                  ))}
+              </ol>
             </div>
           )}
 
@@ -1106,7 +1234,7 @@ export default function QuotationMakerPage() {
             <div className="qp-sig-block">
               <div className="qp-sig-line"></div>
               <p>For Ananya House of Furniture</p>
-              <p className="qp-sig-sub">{(() => { const b = getBranch(customer.branch); return `${b.contactPerson} (${b.short})`; })()}</p>
+              <p className="qp-sig-sub">{getBranch(customer.branch).contacts[0].name}</p>
             </div>
           </div>
 
