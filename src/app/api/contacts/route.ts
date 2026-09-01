@@ -180,7 +180,11 @@ export async function POST(req: NextRequest) {
       message: messageWithBranch,
     });
 
-    let emailResult: Awaited<ReturnType<typeof sendQuoteEmail>>;
+    type EmailResult =
+      | Awaited<ReturnType<typeof sendQuoteEmail>>
+      | { sent: false; reason: 'send_failed' };
+
+    let emailResult: EmailResult;
     try {
       emailResult = await sendQuoteEmail({
         name,
