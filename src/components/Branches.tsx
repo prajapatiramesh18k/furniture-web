@@ -7,7 +7,7 @@ const branches = [
     address: 'Diva-Shil Road, Khardipada',
     city: 'Mumbai, Maharashtra - 400612',
     phone: '+91 83187 27813',
-    phone2: '+91 77150 85021',
+    phone2: '+91 77150 95021',
     email: 'ananyahouseoffurniture@gmail.com',
     mapLink: 'https://maps.app.goo.gl/3wAw79stEiGNyeWa9',
     services: ['Wooden Furniture', 'Modular Kitchen', 'Custom Interiors', 'Pooja Units', 'Wardrobes & TV Units'],
@@ -23,7 +23,6 @@ const branches = [
     address: 'West Court 2nd Floor ,TRP Mall ,Bopal',
     city: 'Ahmedabad, Gujarat - 380059',
     phone: '+91 93218 12823',
-    phone2: '+91 93169 92909',
     email: 'ananyahouseoffurniture@gmail.com',
     mapLink: 'https://maps.google.com/?q=Navrangpura+Ahmedabad',
     services: ['Wooden Furniture', 'PVC Furniture', 'Modular Kitchen', 'Custom Interiors', 'PVC Wardrobes & Cabinets'],
@@ -69,7 +68,9 @@ export default function Branches() {
                 <i className="fas fa-phone"></i>
                 <div>
                   <p><a href={`tel:${branch.phone}`}>{branch.phone}</a></p>
-                  <p><a href={`tel:${branch.phone2}`}>{branch.phone2}</a></p>
+                  {'phone2' in branch && branch.phone2 ? (
+                    <p><a href={`tel:${branch.phone2}`}>{branch.phone2}</a></p>
+                  ) : null}
                 </div>
               </div>
               <div className="branch-info-row">

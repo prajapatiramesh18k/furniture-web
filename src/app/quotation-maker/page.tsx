@@ -29,13 +29,64 @@ const normalizeQtyText = (text: string) => {
   return { text: digits, qty: Number(digits) };
 };
 
-const defaultTerms = [
-  '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
-  'This quotation is valid for 30 days from the date of issue.',
-  'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
-  'Materials and finishes will be provided as specified in this quotation and as mutually agreed before execution of the work.',
-  'Any additional work or changes requested after approval of the quotation will be charged separately.',
-].join('\n');
+type WorkType = 'material-labour' | 'labour-only';
+
+const WORK_TYPE_OPTIONS: { value: WorkType; label: string }[] = [
+  { value: 'material-labour', label: 'Material + Labour (Full Furniture Work)' },
+  { value: 'labour-only', label: 'Labour Only' },
+];
+
+const WORK_TYPE_CONTENT: Record<WorkType, { terms: string; inclusions: string }> = {
+  'material-labour': {
+    terms: [
+      '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
+      'This quotation is valid for 30 days from the date of issue.',
+      'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
+      'All required materials will be purchased/procured by us as per the specifications, designs, and finishes mutually agreed upon before execution.',
+      'Furniture will be manufactured/fabricated using the materials and specifications mentioned in this quotation.',
+      'Materials, hardware, laminates, finishes, and fittings will be provided as specified in the quotation and as mutually agreed before execution.',
+      'Any additional work, material, design changes, or modifications requested after approval of the quotation will be charged separately.',
+      'Any changes in material, brand, finish, or specification requested by the client after approval may result in additional charges and/or changes to the completion timeline.',
+    ].join('\n'),
+    inclusions: [
+      'Material procurement/purchase as per approved specifications',
+      'Furniture manufacturing/fabrication',
+      'Soft-close hinges (Hettich / Ebco) on all applicable doors and drawers',
+      'Premium-quality hardware, handles, channels, screws, and fittings',
+      'High-quality laminate finish as per selected design',
+      'Professional installation and on-site fitting',
+      'Free site measurement and consultation',
+      'Quality inspection before handover',
+      'Site cleaning after installation',
+    ].join('\n'),
+  },
+  'labour-only': {
+    terms: [
+      '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
+      'This quotation is valid for 30 days from the date of issue.',
+      'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
+      'All materials, hardware, laminates, fittings, accessories, and other required items shall be provided by the client unless specifically mentioned otherwise in the quotation.',
+      'Labour charges cover fabrication/assembly, installation, and fitting work as specified in this quotation.',
+      'The client is responsible for ensuring that all required materials are available at the site before the scheduled work begins.',
+      'Any additional labour, rework, modifications, or changes requested after approval of the quotation will be charged separately.',
+      'Delays caused by non-availability of materials, site access, or client-requested changes may affect the completion timeline.',
+    ].join('\n'),
+    inclusions: [
+      'Skilled labour for furniture fabrication/assembly',
+      'Professional installation and on-site fitting',
+      'Assembly and fixing of furniture components',
+      'Installation of hinges, handles, channels, and other hardware supplied by the client',
+      'Basic alignment and adjustment of doors and drawers',
+      'On-site fitting and finishing adjustments',
+      'Quality check before handover',
+      'Site cleaning after installation',
+    ].join('\n'),
+  },
+};
+
+const defaultWorkType: WorkType = 'material-labour';
+const defaultTerms = WORK_TYPE_CONTENT[defaultWorkType].terms;
+const defaultInclusions = WORK_TYPE_CONTENT[defaultWorkType].inclusions;
 
 const materialOptions = [
   '',
@@ -166,17 +217,6 @@ const packagePresets: { label: string; projectType: string; items: { name: strin
   },
 ];
 
-const standardInclusions = [
-  'Soft-close hinges (Hettich / Ebco) on all doors and drawers',
-  'Premium-quality hardware, handles, channels, screws, and fittings',
-  'High-quality laminate finish as per selected design',
-  'Professional installation and on-site fitting',
-  'Free site measurement and consultation',
-  'Thorough quality check before handover',
-  'Site cleaning after installation',
-  '1-year workmanship warranty on all furniture',
-];
-
 const initialCustomer = {
   name: '',
   phone: '',
@@ -228,7 +268,6 @@ const branches: BranchInfo[] = [
     short: 'Ahmedabad',
     address: 'West Court, 2nd Floor, TRP Mall, Bopal, Ahmedabad, Gujarat - 380059',
     contacts: [
-      { name: 'Dhruvil Patel', phone: '+91 93169 92909' },
       { name: 'Ramesh Prajapati', phone: '+91 93218 12823' },
     ],
     email: 'ananyahouseoffurniture@gmail.com',
@@ -306,8 +345,9 @@ export default function QuotationMakerPage() {
     quantity: 1,
     rate: 0,
   });
-  const [inclusionsText, setInclusionsText] = useState<string>('');
+  const [inclusionsText, setInclusionsText] = useState<string>(defaultInclusions);
   const [notes, setNotes] = useState(defaultTerms);
+  const [workType, setWorkType] = useState<WorkType>(defaultWorkType);
   const [includeGst, setIncludeGst] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -492,7 +532,13 @@ export default function QuotationMakerPage() {
 
   const formMaterialOptions = materialOptions;
 
-  const inclusionsList = Array.from(new Set([...standardInclusions, ...customInclusionsList]));
+  const inclusionsList = customInclusionsList;
+
+  const applyWorkType = (next: WorkType) => {
+    setWorkType(next);
+    setNotes(WORK_TYPE_CONTENT[next].terms);
+    setInclusionsText(WORK_TYPE_CONTENT[next].inclusions);
+  };
 
   const handleDownload = async () => {
     if (subtotal === 0) {
@@ -586,8 +632,9 @@ export default function QuotationMakerPage() {
       setCustomer(initialCustomer);
       setProject({ ...initialProject });
       setItems([]);
-      setInclusionsText('');
+      setInclusionsText(defaultInclusions);
       setNotes(defaultTerms);
+      setWorkType(defaultWorkType);
       fetch('/api/quotation-counter')
         .then((r) => r.json())
         .then((data) => {
@@ -722,6 +769,22 @@ export default function QuotationMakerPage() {
                 </select>
                 <label className="floating-label">Project Type</label>
               </div>
+              <div className="floating-field">
+                <select
+                  className="cpf-input cpf-select"
+                  value={workType}
+                  onChange={(e) => applyWorkType(e.target.value as WorkType)}
+                  onFocus={() => setFocused('p-work-type')}
+                  onBlur={() => setFocused(null)}
+                >
+                  {WORK_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <label className="floating-label">Work Type</label>
+              </div>
+            </div>
+            <div className="quotation-grid-2">
               <div className="floating-field">
                 <input
                   type="date"
@@ -991,72 +1054,39 @@ export default function QuotationMakerPage() {
           </div>
 
           <div className="quotation-section">
-            <h3 className="quotation-section-title">Terms &amp; Notes</h3>
+            <h3 className="quotation-section-title">Terms &amp; Conditions</h3>
+            <p className="quotation-section-hint">
+              Auto-filled from Work Type. Edit any line if needed (one term per line).
+            </p>
             <div className="floating-field">
               <textarea
                 className="cpf-input cpf-textarea"
-                rows={4}
+                rows={8}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 onFocus={() => setFocused('notes')}
                 onBlur={() => setFocused(null)}
               />
-              <label className="floating-label floating-label-textarea">Notes</label>
+              <label className="floating-label floating-label-textarea">Terms &amp; Conditions</label>
             </div>
           </div>
 
           <div className="quotation-section">
-            <h3 className="quotation-section-title">What's Included</h3>
+            <h3 className="quotation-section-title">What&apos;s Included</h3>
             <p className="quotation-section-hint">
-              Six standard inclusions are always printed on the PDF. Add any extras below, one per line.
+              Auto-filled from Work Type. Edit any line if needed (one inclusion per line).
             </p>
-            <div className="quotation-inclusions-add">
-              <input
-                type="text"
+            <div className="floating-field">
+              <textarea
+                className="cpf-input cpf-textarea"
+                rows={8}
                 value={inclusionsText}
                 onChange={(e) => setInclusionsText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const v = inclusionsText.trim();
-                    if (v) {
-                      setInclusionsText((cur) => (cur.trim() ? cur + '\n' + v : v));
-                    }
-                  }
-                }}
-                placeholder="Type one extra inclusion and press Enter to add"
+                onFocus={() => setFocused('inclusions')}
+                onBlur={() => setFocused(null)}
               />
-              <button
-                type="button"
-                onClick={() => {
-                  const v = inclusionsText.trim();
-                  if (!v) return;
-                  setInclusionsText((cur) => (cur.trim() ? cur + '\n' + v : v));
-                }}
-                className="quotation-inclusions-add-btn"
-              >
-                <i className="fas fa-plus"></i> Add Line
-              </button>
+              <label className="floating-label floating-label-textarea">What&apos;s Included</label>
             </div>
-            {customInclusionsList.length > 0 && (
-              <div className="quotation-inclusions-custom-list">
-                {customInclusionsList.map((inc, idx) => (
-                  <div className="quotation-inclusions-custom-row" key={idx}>
-                    <i className="fas fa-check"></i> {inc}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = customInclusionsList.filter((_, i) => i !== idx);
-                        setInclusionsText(next.join('\n'));
-                      }}
-                      title="Remove"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="quotation-actions">
@@ -1132,7 +1162,11 @@ export default function QuotationMakerPage() {
             {customer.phone && <p><i className="fas fa-phone"></i> +91 {customer.phone}</p>}
             {customer.email && <p><i className="fas fa-envelope"></i> {customer.email}</p>}
             {customer.address && <p><i className="fas fa-map-marker-alt"></i> {customer.address}</p>}
-            {project.type && <p className="qp-project"><strong>Project:</strong> {project.type} &nbsp;•&nbsp; <strong>Branch:</strong> {customer.branch}</p>}
+            {project.type && (
+              <p className="qp-project">
+                <strong>Project:</strong> {project.type} &nbsp;•&nbsp; <strong>Branch:</strong> {customer.branch}
+              </p>
+            )}
           </div>
 
           <table className="qp-table">
@@ -1234,7 +1268,7 @@ export default function QuotationMakerPage() {
             <div className="qp-sig-block">
               <div className="qp-sig-line"></div>
               <p>For Ananya House of Furniture</p>
-              <p className="qp-sig-sub">{getBranch(customer.branch).contacts[0].name}</p>
+              <p className="qp-sig-sub">Ramesh Prajapati</p>
             </div>
           </div>
 

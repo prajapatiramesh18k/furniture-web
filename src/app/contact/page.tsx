@@ -1,6 +1,7 @@
 'use client';
 import CloseButton from '@/components/CloseButton';
 import { useState, useEffect } from 'react';
+import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
 
 const projectTypes = [
   '1 BHK',
@@ -49,29 +50,48 @@ export default function ContactPage() {
     setSubmitting(true);
     setError(false);
 
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (!form.name.trim() || !form.email.trim() || !form.projectType || !form.message.trim()) {
+      setError(true);
+      setSubmitting(false);
+      return;
+    }
+    if (phoneDigits.length !== 10) {
+      alert('Please enter a valid 10-digit phone number');
+      setSubmitting(false);
+      return;
+    }
+
+    const submittedData = {
+      name: form.name.trim(),
+      phone: phoneDigits,
+      email: form.email.trim(),
+      address: form.address.trim(),
+      branch: form.branch,
+      projectType: form.projectType,
+      message: form.message.trim(),
+    };
+
     try {
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          email: form.email,
-          address: form.address,
-          projectType: form.projectType,
-          message: form.message,
-        }),
+        body: JSON.stringify(submittedData),
       });
 
-      if (response.ok) {
-        setSubmitted(true);
-      } else {
+      if (!response.ok) {
         setError(true);
+        return;
       }
+
+      // DB save confirmed — open WhatsApp with the exact submitted details
+      openQuoteWhatsApp(submittedData);
+      setSubmitted(true);
     } catch {
       setError(true);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const isActive = (field: string) => focused === field || form[field as keyof typeof form];
@@ -339,8 +359,8 @@ export default function ContactPage() {
                         </>
                       ) : (
                         <>
-                          <span>Send Message</span>
-                          <i className="fas fa-arrow-right submit-arrow"></i>
+                          <span>Submit &amp; Open WhatsApp</span>
+                          <i className="fab fa-whatsapp submit-arrow"></i>
                         </>
                       )}
                     </span>

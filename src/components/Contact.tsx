@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', projectType: '', message: '' });
@@ -37,10 +38,21 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!form.name.trim() || !form.email.trim() || !form.projectType || !form.message.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     if (form.phone.length !== 10) {
       alert('Please enter a valid 10-digit phone number');
       return;
     }
+
+    const submittedData = { ...form };
+    const projectTypeLabel =
+      projectTypes.find(
+        (type) => type.toLowerCase().replace(/\s+/g, '-') === submittedData.projectType
+      ) || submittedData.projectType;
 
     setSubmitting(true);
 
@@ -48,18 +60,32 @@ export default function Contact() {
       const res = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(submittedData),
       });
 
-      if (res.ok) {
-        setSubmitted(true);
-        setForm({ name: '', phone: '', email: '', projectType: '', message: '' });
-        setTimeout(() => setSubmitted(false), 5000);
+      if (!res.ok) {
+        alert('Could not save your request. Please try again.');
+        return;
       }
+
+      // DB save confirmed — open WhatsApp with the exact submitted details
+      openQuoteWhatsApp({
+        name: submittedData.name.trim(),
+        phone: submittedData.phone,
+        email: submittedData.email.trim(),
+        projectType: projectTypeLabel,
+        message: submittedData.message.trim(),
+      });
+
+      setSubmitted(true);
+      setForm({ name: '', phone: '', email: '', projectType: '', message: '' });
+      setTimeout(() => setSubmitted(false), 5000);
     } catch (error) {
       console.error('Failed to submit:', error);
+      alert('Could not save your request. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -280,8 +306,8 @@ export default function Contact() {
                       </>
                     ) : (
                       <>
-                        <span>Send Message</span>
-                        <i className="fas fa-paper-plane"></i>
+                        <span>Submit &amp; Open WhatsApp</span>
+                        <i className="fab fa-whatsapp"></i>
                       </>
                     )}
                   </button>
