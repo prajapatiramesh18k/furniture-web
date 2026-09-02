@@ -164,7 +164,7 @@ const packagePresets: { label: string; projectType: string; items: { name: strin
       { name: 'Master Wardrobe', material: 'BWR Plywood', height: 8, width: 7, rate: 850 },
       { name: 'Master Wardrobe Loft', material: 'BWR Plywood', height: 8, width: 2, rate: 850 },
       { name: 'Bedroom Wardrobe', material: 'BWR Plywood', height: 7, width: 7, rate: 850 },
-      { name: 'Bedroom Wardrobe Loft', material: 'BWR Plywood', height: 7, width: 2, rate: 850 },
+      { name: 'Bedroom Wardrobe Loft', material: 'Plywood', height: 7, width: 2, rate: 850 },
       { name: 'King Bed with Storage', material: 'BWR Plywood', height: 6, width: 6.5, rate: 850 },
       { name: 'Queen Bed with Storage', material: 'BWR Plywood', height: 6, width: 6, rate: 850 },
       { name: 'TV Unit', material: 'HDHMR', height: 4, width: 7, rate: 850 },
