@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CloseButton from '@/components/CloseButton';
 import { useCart } from '@/context/CartContext';
+import { openWhatsAppChat } from '@/lib/quote-whatsapp';
 
 interface Product {
   id: string | number;
@@ -224,7 +225,17 @@ export default function ProductDetailPage() {
             <button
               className="btn"
               style={{ background: 'transparent', border: '0.2rem solid #a27341', color: '#a27341' }}
-              onClick={() => window.open('https://wa.me/919321812823', '_blank')}
+              onClick={() =>
+                openWhatsAppChat(
+                  `Hi, I want to enquire about ${product?.name || 'this product'}. Please share price and details.`,
+                  {
+                    branch: 'mumbai',
+                    cta: 'product_enquire',
+                    source: 'product_page',
+                    projectType: product?.name,
+                  }
+                )
+              }
             >
               <i className="fas fa-phone"></i> Enquire Now
             </button>

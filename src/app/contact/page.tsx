@@ -1,6 +1,7 @@
 'use client';
 import CloseButton from '@/components/CloseButton';
 import { useState, useEffect } from 'react';
+import { handleTrackedPhoneClick } from '@/lib/analytics';
 import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
 
 const projectTypes = [
@@ -85,7 +86,10 @@ export default function ContactPage() {
       }
 
       // DB save confirmed — open WhatsApp with the exact submitted details
-      openQuoteWhatsApp(submittedData);
+      openQuoteWhatsApp(submittedData, {
+        source: 'contact_page',
+        cta: 'contact_page_whatsapp',
+      });
       setSubmitted(true);
     } catch {
       setError(true);
@@ -166,7 +170,7 @@ export default function ContactPage() {
                 </div>
                 <span className="info-branch-cta">Get directions <i className="fas fa-chevron-right"></i></span>
               </a>
-              <a href="https://maps.google.com/?q=Navrangpura+Ahmedabad" target="_blank" rel="noopener noreferrer" className="info-branch anim-fade-up" style={{ animationDelay: '0.75s' }}>
+              <a href="https://maps.google.com/?q=TRP+Mall+Bopal+Ahmedabad" target="_blank" rel="noopener noreferrer" className="info-branch anim-fade-up" style={{ animationDelay: '0.75s' }}>
                 <div className="info-branch-icon info-branch-icon-gold">
                   <i className="fas fa-map-marker-alt"></i>
                 </div>
@@ -178,12 +182,23 @@ export default function ContactPage() {
               </a>
             </div>
 
-            <a href="tel:+919321812823" className="info-cta-phone anim-fade-up" style={{ animationDelay: '0.85s' }}>
+            <a
+              href="tel:+918318727813"
+              className="info-cta-phone anim-fade-up"
+              style={{ animationDelay: '0.85s' }}
+              onClick={() =>
+                handleTrackedPhoneClick({
+                  branch: 'mumbai',
+                  cta: 'contact_page_call',
+                  source: 'contact_page',
+                })
+              }
+            >
               <span className="info-cta-pulse"></span>
               <i className="fas fa-phone"></i>
               <div>
                 <span>Or call us now</span>
-                <strong>+91 93218 12823</strong>
+                <strong>+91 83187 27813</strong>
               </div>
             </a>
           </div>

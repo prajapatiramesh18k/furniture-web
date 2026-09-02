@@ -1,4 +1,11 @@
-const DEFAULT_QUOTE_WHATSAPP = '919321812823';
+import { trackGenerateLead, trackWhatsAppClick, type MarketingBranch } from '@/lib/analytics';
+
+export const BRANCH_WHATSAPP_NUMBERS: Record<string, string> = {
+  mumbai: '919321812823',
+  ahmedabad: '919321812823',
+};
+
+export const DEFAULT_WHATSAPP_NUMBER = BRANCH_WHATSAPP_NUMBERS.mumbai;
 
 export type QuoteWhatsAppData = {
   name: string;
@@ -10,6 +17,14 @@ export type QuoteWhatsAppData = {
   message: string;
 };
 
+export type WhatsAppOpenOptions = {
+  branch?: MarketingBranch | string;
+  cta?: string;
+  source?: string;
+  projectType?: string;
+  trackAsLead?: boolean;
+};
+
 const branchLabels: Record<string, string> = {
   mumbai: 'Mumbai (Head Office)',
   ahmedabad: 'Ahmedabad',
@@ -18,6 +33,16 @@ const branchLabels: Record<string, string> = {
 export function formatBranchLabel(branch?: string) {
   if (!branch) return '';
   return branchLabels[branch] || branch;
+}
+
+export function getWhatsAppNumberForBranch(branch?: string) {
+  if (branch && BRANCH_WHATSAPP_NUMBERS[branch]) {
+    return BRANCH_WHATSAPP_NUMBERS[branch];
+  }
+  return (
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) ||
+    DEFAULT_WHATSAPP_NUMBER
+  );
 }
 
 export function buildQuoteWhatsAppMessage(data: QuoteWhatsAppData) {
@@ -48,11 +73,57 @@ export function buildQuoteWhatsAppMessage(data: QuoteWhatsAppData) {
   return lines.join('\n');
 }
 
-export function openQuoteWhatsApp(data: QuoteWhatsAppData) {
-  const phone =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) ||
-    DEFAULT_QUOTE_WHATSAPP;
-  const text = encodeURIComponent(buildQuoteWhatsAppMessage(data));
+function openWhatsAppUrl(
+  phone: string,
+  message: string,
+  options: WhatsAppOpenOptions = {}
+) {
+  const text = encodeURIComponent(message);
   const url = `https://wa.me/${phone}?text=${text}`;
+
+  trackWhatsAppClick({
+    branch: (options.branch as MarketingBranch) || 'unknown',
+    cta: options.cta || 'whatsapp',
+    source: options.source,
+    project_type: options.projectType,
+  });
+
+  if (options.trackAsLead) {
+    trackGenerateLead({
+      branch: options.branch,
+      cta: options.cta || 'quote_form',
+      source: options.source,
+      project_type: options.projectType,
+    });
+  }
+
   window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+export function openQuoteWhatsApp(data: QuoteWhatsAppData, options: WhatsAppOpenOptions = {}) {
+  const branch = data.branch || options.branch;
+  const phone = getWhatsAppNumberForBranch(branch);
+  const message = buildQuoteWhatsAppMessage(data);
+
+  openWhatsAppUrl(phone, message, {
+    ...options,
+    branch: branch || 'mumbai',
+    projectType: data.projectType || options.projectType,
+    trackAsLead: true,
+    cta: options.cta || 'quote_form_whatsapp',
+    source: options.source || 'contact_form',
+  });
+}
+
+export function openWhatsAppChat(
+  message: string,
+  options: WhatsAppOpenOptions = {}
+) {
+  const branch = options.branch || 'mumbai';
+  const phone = getWhatsAppNumberForBranch(branch);
+  openWhatsAppUrl(phone, message, {
+    ...options,
+    branch,
+    cta: options.cta || 'whatsapp_chat',
+  });
 }

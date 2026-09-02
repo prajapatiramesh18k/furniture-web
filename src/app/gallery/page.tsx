@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import CloseButton from '@/components/CloseButton';
+import { openWhatsAppChat } from '@/lib/quote-whatsapp';
 
 interface GalleryImage {
   _id: string;
@@ -160,8 +161,11 @@ export default function GalleryPage() {
   };
 
   const sendWhatsApp = (url: string) => {
-    const message = encodeURIComponent(`I'm interested in this design: ${url}`);
-    window.open(`https://wa.me/919321812823?text=${message}`, '_blank');
+    openWhatsAppChat(`I'm interested in this design: ${url}`, {
+      branch: 'mumbai',
+      cta: 'gallery_enquire',
+      source: 'gallery_page',
+    });
   };
 
   const downloadImage = (url: string) => {

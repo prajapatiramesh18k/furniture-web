@@ -1,3 +1,7 @@
+'use client';
+
+import { handleTrackedPhoneClick } from '@/lib/analytics';
+
 const branches = [
   {
     id: 'mumbai',
@@ -24,7 +28,7 @@ const branches = [
     city: 'Ahmedabad, Gujarat - 380059',
     phone: '+91 93218 12823',
     email: 'ananyahouseoffurniture@gmail.com',
-    mapLink: 'https://maps.google.com/?q=Navrangpura+Ahmedabad',
+    mapLink: 'https://maps.google.com/?q=TRP+Mall+Bopal+Ahmedabad',
     services: ['Wooden Furniture', 'PVC Furniture', 'Modular Kitchen', 'Custom Interiors', 'PVC Wardrobes & Cabinets'],
     specialty: 'PVC work specialists — perfect for Gujarat climate',
     established: '2026',
@@ -67,9 +71,9 @@ export default function Branches() {
               <div className="branch-info-row">
                 <i className="fas fa-phone"></i>
                 <div>
-                  <p><a href={`tel:${branch.phone}`}>{branch.phone}</a></p>
+                  <p><a href={`tel:${branch.phone.replace(/\s/g, '')}`} onClick={() => handleTrackedPhoneClick({ branch: branch.id, cta: 'branch_phone', source: 'branches_section' })}>{branch.phone}</a></p>
                   {'phone2' in branch && branch.phone2 ? (
-                    <p><a href={`tel:${branch.phone2}`}>{branch.phone2}</a></p>
+                    <p><a href={`tel:${branch.phone2.replace(/\s/g, '')}`} onClick={() => handleTrackedPhoneClick({ branch: branch.id, cta: 'branch_phone_2', source: 'branches_section' })}>{branch.phone2}</a></p>
                   ) : null}
                 </div>
               </div>

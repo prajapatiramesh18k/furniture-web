@@ -1,5 +1,6 @@
 'use client';
 
+import { handleTrackedPhoneClick } from '@/lib/analytics';
 const quickLinks = [
   { label: 'Home', href: '#home' },
   { label: 'About', href: '/about' },
@@ -10,9 +11,12 @@ const quickLinks = [
 ];
 
 const contactInfo = {
-  phone: '+91-9321812823 , +91-8318727813',
+  phones: [
+    { display: '+91 83187 27813', tel: '+918318727813', branch: 'mumbai' as const },
+    { display: '+91 93218 12823', tel: '+919321812823', branch: 'ahmedabad' as const },
+  ],
   email: 'ananyahouseoffurniture@gmail.com',
-  address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra, India -[400612]',
+  address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra, India - 400612',
   addressLink: 'https://maps.app.goo.gl/3wAw79stEiGNyeWa9',
 };
 
@@ -30,9 +34,22 @@ export default function Footer() {
         </div>
         <div className="box">
           <h3>contact info</h3>
-          <a href={`tel:${contactInfo.phone}`}>
-            <i className="fas fa-phone"></i>{contactInfo.phone}
-          </a>
+          {contactInfo.phones.map((phone) => (
+            <a
+              key={phone.tel}
+              href={`tel:${phone.tel}`}
+              onClick={() =>
+                handleTrackedPhoneClick({
+                  branch: phone.branch,
+                  cta: 'footer_phone',
+                  source: 'footer',
+                })
+              }
+            >
+              <i className="fas fa-phone"></i>
+              {phone.display}
+            </a>
+          ))}
           <a href={`mailto:${contactInfo.email}`}>
             <i className="fas fa-envelope"></i>{contactInfo.email}
           </a>

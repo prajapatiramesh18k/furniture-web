@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
+import { handleTrackedPhoneClick } from '@/lib/analytics';
+import { openQuoteWhatsApp, openWhatsAppChat } from '@/lib/quote-whatsapp';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', projectType: '', message: '' });
@@ -69,13 +70,17 @@ export default function Contact() {
       }
 
       // DB save confirmed — open WhatsApp with the exact submitted details
-      openQuoteWhatsApp({
-        name: submittedData.name.trim(),
-        phone: submittedData.phone,
-        email: submittedData.email.trim(),
-        projectType: projectTypeLabel,
-        message: submittedData.message.trim(),
-      });
+      openQuoteWhatsApp(
+        {
+          name: submittedData.name.trim(),
+          phone: submittedData.phone,
+          email: submittedData.email.trim(),
+          projectType: projectTypeLabel,
+          message: submittedData.message.trim(),
+          branch: 'mumbai',
+        },
+        { source: 'homepage_contact_section', cta: 'contact_form_whatsapp' }
+      );
 
       setSubmitted(true);
       setForm({ name: '', phone: '', email: '', projectType: '', message: '' });
@@ -192,7 +197,18 @@ export default function Contact() {
                 <i className="fab fa-facebook-f"></i>
                 <span>Facebook</span>
               </a>
-              <a href="https://wa.me/919321812823" target="_blank" rel="noopener noreferrer" className="social-link whatsapp">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openWhatsAppChat('Hi, I want a free quote for custom furniture. My location:', {
+                    branch: 'mumbai',
+                    cta: 'contact_section_whatsapp',
+                    source: 'homepage_contact_section',
+                  });
+                }}
+                className="social-link whatsapp"
+              >
                 <i className="fab fa-whatsapp"></i>
                 <span>WhatsApp</span>
               </a>

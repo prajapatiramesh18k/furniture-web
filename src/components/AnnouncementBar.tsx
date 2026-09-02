@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { handleTrackedPhoneClick } from '@/lib/analytics';
 
 export default function AnnouncementBar() {
   const [visible, setVisible] = useState(true);
@@ -26,11 +27,21 @@ export default function AnnouncementBar() {
         </span>
         <span className="announcement-bar-divider">|</span>
         <span className="announcement-bar-item">
-          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Ahmedabad
+          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Navi Mumbai &amp; Thane
         </span>
         <span className="announcement-bar-divider">|</span>
-        <a href="tel:+919321812823" className="announcement-bar-item announcement-bar-highlight">
-          <i className="fas fa-phone"></i> Call: +91 93218 12823
+        <a
+          href="tel:+918318727813"
+          className="announcement-bar-item announcement-bar-highlight"
+          onClick={() =>
+            handleTrackedPhoneClick({
+              branch: 'mumbai',
+              cta: 'announcement_bar_call',
+              source: 'announcement_bar',
+            })
+          }
+        >
+          <i className="fas fa-phone"></i> Call: +91 83187 27813
         </a>
       </div>
       <button

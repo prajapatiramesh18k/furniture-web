@@ -8,13 +8,15 @@ import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
-  title: "Ananya House of Furniture | Custom Furniture Thane, Maharashtra",
+  title: "Ananya House of Furniture | Custom Furniture Mumbai, Navi Mumbai & Thane",
   description:
-    "Ananya House of Furniture - Custom furniture manufacturer in Thane, Maharashtra. Best quality wooden furniture at factory-direct prices. 14+ years experience, 5000+ happy customers.",
-  keywords: "custom furniture, furniture manufacturer, Thane, Maharashtra, wooden furniture, Mumbai, online furniture",
+    "Custom furniture, modular kitchens & wardrobes in Mumbai, Navi Mumbai & Thane. Factory-direct prices, free site visit, 3D design & 5-year warranty. 14+ years experience.",
+  keywords:
+    "custom furniture Mumbai, modular kitchen Mumbai, wardrobe Navi Mumbai, furniture shop Thane, custom furniture manufacturer Maharashtra, home interiors Mumbai",
   openGraph: {
-    title: "Ananya House of Furniture | Custom Furniture Thane",
-    description: "Custom furniture designed to match your style. Best quality at affordable prices. 14+ years experience.",
+    title: "Ananya House of Furniture | Custom Furniture Mumbai, Navi Mumbai & Thane",
+    description:
+      "Custom furniture & modular kitchens for Mumbai, Navi Mumbai & Thane. Free site visit, 3D design, factory-direct pricing.",
     url: "https://ananyahouseoffurniture.in",
     siteName: "Ananya House of Furniture",
     locale: "en_IN",
@@ -81,6 +83,12 @@ export default function RootLayout({
                 postalCode: "400612",
                 addressCountry: "IN",
               },
+              areaServed: [
+                { "@type": "City", name: "Mumbai" },
+                { "@type": "City", name: "Navi Mumbai" },
+                { "@type": "City", name: "Thane" },
+                { "@type": "City", name: "Ahmedabad" },
+              ],
               priceRange: "₹₹",
               image: "https://ananyahouseoffurniture.in/og-image.jpg",
               openingHours: "Mo-Sa 09:00-19:00",

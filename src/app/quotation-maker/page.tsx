@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
+import { trackQuotationPdfDownload } from '@/lib/analytics';
 
 type LineItem = { id: number; name: string; material: string; height: number; width: number; quantity: number; rate: number };
 
@@ -618,6 +619,12 @@ export default function QuotationMakerPage() {
       }
       const safeQuote = (project.quoteNo || 'quotation').replace(/[^\w-]/g, '_');
       pdf.save(`${safeQuote}.pdf`);
+      trackQuotationPdfDownload({
+        branch: customer.branch === 'ahmedabad' ? 'ahmedabad' : 'mumbai',
+        cta: 'quotation_pdf_download',
+        source: 'quotation_maker',
+        project_type: project.type,
+      });
     } catch (err) {
       console.error('PDF generation failed', err);
       alert('PDF generation failed. Please try again or use the browser print dialog.');
