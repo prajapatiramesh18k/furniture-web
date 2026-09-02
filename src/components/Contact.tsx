@@ -14,18 +14,14 @@ export default function Contact() {
   }, []);
 
   const projectTypes = [
-    'Living Room Furniture',
-    'Bedroom Furniture',
     'Modular Kitchen',
+    'Wardrobe',
+    'Custom Furniture',
+    'PVC Furniture',
+    'TV Unit',
+    'Bedroom Furniture',
     'Office Furniture',
-    'Kids Room Furniture',
-    'Dining Room Furniture',
-    'Storage Solutions',
-    'Custom Wardrobes',
-    'TV Units & Cabinets',
-    'Doors & Windows',
-    'False Ceiling',
-    'Interior Design',
+    'Complete Home Interior',
     'Other',
   ];
 
@@ -125,29 +121,41 @@ export default function Contact() {
 
           <div className="contact-stats">
             <div className="stat-item">
+              <span className="stat-number">2012</span>
+              <span className="stat-label">Established</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item">
               <span className="stat-number">14+</span>
               <span className="stat-label">Years Experience</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat-item">
-              <span className="stat-number">500+</span>
-              <span className="stat-label">Happy Clients</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-number">100%</span>
-              <span className="stat-label">Satisfaction</span>
+              <span className="stat-number">5yr</span>
+              <span className="stat-label">Warranty</span>
             </div>
           </div>
 
           <div className="contact-details">
-            <div className="contact-detail-card">
+              <div className="contact-detail-card">
               <div className="detail-card-icon">
                 <i className="fas fa-phone-alt"></i>
               </div>
               <div className="detail-card-content">
                 <span className="detail-label">Call Us</span>
-                <span className="detail-value">+91 93218 12823</span>
+                <a
+                  href="tel:+919321812823"
+                  className="detail-value"
+                  onClick={() =>
+                    handleTrackedPhoneClick({
+                      branch: 'mumbai',
+                      cta: 'contact_section_phone',
+                      source: 'homepage_contact_section',
+                    })
+                  }
+                >
+                  +91 93218 12823
+                </a>
               </div>
             </div>
 

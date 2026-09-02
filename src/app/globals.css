@@ -1016,13 +1016,26 @@ input, textarea, select {
 
 .hero-heading {
     font-size: 5rem !important;
+    font-weight: 700 !important;
     text-transform: none !important;
     color: #fff !important;
     line-height: 1.2 !important;
     padding: 0 !important;
-    margin-bottom: 2rem;
+    margin: 0 0 2rem 0 !important;
     animation: fadeInUp 1s ease-out 0.2s both;
     text-shadow: 2px 4px 8px rgba(0,0,0,0.3);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .hero-tagline {
@@ -18296,3 +18309,73 @@ input[type="number"] {
 }
 
 .qp-hide-for-capture { display: none !important; }
+
+/* —— Marketing / service / location pages & lead CTAs —— */
+.mkt-page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.mkt-hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2rem; align-items: center; margin-bottom: 3rem; }
+.mkt-hero-local { grid-template-columns: 1fr; }
+.mkt-hero-media img { width: 100%; height: auto; max-height: 420px; object-fit: cover; border-radius: 4px; }
+.mkt-eyebrow { font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a27341; margin-bottom: 0.8rem; }
+.mkt-eyebrow a { color: inherit; }
+.mkt-hero-copy h1 { font-size: clamp(2.4rem, 4vw, 3.6rem); line-height: 1.2; margin-bottom: 1rem; color: #2a1f12; }
+.mkt-lead { font-size: 1.55rem; line-height: 1.6; color: #5a4a3a; margin-bottom: 1.5rem; }
+.mkt-body { display: flex; flex-direction: column; gap: 2.5rem; }
+.mkt-section h2 { font-size: 2.2rem; margin-bottom: 1rem; color: #2a1f12; }
+.mkt-section p { font-size: 1.5rem; line-height: 1.7; color: #4a3b2a; }
+.mkt-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.mkt-list li { font-size: 1.45rem; line-height: 1.5; color: #3a2f22; display: flex; gap: 0.75rem; align-items: flex-start; }
+.mkt-list li i { color: #a27341; margin-top: 0.35rem; }
+.mkt-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.mkt-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.9rem; }
+.mkt-steps li { display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.8rem; align-items: start; font-size: 1.4rem; line-height: 1.5; }
+.mkt-steps li span { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: #a27341; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; }
+.mkt-gallery-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
+.mkt-gallery-row img { width: 100%; height: 180px; object-fit: cover; border-radius: 4px; }
+.mkt-chip-list { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.mkt-chip-list a { display: inline-block; padding: 0.7rem 1.2rem; background: #f3ebe0; color: #2a1f12; font-size: 1.3rem; text-decoration: none; border-radius: 4px; }
+.mkt-chip-list a:hover { background: #a27341; color: #fff; }
+.mkt-faqs { display: grid; gap: 0.75rem; }
+.mkt-faq { border: 1px solid #e8dfd2; border-radius: 4px; padding: 1rem 1.2rem; background: #fff; }
+.mkt-faq summary { cursor: pointer; font-size: 1.45rem; font-weight: 600; color: #2a1f12; }
+.mkt-faq p { margin-top: 0.75rem; font-size: 1.4rem; color: #4a3b2a; }
+.mkt-cta-band { background: #f7f1e8; padding: 2rem; border-radius: 6px; }
+
+.lead-cta { margin-top: 1.25rem; }
+.lead-cta-offer { font-size: 1.35rem; color: #a27341; font-weight: 600; margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; }
+.lead-cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.lead-cta-primary, .lead-cta-whatsapp, .lead-cta-phone, .lead-cta-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 1rem 1.4rem; font-size: 1.35rem; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-weight: 600;
+}
+.lead-cta-primary { background: #a27341; color: #fff; }
+.lead-cta-primary:hover { background: #8a5f32; }
+.lead-cta-whatsapp { background: #25d366; color: #fff; }
+.lead-cta-phone { background: #2a1f12; color: #fff; flex-direction: column; gap: 0.15rem; line-height: 1.2; }
+.lead-cta-phone-num { font-size: 1.1rem; font-weight: 500; opacity: 0.9; }
+.lead-cta-secondary { background: transparent; color: #2a1f12; border: 1px solid #c9b79a; }
+.lead-cta-secondary:hover { border-color: #a27341; color: #a27341; }
+
+.hero-cta-group { flex-wrap: wrap; }
+.hero-cta-wa { background: #25d366 !important; border-color: #25d366 !important; color: #fff !important; }
+.hero-cta-wa:hover { filter: brightness(0.95); }
+
+.case-study { padding: 2rem 0; border-bottom: 1px solid #e8dfd2; }
+.case-study-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0; }
+.case-study-grid dt { font-weight: 700; font-size: 1.3rem; color: #a27341; margin-bottom: 0.35rem; }
+.case-study-grid dd { font-size: 1.4rem; color: #3a2f22; margin: 0; }
+.case-study-quote { font-size: 1.5rem; font-style: italic; color: #4a3b2a; border-left: 3px solid #a27341; padding-left: 1rem; margin: 1.5rem 0; }
+.case-study-alt { margin-top: 1rem; font-size: 1.35rem; }
+
+@media (max-width: 768px) {
+  .mkt-hero, .mkt-grid-2, .mkt-gallery-row, .case-study-grid { grid-template-columns: 1fr; }
+  .lead-cta-actions { flex-direction: column; }
+  .lead-cta-primary, .lead-cta-whatsapp, .lead-cta-phone, .lead-cta-secondary { width: 100%; }
+}
+
+.hp-field {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}

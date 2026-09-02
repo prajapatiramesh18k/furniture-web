@@ -1,18 +1,34 @@
 'use client';
 
-import { openWhatsAppChat } from '@/lib/quote-whatsapp';
+import { openWhatsAppChat, getServiceWhatsAppMessage } from '@/lib/quote-whatsapp';
 
-export default function WhatsAppFloat() {
+type WhatsAppFloatProps = {
+  message?: string;
+  service?: string;
+  location?: string;
+};
+
+export default function WhatsAppFloat({
+  message,
+  service,
+  location,
+}: WhatsAppFloatProps = {}) {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    openWhatsAppChat(
-      'Hi, I am interested in custom furniture / modular kitchen. Please share a free quote. My location:',
-      {
-        branch: 'mumbai',
-        cta: 'float_button',
-        source: 'sitewide_float',
-      }
-    );
+    const text =
+      message ||
+      getServiceWhatsAppMessage(service) +
+        (location ? ` My location is ${location}.` : '');
+
+    openWhatsAppChat(text, {
+      branch:
+        location === 'ahmedabad' || location === 'bopal' ? 'ahmedabad' : 'mumbai',
+      cta: 'float_button',
+      cta_position: 'sitewide_float',
+      source: 'sitewide_float',
+      service,
+      location,
+    });
   };
 
   return (
@@ -22,7 +38,7 @@ export default function WhatsAppFloat() {
       className="whatsapp-float"
       aria-label="Chat on WhatsApp for a free quote"
     >
-      <i className="fab fa-whatsapp"></i>
+      <i className="fab fa-whatsapp" aria-hidden="true" />
     </a>
   );
 }

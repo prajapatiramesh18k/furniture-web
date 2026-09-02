@@ -6,19 +6,36 @@ import ChatBot from "@/components/ChatBot";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { JsonLd } from "@/components/JsonLd";
+import MetaPixel from "@/components/MetaPixel";
+import {
+  localBusinessJsonLd,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/json-ld";
+import { SITE_NAME, SITE_URL } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Ananya House of Furniture | Custom Furniture Mumbai, Navi Mumbai & Thane",
+  title: {
+    default:
+      "Custom Furniture & Interiors in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture",
+    template: "%s | Ananya House of Furniture",
+  },
   description:
-    "Custom furniture, modular kitchens & wardrobes in Mumbai, Navi Mumbai & Thane. Factory-direct prices, free site visit, 3D design & 5-year warranty. 14+ years experience.",
+    "Custom furniture, modular kitchens & wardrobes in Mumbai, Navi Mumbai & Thane. Free site visit, 3D design consultation, in-house manufacturing and professional installation.",
   keywords:
-    "custom furniture Mumbai, modular kitchen Mumbai, wardrobe Navi Mumbai, furniture shop Thane, custom furniture manufacturer Maharashtra, home interiors Mumbai",
+    "custom furniture Mumbai, modular kitchen Mumbai, wardrobe Navi Mumbai, furniture Thane, home interiors Mumbai, PVC furniture Ahmedabad",
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
-    title: "Ananya House of Furniture | Custom Furniture Mumbai, Navi Mumbai & Thane",
+    title:
+      "Custom Furniture & Interiors in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture",
     description:
-      "Custom furniture & modular kitchens for Mumbai, Navi Mumbai & Thane. Free site visit, 3D design, factory-direct pricing.",
-    url: "https://ananyahouseoffurniture.in",
-    siteName: "Ananya House of Furniture",
+      "Custom furniture, modular kitchens & wardrobes for Mumbai, Navi Mumbai & Thane. Free site visit and 3D design consultation.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: "en_IN",
     type: "website",
     images: [
@@ -26,14 +43,15 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Ananya House of Furniture",
+        alt: "Ananya House of Furniture — custom furniture Mumbai, Navi Mumbai & Thane",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ananya House of Furniture",
-    description: "Custom furniture designed to match your style. Best quality at affordable prices.",
+    title: "Ananya House of Furniture | Mumbai, Navi Mumbai & Thane",
+    description:
+      "Custom furniture, modular kitchens & wardrobes. Free site visit + 3D design consultation.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -44,7 +62,6 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
-  metadataBase: new URL("https://ananyahouseoffurniture.in"),
 };
 
 export default function RootLayout({
@@ -52,49 +69,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.GA_MEASUREMENT_ID || "";
+
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
         <meta name="google-site-verification" content="aDEB0fLtHFpcrTyE1-6C6KP6wK4VHImgKtZpABLHUJA" />
         <link
           rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" //css
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "FurnitureStore",
-              name: "Ananya House of Furniture",
-              description: "Custom furniture designed to match your style. Best quality at affordable prices.",
-              url: "https://ananyahouseoffurniture.in",
-              telephone: "+91-9321812823",
-              email: "contact@ananyahouseoffurniture.com",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "Diva-Shil Road, Khardipada",
-                addressLocality: "Thane",
-                addressRegion: "Maharashtra",
-                postalCode: "400612",
-                addressCountry: "IN",
-              },
-              areaServed: [
-                { "@type": "City", name: "Mumbai" },
-                { "@type": "City", name: "Navi Mumbai" },
-                { "@type": "City", name: "Thane" },
-                { "@type": "City", name: "Ahmedabad" },
-              ],
-              priceRange: "₹₹",
-              image: "https://ananyahouseoffurniture.in/og-image.jpg",
-              openingHours: "Mo-Sa 09:00-19:00",
-            }),
-          }}
-        />
+        <JsonLd data={organizationJsonLd()} />
+        <JsonLd data={websiteJsonLd()} />
+        <JsonLd data={localBusinessJsonLd()} />
       </head>
       <body>
         <CartProvider>
@@ -103,7 +94,8 @@ export default function RootLayout({
         <ChatBot />
         <ScrollRestoration />
         <Analytics />
-        <GoogleAnalytics gaId={process.env.GA_MEASUREMENT_ID || ""} />
+        {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
+        <MetaPixel />
       </body>
     </html>
   );

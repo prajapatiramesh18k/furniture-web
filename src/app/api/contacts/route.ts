@@ -158,6 +158,11 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const body = await req.json();
+
+    if (body.website || body.company_url) {
+      return NextResponse.json({ success: true });
+    }
+
     const { name, phone, email, address, projectType, message, branch } = body;
 
     if (!name || !phone || !email || !message) {

@@ -1,11 +1,20 @@
-import { trackGenerateLead, trackWhatsAppClick, type MarketingBranch } from '@/lib/analytics';
+import {
+  trackGenerateLead,
+  trackWhatsAppClick,
+  type AnalyticsEventParams,
+  type MarketingBranch,
+} from '@/lib/analytics';
+import { DEFAULT_WHATSAPP_NUMBER, PHONES } from '@/lib/site-config';
 
 export const BRANCH_WHATSAPP_NUMBERS: Record<string, string> = {
-  mumbai: '919321812823',
-  ahmedabad: '919321812823',
+  mumbai: PHONES.whatsappPrimary.e164,
+  navi_mumbai: PHONES.whatsappPrimary.e164,
+  thane: PHONES.whatsappPrimary.e164,
+  ahmedabad: PHONES.whatsappPrimary.e164,
+  bopal: PHONES.whatsappPrimary.e164,
 };
 
-export const DEFAULT_WHATSAPP_NUMBER = BRANCH_WHATSAPP_NUMBERS.mumbai;
+export { DEFAULT_WHATSAPP_NUMBER };
 
 export type QuoteWhatsAppData = {
   name: string;
@@ -13,21 +22,23 @@ export type QuoteWhatsAppData = {
   email: string;
   address?: string;
   branch?: string;
+  location?: string;
   projectType?: string;
   message: string;
 };
 
-export type WhatsAppOpenOptions = {
+export type WhatsAppOpenOptions = AnalyticsEventParams & {
   branch?: MarketingBranch | string;
-  cta?: string;
-  source?: string;
-  projectType?: string;
   trackAsLead?: boolean;
+  projectType?: string;
 };
 
 const branchLabels: Record<string, string> = {
-  mumbai: 'Mumbai (Head Office)',
+  mumbai: 'Mumbai / Navi Mumbai / Thane',
+  navi_mumbai: 'Navi Mumbai',
+  thane: 'Thane',
   ahmedabad: 'Ahmedabad',
+  bopal: 'Bopal (Ahmedabad)',
 };
 
 export function formatBranchLabel(branch?: string) {
@@ -59,6 +70,10 @@ export function buildQuoteWhatsAppMessage(data: QuoteWhatsAppData) {
     lines.push(`Address: ${data.address.trim()}`);
   }
 
+  if (data.location?.trim()) {
+    lines.push(`Location: ${data.location.trim()}`);
+  }
+
   const branchLabel = formatBranchLabel(data.branch);
   if (branchLabel) {
     lines.push(`Preferred Branch: ${branchLabel}`);
@@ -73,6 +88,33 @@ export function buildQuoteWhatsAppMessage(data: QuoteWhatsAppData) {
   return lines.join('\n');
 }
 
+/** Contextual WhatsApp messages by service slug */
+export const SERVICE_WHATSAPP_MESSAGES: Record<string, string> = {
+  'modular-kitchen':
+    'Hi, I am interested in a modular kitchen. I would like a free 3D design and site visit.',
+  wardrobes:
+    'Hi, I am interested in a custom wardrobe. I would like a free consultation.',
+  'custom-furniture':
+    'Hi, I am interested in custom furniture. Please contact me for a free consultation.',
+  'pvc-furniture':
+    'Hi, I am interested in PVC furniture. Please contact me for a free consultation.',
+  'tv-units':
+    'Hi, I am interested in a custom TV unit. I would like a free consultation.',
+  'bedroom-furniture':
+    'Hi, I am interested in bedroom furniture. Please contact me for a free consultation.',
+  'office-furniture':
+    'Hi, I am interested in office furniture. Please contact me for a free consultation.',
+  'home-interiors':
+    'Hi, I am interested in home interiors. I would like a free 3D design and site visit.',
+};
+
+export function getServiceWhatsAppMessage(service?: string) {
+  if (service && SERVICE_WHATSAPP_MESSAGES[service]) {
+    return SERVICE_WHATSAPP_MESSAGES[service];
+  }
+  return 'Hi, I am interested in custom furniture / modular kitchen. I would like a free 3D design and site visit. My location:';
+}
+
 function openWhatsAppUrl(
   phone: string,
   message: string,
@@ -84,8 +126,12 @@ function openWhatsAppUrl(
   trackWhatsAppClick({
     branch: (options.branch as MarketingBranch) || 'unknown',
     cta: options.cta || 'whatsapp',
+    cta_position: options.cta_position,
     source: options.source,
-    project_type: options.projectType,
+    project_type: options.projectType || options.project_type,
+    service: options.service,
+    location: options.location,
+    page: options.page,
   });
 
   if (options.trackAsLead) {
@@ -93,7 +139,9 @@ function openWhatsAppUrl(
       branch: options.branch,
       cta: options.cta || 'quote_form',
       source: options.source,
-      project_type: options.projectType,
+      project_type: options.projectType || options.project_type,
+      service: options.service,
+      location: options.location,
     });
   }
 

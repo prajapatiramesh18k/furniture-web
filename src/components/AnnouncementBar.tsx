@@ -4,10 +4,8 @@ import { handleTrackedPhoneClick } from '@/lib/analytics';
 
 export default function AnnouncementBar() {
   const [visible, setVisible] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const dismissed = sessionStorage.getItem('announcement-dismissed');
     if (dismissed) setVisible(false);
   }, []);
@@ -17,7 +15,7 @@ export default function AnnouncementBar() {
     sessionStorage.setItem('announcement-dismissed', '1');
   };
 
-  if (!mounted || !visible) return null;
+  if (!visible) return null;
 
   return (
     <div className="announcement-bar">
@@ -31,7 +29,7 @@ export default function AnnouncementBar() {
         </span>
         <span className="announcement-bar-divider">|</span>
         <a
-          href="tel:+918318727813"
+          href="tel:+919321812823"
           className="announcement-bar-item announcement-bar-highlight"
           onClick={() =>
             handleTrackedPhoneClick({
@@ -41,7 +39,7 @@ export default function AnnouncementBar() {
             })
           }
         >
-          <i className="fas fa-phone"></i> Call: +91 83187 27813
+          <i className="fas fa-phone"></i> Call: +91 93218 12823
         </a>
       </div>
       <button

@@ -2,18 +2,20 @@
 
 import { handleTrackedPhoneClick } from '@/lib/analytics';
 const quickLinks = [
-  { label: 'Home', href: '#home' },
+  { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
-  { label: 'Services', href: '#services' },
-  { label: 'Products', href: '#' },
+  { label: 'Modular Kitchen', href: '/modular-kitchen' },
+  { label: 'Wardrobes', href: '/wardrobes' },
+  { label: 'Custom Furniture', href: '/custom-furniture' },
+  { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },
   { label: 'Contact', href: '/contact' },
 ];
 
 const contactInfo = {
   phones: [
+    { display: '+91 93218 12823', tel: '+919321812823', branch: 'mumbai' as const },
     { display: '+91 83187 27813', tel: '+918318727813', branch: 'mumbai' as const },
-    { display: '+91 93218 12823', tel: '+919321812823', branch: 'ahmedabad' as const },
   ],
   email: 'ananyahouseoffurniture@gmail.com',
   address: 'Diva-Shil Road, Khardipada, Thane, Maharashtra, India - 400612',

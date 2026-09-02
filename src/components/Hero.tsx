@@ -1,6 +1,10 @@
 'use client';
-import dynamic from 'next/dynamic';
+
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { openWhatsAppChat } from '@/lib/quote-whatsapp';
+import { handleTrackedPhoneClick, trackEvent } from '@/lib/analytics';
+import { PHONES } from '@/lib/site-config';
 
 const sliders = [
   {
@@ -12,47 +16,54 @@ const sliders = [
   },
   {
     id: 2,
+    image: 'images/home-slide5.jpg',
+    heading: 'Free Site Visit & 3D Design Consultation',
+    tagline: 'See Your Home Before We Build It',
+    subtext: 'Book a free consultation • No commitment required',
+  },
+  {
+    id: 3,
+    image: 'images/home-slide3.jpg',
+    heading: 'In-House Manufacturing Since 2012',
+    tagline: 'Factory-Direct Custom Furniture',
+    subtext: 'In-house Manufacturing • Free Design • 5-Year Warranty',
+  },
+  {
+    id: 4,
     image: 'images/home-slide2.jpg',
     heading: 'Office, Shop & Commercial Interiors',
     tagline: 'Custom Furniture for Every Business',
     subtext: 'Workstations • Counters • Display Units • Storage • Complete Fit-outs',
   },
   {
-    id: 3,
-    image: 'images/home-slide3.jpg',
-    heading: 'Trusted by 2,500+ Families Since 2012',
-    tagline: 'Factory-Direct Custom Furniture',
-    subtext: 'In-house Manufacturing • Free Design • 5-Year Warranty',
-  },
-  {
-    id: 4,
+    id: 5,
     image: 'images/home-slide4.jpg',
     heading: 'Your Dream Home, Designed & Built by Us',
-    tagline: 'Bespoke Furniture • 14+ Years of Trust',
+    tagline: 'Bespoke Furniture • Trusted Since 2012',
     subtext: 'Living Room • Bedroom • Kitchen • Office • Pooja Room',
-  },
-  {
-    id: 5,
-    image: 'images/home-slide5.jpg',
-    heading: 'Free Site Visit & 3D Design Consultation',
-    tagline: 'See Your Home Before We Build It',
-    subtext: 'Book a free consultation • No commitment required',
   },
 ];
 
-function HeroSlider() {
+export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setReady(true);
   }, []);
 
   useEffect(() => {
-    let swiper: any = null;
+    if (!ready) return;
+
+    let swiper: { destroy?: (deleteInstance?: boolean, cleanStyles?: boolean) => void } | null =
+      null;
+    let cancelled = false;
 
     const initSwiper = async () => {
       const Swiper = (await import('swiper')).default;
       const { Autoplay, Navigation } = await import('swiper/modules');
+      if (cancelled) return;
 
       swiper = new Swiper('.home-slider', {
         modules: [Autoplay, Navigation],
@@ -66,8 +77,8 @@ function HeroSlider() {
           prevEl: '#hero-prev',
         },
         on: {
-          slideChange: (swiper: any) => {
-            setCurrentSlide(swiper.realIndex);
+          slideChange: (s: { realIndex: number }) => {
+            setCurrentSlide(s.realIndex);
           },
         },
       });
@@ -76,12 +87,26 @@ function HeroSlider() {
     initSwiper();
 
     return () => {
+      cancelled = true;
       if (swiper && typeof swiper.destroy === 'function') {
         swiper.destroy(true, true);
         swiper = null;
       }
     };
-  }, []);
+  }, [ready]);
+
+  const onWhatsApp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    openWhatsAppChat(
+      'Hi, I am interested in custom furniture / modular kitchen. I would like a free 3D design and site visit. My location:',
+      {
+        branch: 'mumbai',
+        cta: 'hero_whatsapp',
+        cta_position: 'homepage_hero',
+        source: 'homepage_hero',
+      }
+    );
+  };
 
   return (
     <section className="home" id="home">
@@ -90,32 +115,60 @@ function HeroSlider() {
           {sliders.map((slide, index) => (
             <div
               key={slide.id}
-              className={`swiper-slide slide ${currentSlide === index ? 'active' : ''}`}
+              className={`swiper-slide slide${currentSlide === index ? ' active' : ''}`}
               style={{
                 backgroundImage: `url("${slide.image}")`,
                 backgroundPosition: 'center center',
                 backgroundRepeat: 'no-repeat',
               }}
             >
-              <div className="hero-overlay"></div>
+              <div className="hero-overlay" />
               <div className="hero-content-wrapper">
                 <div className="hero-badge">
                   <span className="hero-badge-icon">🏆</span>
                   <span>Handcrafted Furniture Experts • Since 2012</span>
                 </div>
-                <h3 className="hero-heading">{slide.heading}</h3>
+                {index === 0 ? (
+                  <h1 className="hero-heading">{slide.heading}</h1>
+                ) : (
+                  <h3 className="hero-heading">{slide.heading}</h3>
+                )}
                 <div className="hero-tagline">
                   <span className="hero-tagline-text">{slide.tagline}</span>
                 </div>
                 <p className="hero-subtext">{slide.subtext}</p>
                 <div className="hero-cta-group">
-                  <a href="/contact" className="hero-cta-primary">
-                    <span>Get Free Quote</span>
-                    <i className="fas fa-paper-plane"></i>
+                  <Link
+                    href="/contact?type=Custom%20Furniture"
+                    className="hero-cta-primary"
+                    onClick={() =>
+                      trackEvent('3d_design_request', {
+                        cta_position: 'homepage_hero',
+                        source: 'homepage_hero',
+                      })
+                    }
+                  >
+                    <span>Get Free 3D Design</span>
+                    <i className="fas fa-cube" />
+                  </Link>
+                  <a href="#" className="hero-cta-secondary hero-cta-wa" onClick={onWhatsApp}>
+                    <span>WhatsApp Us</span>
+                    <i className="fab fa-whatsapp" />
                   </a>
-                  <a href="/projects" className="hero-cta-secondary">
-                    <span>View Our Work</span>
-                    <i className="fas fa-arrow-right"></i>
+                  <a
+                    href={`tel:${PHONES.mumbaiPrimary.tel}`}
+                    className="hero-cta-secondary"
+                    onClick={() =>
+                      handleTrackedPhoneClick({
+                        branch: 'mumbai',
+                        cta: 'hero_call',
+                        cta_position: 'homepage_hero',
+                        source: 'homepage_hero',
+                      })
+                    }
+                  >
+                    <span>Call Now</span>
+                    <i className="fas fa-phone" />
                   </a>
                 </div>
               </div>
@@ -126,5 +179,3 @@ function HeroSlider() {
     </section>
   );
 }
-
-export default dynamic(() => Promise.resolve(HeroSlider), { ssr: true });

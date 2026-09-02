@@ -9,7 +9,7 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     question: 'What is your delivery time?',
-    answer: 'Standard delivery takes 7-15 working days depending on the product and your location. Custom furniture may take 15-30 days. We provide free delivery across Thane and Mumbai.',
+    answer: 'Standard delivery takes 7-15 working days depending on the product and your location. Custom furniture may take 15-30 days. We provide delivery across Mumbai, Navi Mumbai and Thane (and Ahmedabad projects via our Bopal branch).',
   },
   {
     question: 'Do you offer warranty on furniture?',

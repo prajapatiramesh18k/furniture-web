@@ -1,58 +1,106 @@
 'use client';
 import CloseButton from '@/components/CloseButton';
-import { useState, useEffect } from 'react';
-import { handleTrackedPhoneClick } from '@/lib/analytics';
+import { useState, useEffect, useRef } from 'react';
+import {
+  handleTrackedPhoneClick,
+  trackContactFormStart,
+  trackContactFormSubmit,
+  trackQuoteRequest,
+  trackSiteVisitRequest,
+  track3dDesignRequest,
+} from '@/lib/analytics';
 import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
+import { trackMetaContact, trackMetaLead } from '@/components/MetaPixel';
 
 const projectTypes = [
-  '1 BHK',
-  '2 BHK',
-  '3 BHK',
-  '4 BHK / Villa',
-  'Office',
-  'Shop / Retail',
-  'Restaurant',
-  'Showroom',
   'Modular Kitchen',
-  'Pooja Unit',
+  'Wardrobe',
   'Custom Furniture',
+  'PVC Furniture',
+  'TV Unit',
+  'Bedroom Furniture',
+  'Office Furniture',
+  'Complete Home Interior',
+  'Other',
+];
+
+const locations = [
+  'Mumbai',
+  'Navi Mumbai',
+  'Thane',
+  'Ahmedabad',
+  'Bopal',
   'Other',
 ];
 
 const branches = [
-  { id: 'mumbai', name: 'Mumbai (Head Office)' },
-  { id: 'ahmedabad', name: 'Ahmedabad' },
+  { id: 'mumbai', name: 'Mumbai / Thane (Head Office)' },
+  { id: 'ahmedabad', name: 'Ahmedabad (Bopal)' },
 ];
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', branch: '', projectType: '', message: '' });
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    location: '',
+    branch: '',
+    projectType: '',
+    message: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
+  const formStarted = useRef(false);
 
   useEffect(() => {
-    document.title = 'Send Us a Message | Ananya House of Furniture';
+    document.title = 'Get Free 3D Design & Site Visit | Ananya House of Furniture';
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const type = params.get('type');
       const branch = params.get('branch');
+      const location = params.get('location');
       if (type) {
-        setForm((f) => ({ ...f, projectType: type }));
+        const match = projectTypes.find(
+          (t) => t.toLowerCase() === type.toLowerCase() || t.toLowerCase().replace(/\s+/g, '-') === type.toLowerCase()
+        );
+        setForm((f) => ({
+          ...f,
+          projectType: match ? match.toLowerCase().replace(/[\s/]+/g, '-') : type.toLowerCase().replace(/[\s/]+/g, '-'),
+        }));
       }
       if (branch) {
         setForm((f) => ({ ...f, branch }));
       }
+      if (location) {
+        setForm((f) => ({ ...f, location }));
+      }
     }
   }, []);
+
+  const markFormStart = () => {
+    if (formStarted.current) return;
+    formStarted.current = true;
+    trackContactFormStart({ source: 'contact_page', cta_position: 'contact_form' });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(false);
 
+    const formEl = e.target as HTMLFormElement;
+    const honey = (formEl.elements.namedItem('company_url') as HTMLInputElement | null)?.value;
+    if (honey) {
+      setSubmitting(false);
+      setSubmitted(true);
+      return;
+    }
+
     const phoneDigits = form.phone.replace(/\D/g, '');
-    if (!form.name.trim() || !form.email.trim() || !form.projectType || !form.message.trim()) {
+    if (!form.name.trim() || !form.email.trim() || !form.projectType || !form.location || !form.message.trim()) {
       setError(true);
       setSubmitting(false);
       return;
@@ -63,14 +111,20 @@ export default function ContactPage() {
       return;
     }
 
+    const projectTypeLabel =
+      projectTypes.find(
+        (type) => type.toLowerCase().replace(/[\s/]+/g, '-') === form.projectType
+      ) || form.projectType;
+
     const submittedData = {
       name: form.name.trim(),
       phone: phoneDigits,
       email: form.email.trim(),
       address: form.address.trim(),
-      branch: form.branch,
+      location: form.location,
+      branch: form.branch || (form.location === 'Ahmedabad' || form.location === 'Bopal' ? 'ahmedabad' : 'mumbai'),
       projectType: form.projectType,
-      message: form.message.trim(),
+      message: `[Location: ${form.location}] ${form.message.trim()}`,
     };
 
     try {
@@ -85,11 +139,45 @@ export default function ContactPage() {
         return;
       }
 
-      // DB save confirmed — open WhatsApp with the exact submitted details
-      openQuoteWhatsApp(submittedData, {
+      trackContactFormSubmit({
         source: 'contact_page',
-        cta: 'contact_page_whatsapp',
+        cta_position: 'contact_form',
+        service: form.projectType,
+        location: form.location,
+        project_type: projectTypeLabel,
       });
+      trackQuoteRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: form.location,
+      });
+      trackSiteVisitRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: form.location,
+      });
+      track3dDesignRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: form.location,
+      });
+      trackMetaLead();
+      trackMetaContact();
+
+      openQuoteWhatsApp(
+        {
+          ...submittedData,
+          projectType: projectTypeLabel,
+          location: form.location,
+        },
+        {
+          source: 'contact_page',
+          cta: 'contact_page_whatsapp',
+          cta_position: 'contact_form',
+          service: form.projectType,
+          location: form.location,
+        }
+      );
       setSubmitted(true);
     } catch {
       setError(true);
@@ -138,20 +226,20 @@ export default function ContactPage() {
 
             <div className="info-stats">
               <div className="info-stat anim-fade-up" style={{ animationDelay: '0.3s' }}>
-                <span className="info-stat-num">5000+</span>
-                <span className="info-stat-label">Happy Homes</span>
+                <span className="info-stat-num">2012</span>
+                <span className="info-stat-label">Established</span>
               </div>
               <div className="info-stat anim-fade-up" style={{ animationDelay: '0.4s' }}>
                 <span className="info-stat-num">14+</span>
                 <span className="info-stat-label">Years</span>
               </div>
               <div className="info-stat anim-fade-up" style={{ animationDelay: '0.5s' }}>
-                <span className="info-stat-num">5★</span>
-                <span className="info-stat-label">Rated</span>
+                <span className="info-stat-num">5yr</span>
+                <span className="info-stat-label">Warranty</span>
               </div>
               <div className="info-stat anim-fade-up" style={{ animationDelay: '0.6s' }}>
-                <span className="info-stat-num">24h</span>
-                <span className="info-stat-label">Response</span>
+                <span className="info-stat-num">Free</span>
+                <span className="info-stat-label">3D Design</span>
               </div>
             </div>
 
@@ -183,7 +271,7 @@ export default function ContactPage() {
             </div>
 
             <a
-              href="tel:+918318727813"
+              href="tel:+919321812823"
               className="info-cta-phone anim-fade-up"
               style={{ animationDelay: '0.85s' }}
               onClick={() =>
@@ -198,7 +286,7 @@ export default function ContactPage() {
               <i className="fas fa-phone"></i>
               <div>
                 <span>Or call us now</span>
-                <strong>+91 83187 27813</strong>
+                <strong>+91 93218 12823</strong>
               </div>
             </a>
           </div>
@@ -215,18 +303,22 @@ export default function ContactPage() {
                 </div>
                 <h2 className="success-title">Message Sent!</h2>
                 <p className="success-text">Thank you for reaching out. Our team will contact you within 24 hours.</p>
-                <button className="cpf-submit success-btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', address: '', branch: '', projectType: '', message: '' }); }}>
+                <button className="cpf-submit success-btn" onClick={() => { setSubmitted(false); setForm({ name: '', phone: '', email: '', address: '', location: '', branch: '', projectType: '', message: '' }); }}>
                   <i className="fas fa-paper-plane"></i> Send Another Message
                 </button>
               </div>
             ) : (
               <>
                 <div className="contact-form-header anim-fade-up" style={{ animationDelay: '0.05s' }}>
-                  <h1>Send Us a Message</h1>
-                  <p>Tell us about your project — our team will respond within 24 hours.</p>
+                  <h1>Get Free 3D Design &amp; Site Visit</h1>
+                  <p>Tell us your service and location — we respond within 24 hours.</p>
                 </div>
 
-                <form className="contact-page-form" onSubmit={handleSubmit}>
+                <form className="contact-page-form" onSubmit={handleSubmit} onFocus={markFormStart}>
+                  <div className="hp-field" aria-hidden="true">
+                    <label htmlFor="company_url">Company URL</label>
+                    <input type="text" id="company_url" name="company_url" tabIndex={-1} autoComplete="off" defaultValue="" />
+                  </div>
                   <div className="cpf-section-label anim-fade-up" style={{ animationDelay: '0.1s' }}>
                     <span>Personal Details</span>
                   </div>
@@ -235,14 +327,16 @@ export default function ContactPage() {
                     <div className={`floating-field ${isActive('name') ? 'active' : ''}`}>
                       <input
                         type="text"
+                        id="contact-name"
                         className="cpf-input"
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
                         onFocus={() => setFocused('name')}
                         onBlur={() => setFocused(null)}
+                        autoComplete="name"
                         required
                       />
-                      <label className="floating-label">Your Name</label>
+                      <label className="floating-label" htmlFor="contact-name">Your Name</label>
                     </div>
                   </div>
 
@@ -251,6 +345,7 @@ export default function ContactPage() {
                       <div className={`floating-field ${isActive('phone') ? 'active' : ''}`}>
                         <input
                           type="tel"
+                          id="contact-phone"
                           className="cpf-input"
                           value={form.phone}
                           onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -258,9 +353,11 @@ export default function ContactPage() {
                           onBlur={() => setFocused(null)}
                           pattern="[0-9]{10}"
                           maxLength={10}
+                          inputMode="numeric"
+                          autoComplete="tel"
                           required
                         />
-                        <label className="floating-label">Mobile Number</label>
+                        <label className="floating-label" htmlFor="contact-phone">Mobile Number</label>
                       </div>
                     </div>
 
@@ -268,14 +365,16 @@ export default function ContactPage() {
                       <div className={`floating-field ${isActive('email') ? 'active' : ''}`}>
                         <input
                           type="email"
+                          id="contact-email"
                           className="cpf-input"
                           value={form.email}
                           onChange={(e) => setForm({ ...form, email: e.target.value })}
                           onFocus={() => setFocused('email')}
                           onBlur={() => setFocused(null)}
+                          autoComplete="email"
                           required
                         />
-                        <label className="floating-label">Email Address</label>
+                        <label className="floating-label" htmlFor="contact-email">Email Address</label>
                       </div>
                     </div>
                   </div>
@@ -283,6 +382,7 @@ export default function ContactPage() {
                   <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.36s' }}>
                     <div className={`floating-field ${isActive('address') ? 'active' : ''}`}>
                       <textarea
+                        id="contact-address"
                         className="cpf-input cpf-textarea-short"
                         rows={2}
                         value={form.address}
@@ -290,7 +390,7 @@ export default function ContactPage() {
                         onFocus={() => setFocused('address')}
                         onBlur={() => setFocused(null)}
                       />
-                      <label className="floating-label">Your Address <span className="cpf-optional">(site location for visit)</span></label>
+                      <label className="floating-label" htmlFor="contact-address">Your Address <span className="cpf-optional">(site location for visit)</span></label>
                     </div>
                   </div>
 
@@ -300,8 +400,29 @@ export default function ContactPage() {
 
                   <div className="cpf-row">
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.43s' }}>
+                      <div className={`floating-field ${isActive('location') ? 'active' : ''}`}>
+                        <select
+                          id="contact-location"
+                          className="cpf-input cpf-select"
+                          value={form.location}
+                          onChange={(e) => setForm({ ...form, location: e.target.value })}
+                          onFocus={() => setFocused('location')}
+                          onBlur={() => setFocused(null)}
+                          required
+                        >
+                          <option value=""></option>
+                          {locations.map((loc) => (
+                            <option key={loc} value={loc}>{loc}</option>
+                          ))}
+                        </select>
+                        <label className="floating-label" htmlFor="contact-location">Your Location</label>
+                      </div>
+                    </div>
+
+                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.46s' }}>
                       <div className={`floating-field ${isActive('branch') ? 'active' : ''}`}>
                         <select
+                          id="contact-branch"
                           className="cpf-input cpf-select"
                           value={form.branch}
                           onChange={(e) => setForm({ ...form, branch: e.target.value })}
@@ -313,29 +434,30 @@ export default function ContactPage() {
                             <option key={b.id} value={b.id}>{b.name}</option>
                           ))}
                         </select>
-                        <label className="floating-label">Preferred Branch</label>
+                        <label className="floating-label" htmlFor="contact-branch">Preferred Branch</label>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.5s' }}>
-                      <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
-                        <select
-                          className="cpf-input cpf-select"
-                          value={form.projectType}
-                          onChange={(e) => setForm({ ...form, projectType: e.target.value })}
-                          onFocus={() => setFocused('projectType')}
-                          onBlur={() => setFocused(null)}
-                          required
-                        >
-                          <option value=""></option>
-                          {projectTypes.map((type) => (
-                            <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                        <label className="floating-label">Project Type</label>
-                      </div>
+                  <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.5s' }}>
+                    <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
+                      <select
+                        id="contact-service"
+                        className="cpf-input cpf-select"
+                        value={form.projectType}
+                        onChange={(e) => setForm({ ...form, projectType: e.target.value })}
+                        onFocus={() => setFocused('projectType')}
+                        onBlur={() => setFocused(null)}
+                        required
+                      >
+                        <option value=""></option>
+                        {projectTypes.map((type) => (
+                          <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                      <label className="floating-label" htmlFor="contact-service">Service Needed</label>
                     </div>
                   </div>
 
@@ -346,6 +468,7 @@ export default function ContactPage() {
                   <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.57s' }}>
                     <div className={`floating-field ${isActive('message') ? 'active' : ''}`}>
                       <textarea
+                        id="contact-message"
                         className="cpf-input cpf-textarea"
                         rows={4}
                         value={form.message}
@@ -354,14 +477,14 @@ export default function ContactPage() {
                         onBlur={() => setFocused(null)}
                         required
                       />
-                      <label className="floating-label floating-label-textarea">Tell us about your requirements…</label>
+                      <label className="floating-label floating-label-textarea" htmlFor="contact-message">Tell us about your requirements…</label>
                     </div>
                   </div>
 
                   {error && (
-                    <div className="cpf-error anim-fade-up">
+                    <div className="cpf-error anim-fade-up" role="alert">
                       <i className="fas fa-exclamation-circle"></i>
-                      Something went wrong. Please try again or contact us directly.
+                      Please fill all required fields, or try again. You can also WhatsApp / call us directly.
                     </div>
                   )}
 

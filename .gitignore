@@ -6,3 +6,4 @@ node_modules
 # Environment variables (local only)
 .env.local
 .env.*.local
+.env*

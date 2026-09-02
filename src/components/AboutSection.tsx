@@ -6,15 +6,15 @@ const aboutData = {
   tagline: 'Welcome to Ananya House of Furniture',
   heading: 'We Enhance the Beauty of Your Home',
   description:
-    'Since the past seven years, we have been passionate about making furniture that transforms spaces. Each piece is painstakingly crafted by our skilled artisans to ensure durability and timeless beauty. We back eco-friendly practices and neighborhood communities. Let Us Redefine Your Home by Choosing From Our Collections Today.',
+    'Founded in 2012, we have been passionate about making furniture that transforms spaces. Each piece is painstakingly crafted by our skilled artisans to ensure durability and timeless beauty. We back eco-friendly practices and neighborhood communities. Let Us Redefine Your Home by Choosing From Our Collections Today.',
   image: 'images/about.jpg',
   fullContent:
     'Founded in 2012, we have grown from a small workshop to a trusted name in custom furniture across Thane and Maharashtra. Our journey began with a simple vision: to create furniture that doesn\'t just fill a space but transforms it into a home.\n\nWhat sets us apart is our unwavering commitment to quality. Every piece that leaves our workshop undergoes rigorous quality checks. We source our wood from sustainable forests and use eco-friendly finishes that are safe for your family and the environment.\n\nOur team of 25+ skilled artisans brings decades of combined experience in woodworking, upholstery, and interior design. From traditional joinery techniques passed down through generations to modern CNC precision, we blend the best of both worlds.\n\nWe believe in transparent pricing with no hidden costs. Our in-house manufacturing means you get factory-direct prices without compromising on quality. Every purchase comes with our comprehensive 5-year warranty.',
   stats: [
+    { number: '2012', label: 'Established' },
     { number: '14+', label: 'Years Experience' },
-    { number: '500+', label: 'Happy Clients' },
     { number: '25+', label: 'Skilled Craftsmen' },
-    { number: '1000+', label: 'Custom Designs' },
+    { number: '5yr', label: 'Warranty' },
   ],
   whyChooseUs: [
     {
