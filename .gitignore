@@ -2,6 +2,7 @@ node_modules
 .next
 .vercel
 .playwright-mcp
+.claude
 
 # Environment variables (local only)
 .env.local
