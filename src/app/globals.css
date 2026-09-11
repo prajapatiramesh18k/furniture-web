@@ -17903,7 +17903,7 @@ input[type="number"] {
   color: #5a4a3a;
   margin: 0.1rem 0;
 }
-.qp-sig-sub { font-size: 0.7rem !important; color: #8a7d70 !important; }
+.qp-sig-sub { font-size: 1rem !important; font-weight: bold !important; color: black !important; }
 
 .qp-footer-note {
   text-align: center;

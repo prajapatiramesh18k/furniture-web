@@ -549,6 +549,22 @@ export default function QuotationMakerPage() {
     const target = document.getElementById('print-area');
     if (!target) return;
     setDownloading(true);
+    
+    // Save to database asynchronously
+    fetch('/api/quotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer,
+        project,
+        items,
+        totals: { subtotal, gst: includeGst ? subtotal * 0.18 : 0, total: includeGst ? subtotal * 1.18 : subtotal },
+        workType,
+        terms: notes,
+        inclusions: inclusionsText,
+      })
+    }).catch(console.error);
+
     target.classList.add('qp-compact');
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -1167,7 +1183,7 @@ export default function QuotationMakerPage() {
             <h4>To</h4>
             <p className="qp-name">{customer.name || '—'}</p>
             {customer.phone && <p><i className="fas fa-phone"></i> +91 {customer.phone}</p>}
-            {customer.email && <p><i className="fas fa-envelope"></i> {customer.email}</p>}
+            {customer.email && <p style={{ textTransform: 'lowercase' }}><i className="fas fa-envelope"></i> {customer.email}</p>}
             {customer.address && <p><i className="fas fa-map-marker-alt"></i> {customer.address}</p>}
             {project.type && (
               <p className="qp-project">
@@ -1275,7 +1291,11 @@ export default function QuotationMakerPage() {
             <div className="qp-sig-block">
               <div className="qp-sig-line"></div>
               <p>For Ananya House of Furniture</p>
-              <p className="qp-sig-sub">Ramesh Prajapati</p>
+              <p className="qp-sig-sub" style={{ fontWeight: 'bold', color: 'red' }}>
+                {customer.branch.toLowerCase().includes('mumbai') 
+                  ? 'Mahesh Prajapati' 
+                  : 'Ramesh Prajapati'}
+              </p>
             </div>
           </div>
 
