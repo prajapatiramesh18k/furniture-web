@@ -15,7 +15,12 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    // Not required if logging in via Google
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
   },
   isAdmin: {
     type: Boolean,

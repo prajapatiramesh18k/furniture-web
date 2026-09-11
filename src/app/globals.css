@@ -13475,7 +13475,13 @@ input, textarea, select {
 .forgot-split-page {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: #fff;
   animation: fadeInPage 0.8s ease-out;
 }
 

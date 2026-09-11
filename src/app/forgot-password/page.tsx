@@ -7,7 +7,6 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const [resetUrl, setResetUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +24,6 @@ export default function ForgotPasswordPage() {
 
       if (res.ok) {
         setSent(true);
-        if (data.resetUrl) {
-          setResetUrl(data.resetUrl);
-        }
       } else {
         setError(data.error || 'Something went wrong');
       }
@@ -40,6 +36,13 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="forgot-split-page">
+      {/* Close button */}
+      <a href="/login" className="close-btn" style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 100 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </a>
+
       {/* Left Side - Image */}
       <div className="forgot-image-side">
         <div className="forgot-image-overlay">
@@ -86,20 +89,6 @@ export default function ForgotPasswordPage() {
                 <i className="fas fa-info-circle"></i>
                 <p>If you don&apos;t see the email, check your spam folder or try again in a few minutes.</p>
               </div>
-
-              {resetUrl && (
-                <div className="dev-reset-box">
-                  <div className="dev-reset-header">
-                    <i className="fas fa-code"></i>
-                    <span>Development Mode</span>
-                  </div>
-                  <p>Click the link below to reset your password:</p>
-                  <a href={resetUrl} className="dev-reset-link">
-                    <i className="fas fa-external-link-alt"></i>
-                    Reset Password
-                  </a>
-                </div>
-              )}
 
               <div className="success-actions">
                 <Link href="/login" className="btn-back-login">

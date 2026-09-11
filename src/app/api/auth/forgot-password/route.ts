@@ -95,9 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Password reset email sent! Check your inbox.',
-      // Return reset URL for testing (remove in production)
-      resetUrl
+      message: 'Password reset email sent! Check your inbox.'
     });
 
   } catch (error) {

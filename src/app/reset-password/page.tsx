@@ -61,6 +61,11 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="forgot-split-page">
+        <a href="/login" className="close-btn" style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 100 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </a>
         <div className="forgot-image-side">
           <div className="forgot-image-overlay">
             <div className="forgot-brand">
@@ -98,6 +103,11 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="forgot-split-page">
+        <a href="/login" className="close-btn" style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 100 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </a>
         <div className="forgot-image-side">
           <div className="forgot-image-overlay">
             <div className="forgot-brand">
@@ -145,6 +155,11 @@ function ResetPasswordForm() {
 
   return (
     <div className="forgot-split-page">
+      <a href="/login" className="close-btn" style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 100 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </a>
       {/* Left Side - Image */}
       <div className="forgot-image-side">
         <div className="forgot-image-overlay">
