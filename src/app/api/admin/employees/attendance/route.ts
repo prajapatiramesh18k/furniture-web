@@ -40,6 +40,30 @@ export async function POST(request: Request) {
 
     const earnedDays = calculateEarnedDays(data.workHours, employee.standardHours);
     data.earnedDays = earnedDays;
+    if (!data.status) {
+      data.status = Number(data.workHours) > 0 ? 'manual' : 'absent';
+    }
+
+    const targetDate = new Date(data.date);
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Check if an attendance record already exists for this employee on this date
+    const existing = await EmployeeAttendance.findOne({
+      employeeId: data.employeeId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    if (existing) {
+      existing.workHours = Number(data.workHours);
+      existing.earnedDays = earnedDays;
+      if (data.notes !== undefined) existing.notes = data.notes;
+      existing.status = data.status || (Number(data.workHours) > 0 ? 'manual' : 'absent');
+      await existing.save();
+      return NextResponse.json(existing, { status: 200 });
+    }
 
     const newAttendance = await EmployeeAttendance.create(data);
     return NextResponse.json(newAttendance, { status: 201 });

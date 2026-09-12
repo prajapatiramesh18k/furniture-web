@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import DeleteButton from '@/components/DeleteButton';
 import { trackQuotationPdfDownload } from '@/lib/analytics';
 
 type LineItem = { id: number; name: string; material: string; height: number; width: number; quantity: number; rate: number };
@@ -358,6 +360,7 @@ export default function QuotationMakerPage() {
   const [activePresetLabel, setActivePresetLabel] = useState<string | null>(null);
   const [draftQtyText, setDraftQtyText] = useState('1');
   const [listQtyTexts, setListQtyTexts] = useState<Record<number, string>>({});
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -651,20 +654,23 @@ export default function QuotationMakerPage() {
   };
 
   const handleReset = () => {
-    if (window.confirm('Reset all fields? This cannot be undone.')) {
-      setCustomer(initialCustomer);
-      setProject({ ...initialProject });
-      setItems([]);
-      setInclusionsText(defaultInclusions);
-      setNotes(defaultTerms);
-      setWorkType(defaultWorkType);
-      fetch('/api/quotation-counter')
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.quoteNo) setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
-        })
-        .catch(() => {});
-    }
+    setIsResetConfirmOpen(true);
+  };
+
+  const executeReset = () => {
+    setIsResetConfirmOpen(false);
+    setCustomer(initialCustomer);
+    setProject({ ...initialProject });
+    setItems([]);
+    setInclusionsText(defaultInclusions);
+    setNotes(defaultTerms);
+    setWorkType(defaultWorkType);
+    fetch('/api/quotation-counter')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.quoteNo) setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
+      })
+      .catch(() => {});
   };
 
   const isActive = (key: string) => focused === key;
@@ -1051,14 +1057,12 @@ export default function QuotationMakerPage() {
                           </button>
                         </div>
                         <div className="quotation-items-list-action-cell">
-                          <button
-                            type="button"
-                            className="quotation-list-btn quotation-list-btn-delete"
+                          <DeleteButton
+                            size={32}
+                            iconSize={16}
                             onClick={() => removeItem(it.id)}
                             title="Delete this item"
-                          >
-                            <i className="fas fa-trash"></i> Delete
-                          </button>
+                          />
                         </div>
                       </div>
                     );
@@ -1304,6 +1308,18 @@ export default function QuotationMakerPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isResetConfirmOpen}
+        message="Are you sure you want to"
+        boldWord="Reset"
+        afterBold="all quotation fields?"
+        subtext="This will clear customer details, items, specifications, and terms. This action cannot be undone."
+        confirmText="Yes, Reset"
+        confirmButtonVariant="danger"
+        onConfirm={executeReset}
+        onCancel={() => setIsResetConfirmOpen(false)}
+      />
     </div>
   );
 }

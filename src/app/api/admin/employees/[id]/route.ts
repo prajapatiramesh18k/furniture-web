@@ -17,6 +17,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
+import EmployeeSettlement from '@/lib/models/EmployeeSettlement';
+import EmployeePayment from '@/lib/models/EmployeePayment';
+import { calculateMonthlyPayroll } from '@/lib/payroll-service';
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -35,6 +39,46 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (!updatedEmployee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
+
+    // If dailyRate was updated, automatically synchronize the current month's payroll settlement
+    if (data.dailyRate !== undefined && Number(data.dailyRate) > 0) {
+      try {
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+        const existingSettlement = await EmployeeSettlement.findOne({
+          employeeId: id,
+          month: currentMonth,
+          year: currentYear,
+        });
+
+        if (existingSettlement) {
+          const newRate = Number(data.dailyRate);
+          const calc = await calculateMonthlyPayroll(id, newRate, currentMonth, currentYear);
+          existingSettlement.dailyRate = newRate;
+          existingSettlement.totalWorkHours = calc.totalWorkHours;
+          existingSettlement.totalEarnedDays = calc.totalEarnedDays;
+          existingSettlement.grossAmount = calc.grossAmount;
+          existingSettlement.totalPaid = calc.totalPaid;
+          existingSettlement.balanceAmount = calc.balanceAmount;
+          existingSettlement.settlementAmount = calc.balanceAmount;
+          await existingSettlement.save();
+
+          const settlementNotes = `Settlement for ${currentMonth}/${currentYear}`;
+          const existingPayment = await EmployeePayment.findOne({
+            employeeId: id,
+            paymentType: 'Settlement',
+            notes: settlementNotes,
+          });
+          if (existingPayment) {
+            existingPayment.amount = calc.balanceAmount;
+            await existingPayment.save();
+          }
+        }
+      } catch (syncErr) {
+        console.error('Error synchronizing settlement on dailyRate update:', syncErr);
+      }
+    }
+
     return NextResponse.json(updatedEmployee);
   } catch (error) {
     console.error('Error updating employee:', error);

@@ -4,6 +4,7 @@
 
 import EmployeeAttendance from './models/EmployeeAttendance';
 import EmployeePayment from './models/EmployeePayment';
+import Employee from './models/Employee';
 
 /**
  * Calculate earned days from work hours based on the business rule:
@@ -45,28 +46,48 @@ export async function calculateMonthlyPayroll(employeeId: string, dailyRate: num
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-  // 1. Get total attendance and calculate total earned days
-  const attendanceRecords = await EmployeeAttendance.find({
-    employeeId,
-    date: { $gte: startDate, $lte: endDate }
-  });
+  // Fetch employee, attendance records, and payments in parallel
+  const [employee, attendanceRecords, paymentRecords] = await Promise.all([
+    Employee.findById(employeeId).select('standardHours'),
+    EmployeeAttendance.find({
+      employeeId,
+      date: { $gte: startDate, $lte: endDate }
+    }),
+    EmployeePayment.find({
+      employeeId,
+      paymentType: { $ne: 'Settlement' },
+      date: { $gte: startDate, $lte: endDate }
+    })
+  ]);
+
+  const standardHours = employee?.standardHours || 8;
 
   let totalWorkHours = 0;
   let totalEarnedDays = 0;
+  let hasActiveShift = false;
+  let activeShiftHours = 0;
 
   for (const record of attendanceRecords) {
-    totalWorkHours += record.workHours;
-    totalEarnedDays += record.earnedDays;
+    let hours = record.workHours || 0;
+    let days = record.earnedDays || 0;
+
+    // If currently working on-site (punched in, not yet punched out), dynamically include live elapsed hours
+    if (record.status === 'punched_in' && record.punchIn && hours === 0) {
+      const elapsedMinutes = Math.max(0, Math.floor((Date.now() - new Date(record.punchIn).getTime()) / (1000 * 60)));
+      hours = Math.round((elapsedMinutes / 60) * 100) / 100;
+      days = Number(calculateEarnedDays(hours, standardHours).toFixed(2));
+      hasActiveShift = true;
+      activeShiftHours = hours;
+    }
+
+    totalWorkHours += hours;
+    totalEarnedDays += days;
   }
 
-  const grossAmount = totalEarnedDays * dailyRate;
+  totalWorkHours = Math.round(totalWorkHours * 100) / 100;
+  totalEarnedDays = Math.round(totalEarnedDays * 100) / 100;
 
-  // 2. Get total advances/payments made during this month (exclude Settlement records)
-  const paymentRecords = await EmployeePayment.find({
-    employeeId,
-    paymentType: { $ne: 'Settlement' },
-    date: { $gte: startDate, $lte: endDate }
-  });
+  const grossAmount = Math.round(totalEarnedDays * dailyRate);
 
   let totalPaid = 0;
   for (const payment of paymentRecords) {
@@ -83,6 +104,8 @@ export async function calculateMonthlyPayroll(employeeId: string, dailyRate: num
     dailyRate,
     grossAmount,
     totalPaid,
-    balanceAmount
+    balanceAmount,
+    hasActiveShift,
+    activeShiftHours,
   };
 }

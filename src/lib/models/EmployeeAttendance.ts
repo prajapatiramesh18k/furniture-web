@@ -36,7 +36,7 @@ const employeeAttendanceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['punched_in', 'completed', 'manual'],
+    enum: ['punched_in', 'completed', 'manual', 'absent'],
     default: 'manual',
   },
   workHours: {

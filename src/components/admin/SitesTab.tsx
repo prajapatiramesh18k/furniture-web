@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import FloatingInput from './FloatingInput';
 import ConfirmationModal from './ConfirmationModal';
+import DeleteButton from './DeleteButton';
 
 interface Site {
   _id: string;
@@ -48,6 +49,7 @@ export default function SitesTab() {
     afterBold?: string;
     subtext?: string;
     confirmText?: string;
+    confirmButtonVariant?: 'danger' | 'primary';
     onConfirm: () => void;
   }>({
     isOpen: false,
@@ -219,16 +221,17 @@ export default function SitesTab() {
       {toast && (
         <div style={{
           position: 'fixed',
-          top: '20px',
+          top: '80px',
           right: '20px',
-          zIndex: 9999,
-          padding: '1rem 1.6rem',
+          zIndex: 99999,
+          padding: '15px 30px',
           borderRadius: '8px',
           color: '#ffffff',
-          backgroundColor: toast.type === 'success' ? '#16a34a' : '#dc2626',
+          backgroundColor: toast.type === 'success' ? '#25D366' : '#dc2626',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontSize: '1.3rem',
+          fontSize: '16px',
           fontWeight: 600,
+          animation: 'slideIn 0.3s ease-out',
         }}>
           {toast.message}
         </div>
@@ -391,7 +394,21 @@ export default function SitesTab() {
                 </tr>
               ) : (
                 filteredSites.map((site) => (
-                  <tr key={site._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr
+                    key={site._id}
+                    onClick={() => handleOpenEdit(site)}
+                    style={{
+                      borderBottom: '1px solid #f1f5f9',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#faf8f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
                     <td style={{ padding: '1rem 1.2rem' }}>
                       <div style={{ fontWeight: 700, color: '#0f172a' }}>{site.name}</div>
                       {site.clientName && (
@@ -408,6 +425,7 @@ export default function SitesTab() {
                         href={`https://www.google.com/maps?q=${site.location.latitude},${site.location.longitude}`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                       >
                         <i className="fas fa-map-marker-alt"></i>
@@ -432,7 +450,7 @@ export default function SitesTab() {
                         {site.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }}>
+                    <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                         <button
                           onClick={() => handleOpenEdit(site)}
@@ -440,28 +458,25 @@ export default function SitesTab() {
                           style={{
                             backgroundColor: '#f1f5f9',
                             border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            width: '32px',
+                            height: '32px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             color: '#0284c7',
                             cursor: 'pointer',
+                            padding: 0,
                           }}
                         >
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button
+                        <DeleteButton
+                          size={32}
+                          iconSize={16}
                           onClick={() => handleDelete(site._id, site.name)}
                           title="Delete Site"
-                          style={{
-                            backgroundColor: '#fee2e2',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 10px',
-                            color: '#dc2626',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>
@@ -474,29 +489,35 @@ export default function SitesTab() {
 
       {/* Add / Edit Site Modal */}
       {modalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10000,
-          padding: '1rem',
-        }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '560px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            padding: '2rem',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-          }}>
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '2rem',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 {editingSite ? 'Edit Job Site' : 'Add New Job Site'}
@@ -665,6 +686,7 @@ export default function SitesTab() {
         afterBold={confirmModal.afterBold}
         subtext={confirmModal.subtext}
         confirmText={confirmModal.confirmText}
+        confirmButtonVariant={confirmModal.confirmButtonVariant}
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />

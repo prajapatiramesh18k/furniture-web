@@ -18,14 +18,24 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Build update object with only the fields we want to change
     const updateData: any = {};
     if (data.date !== undefined) updateData.date = new Date(data.date);
-    if (data.workHours !== undefined) updateData.workHours = data.workHours;
     if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.status !== undefined) updateData.status = data.status;
 
-    // Recalculate earned days if workHours is provided
     if (data.workHours !== undefined) {
+      const hours = Number(data.workHours);
+      updateData.workHours = hours;
+      if (attendance.status === 'punched_in') {
+        updateData.status = hours > 0 ? 'completed' : 'absent';
+        if (!attendance.punchOut) updateData.punchOut = new Date();
+      } else if (hours > 0 && (!attendance.status || attendance.status === 'absent')) {
+        updateData.status = 'manual';
+      } else if (hours === 0 && !data.status) {
+        updateData.status = 'absent';
+      }
+
       const employee = await Employee.findById(attendance.employeeId);
       if (employee) {
-        updateData.earnedDays = calculateEarnedDays(data.workHours, employee.standardHours);
+        updateData.earnedDays = calculateEarnedDays(hours, employee.standardHours);
       }
     }
 

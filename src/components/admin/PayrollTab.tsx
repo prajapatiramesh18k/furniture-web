@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import ConfirmationModal from './ConfirmationModal';
 
 export default function PayrollTab() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -16,6 +17,20 @@ export default function PayrollTab() {
   const [cardOpen, setCardOpen] = useState(false);
   const [search, setSearch] = useState('');
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    boldWord?: string;
+    afterBold?: string;
+    subtext?: string;
+    confirmText?: string;
+    confirmButtonVariant?: 'danger' | 'primary';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
+  });
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -82,8 +97,24 @@ export default function PayrollTab() {
     setPreview(null);
   };
 
-  const handleSettle = async () => {
-    if (!preview || !preview.isPreview) return;
+  const handleSettle = () => {
+    if (!preview || !preview.isPreview || !selectedEmployee) return;
+    setConfirmModal({
+      isOpen: true,
+      message: 'Are you sure you want to',
+      boldWord: 'Settle & Record Payment',
+      afterBold: `for ${selectedEmployee.name} (${monthName} ${year}) for ₹${(preview.balanceAmount || 0).toLocaleString()}?`,
+      subtext: 'This will finalize this month\'s payroll and record the settlement payment.',
+      confirmText: 'Yes, Settle',
+      confirmButtonVariant: 'primary',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        executeSettle();
+      }
+    });
+  };
+
+  const executeSettle = async () => {
     try {
       const res = await fetch('/api/admin/employees/settlements', {
         method: 'POST',
@@ -114,6 +145,67 @@ export default function PayrollTab() {
       console.error(err);
       showToast('An error occurred', 'error');
     }
+  };
+
+  const handleRecalculateSettlement = async () => {
+    if (!selectedEmployee) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/employees/settlements', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: selectedEmployee._id,
+          month,
+          year,
+          dailyRate: selectedEmployee.dailyRate,
+        }),
+      });
+      if (res.ok) {
+        showToast(`Settlement updated to ₹${selectedEmployee.dailyRate}/day successfully`);
+        handleSelectEmployee(selectedEmployee);
+      } else {
+        const err = await res.json();
+        showToast(err.error || 'Failed to update settlement', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error updating settlement', 'error');
+    }
+    setLoading(false);
+  };
+
+  const handleResetSettlement = () => {
+    if (!selectedEmployee) return;
+    setConfirmModal({
+      isOpen: true,
+      message: 'Are you sure you want to',
+      boldWord: 'Reset Settlement',
+      afterBold: `for ${selectedEmployee.name} (${monthName} ${year})?`,
+      subtext: 'This will remove the settlement payment and return the account to an open dynamic preview.',
+      confirmText: 'Yes, Reset',
+      confirmButtonVariant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/admin/employees/settlements?employeeId=${selectedEmployee._id}&month=${month}&year=${year}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) {
+            showToast('Settlement reset to open preview');
+            handleSelectEmployee(selectedEmployee);
+          } else {
+            const err = await res.json();
+            showToast(err.error || 'Failed to reset settlement', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Error resetting settlement', 'error');
+        }
+        setLoading(false);
+      }
+    });
   };
 
   const generateReceiptNumber = () => {
@@ -446,7 +538,21 @@ export default function PayrollTab() {
                 </tr>
               ) : (
                 filteredEmployees.map(emp => (
-                  <tr key={emp._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr
+                    key={emp._id}
+                    onClick={() => handleSelectEmployee(emp)}
+                    style={{
+                      borderBottom: '1px solid #f1f5f9',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#faf8f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
                     <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
                       <span style={{
                         backgroundColor: '#f8fafc',
@@ -480,8 +586,12 @@ export default function PayrollTab() {
                         {emp.status}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <button className="btn-edit" style={{ margin: 0, padding: '0.4rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleSelectEmployee(emp)}>
+                    <td style={{ padding: '1rem 1.2rem' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="btn-edit"
+                        style={{ margin: 0, padding: '0.4rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                        onClick={() => handleSelectEmployee(emp)}
+                      >
                         <i className="fas fa-eye"></i> View Payroll
                       </button>
                     </td>
@@ -495,15 +605,21 @@ export default function PayrollTab() {
 
       {/* Payroll Card Modal */}
       {cardOpen && selectedEmployee && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050,
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-          paddingTop: '90px',
-          paddingBottom: '10px',
-          animation: 'fadeIn 0.3s ease-out'
-        }}>
-          <div style={{ animation: 'fadeInUp 0.4s ease-out', width: '100%', maxWidth: '850px', margin: '0 20px', maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', borderRadius: '12px', background: '#fff', boxShadow: '0 .5rem 2rem rgba(0,0,0,.2)' }}>
+        <div
+          onClick={handleCloseCard}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050,
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            paddingTop: '90px',
+            paddingBottom: '10px',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'fadeInUp 0.4s ease-out', width: '100%', maxWidth: '850px', margin: '0 20px', maxHeight: 'calc(100vh - 150px)', overflowY: 'auto', borderRadius: '12px', background: '#fff', boxShadow: '0 .5rem 2rem rgba(0,0,0,.2)' }}
+          >
             
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid #eee', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '12px 12px 0 0' }}>
@@ -529,6 +645,52 @@ export default function PayrollTab() {
               <div style={{ padding: '3rem', textAlign: 'center' }}><p>Loading payroll data...</p></div>
             ) : preview ? (
               <>
+                {/* Rate Mismatch Warning Banner */}
+                {selectedEmployee && !preview.isPreview && preview.dailyRate !== selectedEmployee.dailyRate && (
+                  <div
+                    style={{
+                      margin: '1.2rem 2rem 0',
+                      padding: '1rem 1.4rem',
+                      borderRadius: '8px',
+                      backgroundColor: '#fef3c7',
+                      border: '1.5px solid #f59e0b',
+                      color: '#92400e',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}
+                    data-html2canvas-ignore="true"
+                  >
+                    <div style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="fas fa-exclamation-triangle" style={{ color: '#d97706', fontSize: '1.4rem' }}></i>
+                      <span>
+                        <strong>Daily Rate Changed:</strong> Employee rate is now <strong>₹{selectedEmployee.dailyRate}</strong>, but this settlement was saved at <strong>₹{preview.dailyRate}</strong>.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRecalculateSettlement}
+                      style={{
+                        backgroundColor: '#d97706',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 14px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '1.2rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <i className="fas fa-sync-alt"></i> Recalculate with ₹{selectedEmployee.dailyRate}
+                    </button>
+                  </div>
+                )}
+
                 {/* === RECEIPT START === */}
                 <div
                   ref={receiptRef}
@@ -676,8 +838,28 @@ export default function PayrollTab() {
                     <div style={rcptSectionTitle}>Work History</div>
                     <table style={rcptTable}>
                       <tbody>
-                        <tr><td style={rcptTd}>Total Work Hours</td><td style={rcptTdRight}>{preview.totalWorkHours} Hours</td></tr>
-                        <tr><td style={rcptTd}>Earned Days</td><td style={rcptTdRight}>{preview.totalEarnedDays} Days</td></tr>
+                        <tr>
+                          <td style={rcptTd}>Total Work Hours</td>
+                          <td style={rcptTdRight}>
+                            {preview.totalWorkHours} Hours
+                            {preview.hasActiveShift && (
+                              <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '1.1rem', color: '#16a34a', fontWeight: 600 }}>
+                                (Live)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={rcptTd}>Earned Days</td>
+                          <td style={rcptTdRight}>
+                            {preview.totalEarnedDays} Days
+                            {preview.hasActiveShift && (
+                              <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '1.1rem', color: '#16a34a', fontWeight: 600 }}>
+                                (Live)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
                         <tr><td style={rcptTd}>Daily Rate</td><td style={rcptTdRight}>₹{preview.dailyRate}</td></tr>
                         <tr style={{ background: '#faf8f5' }}><td style={rcptTdBold}>Total Earnings</td><td style={rcptTdBoldRight}>₹{preview.grossAmount?.toLocaleString()}</td></tr>
                       </tbody>
@@ -763,11 +945,51 @@ export default function PayrollTab() {
                 {/* === RECEIPT END === */}
 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid #eee', flexWrap: 'wrap' }} data-html2canvas-ignore="true">
-                  {preview.isPreview && (
+                <div style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid #eee', flexWrap: 'wrap', alignItems: 'center' }} data-html2canvas-ignore="true">
+                  {preview.isPreview ? (
                     <button className="btn" style={{ margin: 0, padding: '0.7rem 1.5rem', fontSize: '1.3rem', width: 'auto', background: 'var(--primary-color)' }} onClick={handleSettle}>
                       <i className="fas fa-check"></i> Settle Account
                     </button>
+                  ) : (
+                    <>
+                      <button
+                        className="btn"
+                        style={{
+                          margin: 0,
+                          padding: '0.7rem 1.4rem',
+                          fontSize: '1.3rem',
+                          width: 'auto',
+                          background: '#0284c7',
+                          color: '#ffffff',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                        }}
+                        onClick={handleRecalculateSettlement}
+                        title="Recalculate settlement with current employee daily rate and attendance"
+                      >
+                        <i className="fas fa-sync-alt"></i> Recalculate
+                      </button>
+                      <button
+                        className="btn"
+                        style={{
+                          margin: 0,
+                          padding: '0.7rem 1.4rem',
+                          fontSize: '1.3rem',
+                          width: 'auto',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                        }}
+                        onClick={handleResetSettlement}
+                        title="Reset settlement back to open preview"
+                      >
+                        <i className="fas fa-undo"></i> Reset Settlement
+                      </button>
+                    </>
                   )}
                   <button
                     className="btn"
@@ -818,6 +1040,19 @@ export default function PayrollTab() {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        boldWord={confirmModal.boldWord}
+        afterBold={confirmModal.afterBold}
+        subtext={confirmModal.subtext}
+        confirmText={confirmModal.confirmText}
+        confirmButtonVariant={confirmModal.confirmButtonVariant}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

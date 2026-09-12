@@ -882,16 +882,29 @@ export default function PunchClientView() {
                         {new Date(h.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
                       <div style={{ fontSize: '1.1rem', color: '#64748b' }}>
-                        {h.siteName || 'Site'} • {h.status === 'completed' ? 'Completed' : h.status === 'punched_in' ? 'Working' : 'Manual'}
+                        {h.siteName || 'Site'} • {h.status === 'completed' ? 'Completed' : h.status === 'punched_in' ? 'Working On-Site' : 'Manual'}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#a27341' }}>
-                        {h.workHours} hrs
-                      </div>
-                      <div style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 600 }}>
-                        {h.earnedDays} day
-                      </div>
+                      {h.status === 'punched_in' ? (
+                        <div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#15803d' }}>
+                            Working (Live)
+                          </div>
+                          <div style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 600 }}>
+                            In Progress
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#a27341' }}>
+                            {h.workHours} hrs
+                          </div>
+                          <div style={{ fontSize: '1.05rem', color: '#16a34a', fontWeight: 600 }}>
+                            {h.earnedDays} {h.earnedDays === 1 ? 'day' : 'days'}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

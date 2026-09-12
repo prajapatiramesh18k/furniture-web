@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import CloseButton from '@/components/CloseButton';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EmployeesTab from '@/components/admin/EmployeesTab';
@@ -10,7 +12,44 @@ import SitesTab from '@/components/admin/SitesTab';
 import LiveAttendanceTab from '@/components/admin/LiveAttendanceTab';
 
 export default function EmployeeManagementPage() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('employees');
+
+  useEffect(() => {
+    document.title = 'Employee Management | Ananya House of Furniture';
+    try {
+      const raw = sessionStorage.getItem('auth-user');
+      const user = raw ? JSON.parse(raw) : null;
+      setAuthorized(!!(user && user.isAdmin));
+    } catch {
+      setAuthorized(false);
+    }
+  }, []);
+
+  if (authorized === null) {
+    return <div style={{ minHeight: '60vh' }} />;
+  }
+
+  if (authorized === false) {
+    return (
+      <div className="quotation-page">
+        <div className="quotation-hero no-print">
+          <CloseButton href="/" />
+          <h1>Admin <span>Access</span></h1>
+          <p>This page is restricted to administrators.</p>
+        </div>
+        <div className="quotation-locked">
+          <i className="fas fa-lock"></i>
+          <h2>Login required</h2>
+          <p>You need an admin account to use the Employee Management.</p>
+          <button type="button" className="cpf-submit" onClick={() => router.push('/login')}>
+            <i className="fas fa-arrow-right"></i> Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

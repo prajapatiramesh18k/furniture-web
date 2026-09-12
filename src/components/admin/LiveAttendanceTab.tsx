@@ -163,16 +163,17 @@ export default function LiveAttendanceTab() {
       {toast && (
         <div style={{
           position: 'fixed',
-          top: '20px',
+          top: '80px',
           right: '20px',
-          zIndex: 9999,
-          padding: '1rem 1.6rem',
+          zIndex: 99999,
+          padding: '15px 30px',
           borderRadius: '8px',
           color: '#ffffff',
-          backgroundColor: toast.type === 'success' ? '#16a34a' : '#dc2626',
+          backgroundColor: toast.type === 'success' ? '#25D366' : '#dc2626',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontSize: '1.3rem',
+          fontSize: '16px',
           fontWeight: 600,
+          animation: 'slideIn 0.3s ease-out',
         }}>
           {toast.message}
         </div>
@@ -317,7 +318,22 @@ export default function LiveAttendanceTab() {
                   const isDone = rec.status === 'completed';
 
                   return (
-                    <tr key={rec.employee._id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: isWorking ? '#f0fdf455' : undefined }}>
+                    <tr
+                      key={rec.employee._id}
+                      onClick={() => handleOpenAdjust(rec)}
+                      style={{
+                        borderBottom: '1px solid #f1f5f9',
+                        backgroundColor: isWorking ? '#f0fdf455' : undefined,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isWorking) e.currentTarget.style.backgroundColor = '#faf8f5';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isWorking) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
                       <td style={{ padding: '1rem 1.2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{
@@ -392,7 +408,7 @@ export default function LiveAttendanceTab() {
                           <span style={{ color: '#94a3b8' }}>0 hrs</span>
                         )}
                       </td>
-                      <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }}>
+                      <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenAdjust(rec)}
                           style={{
@@ -420,27 +436,33 @@ export default function LiveAttendanceTab() {
 
       {/* Manual Adjustment Modal */}
       {modalOpen && selectedRecord && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10000,
-          padding: '1rem',
-        }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '460px',
-            padding: '2rem',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-          }}>
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '460px',
+              padding: '2rem',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
               <h2 style={{ fontSize: '1.7rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 Adjust Attendance

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 interface GalleryImage {
   _id: string;
@@ -230,29 +231,17 @@ export default function AdminGalleryCategoryPage() {
       </div>
 
       {/* Confirmation Dialog */}
-      {confirmOpen && (
-        <div className="confirm-overlay" onClick={() => setConfirmOpen(false)}>
-          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <div className="confirm-icon">
-              <i className="fas fa-trash-alt"></i>
-            </div>
-            <h3>Confirm Delete</h3>
-            <p>{confirmMessage}</p>
-            <div className="confirm-actions">
-              <button className="confirm-cancel" onClick={() => setConfirmOpen(false)}>Cancel</button>
-              <button
-                className="confirm-delete"
-                onClick={() => {
-                  if (confirmAction) confirmAction();
-                  setConfirmOpen(false);
-                }}
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        message={confirmMessage}
+        confirmText="Yes, Delete"
+        confirmButtonVariant="danger"
+        onConfirm={() => {
+          if (confirmAction) confirmAction();
+          setConfirmOpen(false);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

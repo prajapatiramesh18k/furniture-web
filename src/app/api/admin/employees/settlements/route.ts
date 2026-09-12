@@ -87,3 +87,100 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const data = await request.json();
+    const { employeeId, month, year, dailyRate: customRate } = data;
+
+    if (!employeeId || !month || !year) {
+      return NextResponse.json({ error: 'Missing employeeId, month, or year' }, { status: 400 });
+    }
+
+    await dbConnect();
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    const effectiveRate = customRate !== undefined && customRate !== null ? Number(customRate) : employee.dailyRate;
+    const calc = await calculateMonthlyPayroll(employeeId, effectiveRate, Number(month), Number(year));
+
+    const updatedSettlement = await EmployeeSettlement.findOneAndUpdate(
+      { employeeId, month: Number(month), year: Number(year) },
+      {
+        $set: {
+          totalWorkHours: calc.totalWorkHours,
+          totalEarnedDays: calc.totalEarnedDays,
+          dailyRate: effectiveRate,
+          grossAmount: calc.grossAmount,
+          totalPaid: calc.totalPaid,
+          balanceAmount: calc.balanceAmount,
+          settlementAmount: calc.balanceAmount,
+          status: 'Settled',
+          updatedAt: new Date(),
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    // Synchronize the associated settlement payment record
+    const settlementNotes = `Settlement for ${month}/${year}`;
+    const existingPayment = await EmployeePayment.findOne({
+      employeeId,
+      paymentType: 'Settlement',
+      notes: settlementNotes,
+    });
+
+    if (existingPayment) {
+      existingPayment.amount = calc.balanceAmount;
+      await existingPayment.save();
+    } else if (calc.balanceAmount > 0) {
+      await EmployeePayment.create({
+        employeeId,
+        date: new Date(),
+        amount: calc.balanceAmount,
+        paymentType: 'Settlement',
+        notes: settlementNotes,
+        createdBy: data.createdBy || 'Admin'
+      });
+    }
+
+    return NextResponse.json({ ...updatedSettlement.toObject(), isPreview: false });
+  } catch (error: any) {
+    console.error('Error updating settlement:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('employeeId');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
+
+    if (!employeeId || !month || !year) {
+      return NextResponse.json({ error: 'Missing employeeId, month, or year' }, { status: 400 });
+    }
+
+    await dbConnect();
+    await EmployeeSettlement.findOneAndDelete({
+      employeeId,
+      month: Number(month),
+      year: Number(year),
+    });
+
+    // Remove the associated settlement payment record so advances/payments revert to clean state
+    await EmployeePayment.findOneAndDelete({
+      employeeId,
+      paymentType: 'Settlement',
+      notes: `Settlement for ${month}/${year}`,
+    });
+
+    return NextResponse.json({ message: 'Settlement reset successfully' });
+  } catch (error: any) {
+    console.error('Error resetting settlement:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

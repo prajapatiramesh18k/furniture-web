@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { TrashIcon } from './DeleteButton';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ConfirmationModalProps {
   subtext?: string;
   confirmText?: string;
   cancelText?: string;
+  confirmButtonVariant?: 'danger' | 'primary';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -22,10 +24,16 @@ export default function ConfirmationModal({
   subtext,
   confirmText = 'Yes',
   cancelText = 'No, Go Back',
+  confirmButtonVariant = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
+
+  const isPrimary = confirmButtonVariant === 'primary';
+  const confirmBorderColor = isPrimary ? 'var(--primary-color)' : '#ef4444';
+  const confirmTextColor = isPrimary ? 'var(--primary-color)' : '#ef4444';
+  const confirmHoverBg = isPrimary ? '#fef8ee' : '#fef2f2';
 
   return (
     <div
@@ -54,6 +62,25 @@ export default function ConfirmationModal({
           animation: 'fadeInScale 0.2s ease-out',
         }}
       >
+        <div
+          style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '12px',
+            backgroundColor: isPrimary ? '#fef8ee' : '#fee2e2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1.4rem',
+          }}
+        >
+          {isPrimary ? (
+            <i className="fas fa-check-circle" style={{ fontSize: '2.2rem', color: 'var(--primary-color)' }}></i>
+          ) : (
+            <TrashIcon size={24} color="#ef4444" />
+          )}
+        </div>
+
         <p
           style={{
             fontSize: '1.5rem',
@@ -100,9 +127,9 @@ export default function ConfirmationModal({
             style={{
               minWidth: '130px',
               padding: '0.75rem 1.8rem',
-              border: '1.8px solid #ef4444',
+              border: `1.8px solid ${confirmBorderColor}`,
               backgroundColor: '#ffffff',
-              color: '#ef4444',
+              color: confirmTextColor,
               borderRadius: '8px',
               fontSize: '1.35rem',
               fontWeight: 700,
@@ -111,7 +138,7 @@ export default function ConfirmationModal({
               textAlign: 'center',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#fef2f2';
+              e.currentTarget.style.backgroundColor = confirmHoverBg;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffff';
@@ -126,9 +153,9 @@ export default function ConfirmationModal({
             style={{
               minWidth: '130px',
               padding: '0.75rem 1.8rem',
-              border: '1.8px solid #1d4ed8',
+              border: '1.8px solid #94a3b8',
               backgroundColor: '#ffffff',
-              color: '#1d4ed8',
+              color: '#475569',
               borderRadius: '8px',
               fontSize: '1.35rem',
               fontWeight: 700,
@@ -137,7 +164,7 @@ export default function ConfirmationModal({
               textAlign: 'center',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#eff6ff';
+              e.currentTarget.style.backgroundColor = '#f8fafc';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffff';
@@ -149,4 +176,60 @@ export default function ConfirmationModal({
       </div>
     </div>
   );
+}
+
+export interface ConfirmOptions {
+  message: string;
+  boldWord?: string;
+  afterBold?: string;
+  subtext?: string;
+  confirmText?: string;
+  cancelText?: string;
+  confirmButtonVariant?: 'danger' | 'primary';
+  onConfirm: () => void | Promise<void>;
+}
+
+export function useConfirmModal() {
+  const [modalState, setModalState] = React.useState<ConfirmOptions & { isOpen: boolean }>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const confirm = React.useCallback((options: ConfirmOptions) => {
+    setModalState({
+      ...options,
+      isOpen: true,
+    });
+  }, []);
+
+  const close = React.useCallback(() => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const ConfirmModal = React.useCallback(() => {
+    return (
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        message={modalState.message}
+        boldWord={modalState.boldWord}
+        afterBold={modalState.afterBold}
+        subtext={modalState.subtext}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        confirmButtonVariant={modalState.confirmButtonVariant}
+        onConfirm={async () => {
+          close();
+          await modalState.onConfirm();
+        }}
+        onCancel={close}
+      />
+    );
+  }, [modalState, close]);
+
+  return {
+    confirm,
+    close,
+    ConfirmModal,
+  };
 }
