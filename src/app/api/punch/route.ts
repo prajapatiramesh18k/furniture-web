@@ -1,0 +1,346 @@
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Employee from '@/lib/models/Employee';
+import Site from '@/lib/models/Site';
+import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
+import mongoose from 'mongoose';
+import { calculateDistanceMeters, calculateShiftMetrics } from '@/lib/geo-utils';
+
+// Helper to get normalized start & end of day
+function getDayBounds(date: Date = new Date()) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+export async function GET(req: Request) {
+  try {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+    const identifier = searchParams.get('identifier') || searchParams.get('employeeId') || searchParams.get('phone');
+    const deviceId = searchParams.get('deviceId');
+    const deviceName = searchParams.get('deviceName') || 'Mobile Phone';
+
+    let employee = null;
+
+    if (!identifier) {
+      if (deviceId) {
+        // Auto-detect employee registered to this phone in the database!
+        employee = await Employee.findOne({
+          deviceId,
+          status: { $regex: /^active$/i },
+        });
+        if (!employee) {
+          return NextResponse.json({ error: 'Please enter your Employee ID to continue.' }, { status: 400 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Employee ID or phone number is required' }, { status: 400 });
+      }
+    } else {
+      const cleanInput = identifier.trim();
+
+      // Build search conditions:
+      // 1. Direct match on employeeId (e.g. "AHF-001" or "ahf-001")
+      const queryConditions: any[] = [
+        { employeeId: { $regex: new RegExp(`^${cleanInput}$`, 'i') } },
+      ];
+
+      // 2. If user typed pure digits (e.g. "1" or "001" or "01")
+      if (/^\d{1,4}$/.test(cleanInput)) {
+        const num = parseInt(cleanInput, 10);
+        const paddedId = `AHF-${String(num).padStart(3, '0')}`;
+        queryConditions.push({ employeeId: paddedId });
+      }
+
+      // 3. If user typed "AHF-1" or "ahf-1"
+      const ahfNumMatch = cleanInput.match(/^ahf[- ]?(\d+)$/i);
+      if (ahfNumMatch) {
+        const num = parseInt(ahfNumMatch[1], 10);
+        const paddedId = `AHF-${String(num).padStart(3, '0')}`;
+        queryConditions.push({ employeeId: paddedId });
+      }
+
+      // 4. Fallback: match 10-digit mobile number
+      const cleanPhone = cleanInput.replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length === 10) {
+        queryConditions.push({ phone: { $regex: cleanPhone } });
+      }
+
+      // Find active employee in database
+      employee = await Employee.findOne({
+        $or: queryConditions,
+        status: { $regex: /^active$/i },
+      });
+
+      if (!employee) {
+        return NextResponse.json({
+          error: 'No active employee found with this ID. Please enter your valid Employee ID (e.g. AHF-001) or contact your supervisor.',
+        }, { status: 404 });
+      }
+    }
+
+    // DEVICE LOCK VERIFICATION:
+    if (deviceId) {
+      // 1. Check if this physical phone is already linked to another active worker
+      const otherEmp = await Employee.findOne({
+        deviceId,
+        _id: { $ne: employee._id },
+        status: { $regex: /^active$/i },
+      });
+
+      if (otherEmp) {
+        return NextResponse.json({
+          error: `Device Locked: This phone is already linked to ${otherEmp.name}. Each worker must punch from their own mobile phone.`,
+          deviceConflict: true,
+          lockedTo: otherEmp.name,
+        }, { status: 403 });
+      }
+
+      // 2. Check if this employee is registered on a different phone
+      if (employee.deviceId && employee.deviceId !== deviceId) {
+        return NextResponse.json({
+          error: `Device Mismatch: ${employee.name} is already registered on another phone (${employee.deviceName || 'Registered Phone'}). If you got a new phone, please contact your Admin to reset your device lock.`,
+          deviceMismatch: true,
+          registeredDevice: employee.deviceName || 'Registered Phone',
+        }, { status: 403 });
+      }
+
+      // 3. If employee does not have a device linked yet, auto-bind this phone!
+      if (!employee.deviceId) {
+        employee.deviceId = deviceId;
+        employee.deviceName = deviceName;
+        employee.deviceRegisteredAt = new Date();
+        await employee.save();
+      }
+    }
+
+    // Check today's attendance
+    const { start, end } = getDayBounds();
+    const todayAttendance = await EmployeeAttendance.findOne({
+      employeeId: employee._id,
+      date: { $gte: start, $lte: end },
+    }).lean();
+
+    // Fetch active sites
+    const activeSites = await Site.find({ isActive: true }).select('name clientName address location radiusMeters').lean();
+
+    // Fetch last 7 days history for employee
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const history = await EmployeeAttendance.find({
+      employeeId: employee._id,
+      date: { $gte: sevenDaysAgo },
+    }).sort({ date: -1 }).lean();
+
+    return NextResponse.json({
+      employee: {
+        _id: employee._id,
+        employeeId: employee.employeeId,
+        name: employee.name,
+        department: employee.department,
+        role: employee.role,
+        phone: employee.phone,
+        dailyRate: employee.dailyRate,
+        standardHours: (employee as any).standardHours || 8,
+        deviceId: employee.deviceId,
+        deviceName: employee.deviceName,
+        deviceRegisteredAt: employee.deviceRegisteredAt,
+      },
+      todayAttendance,
+      activeSites,
+      history,
+    });
+  } catch (err: any) {
+    console.error('Error in punch GET:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await dbConnect();
+    const body = await req.json();
+    const { action, employeeId, siteId, latitude, longitude, notes, deviceId, deviceName } = body;
+
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
+    }
+
+    let employee = null;
+    if (mongoose.Types.ObjectId.isValid(employeeId)) {
+      employee = await Employee.findById(employeeId);
+    }
+    if (!employee) {
+      employee = await Employee.findOne({ employeeId: { $regex: new RegExp(`^${employeeId}$`, 'i') } });
+    }
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // DEVICE LOCK VALIDATION ON POST:
+    if (deviceId) {
+      const otherEmp = await Employee.findOne({
+        deviceId,
+        _id: { $ne: employee._id },
+        status: { $regex: /^active$/i },
+      });
+      if (otherEmp) {
+        return NextResponse.json({
+          error: `Security Error: This phone is already linked to ${otherEmp.name}. You cannot punch for ${employee.name} from this phone.`,
+        }, { status: 403 });
+      }
+
+      if (employee.deviceId && employee.deviceId !== deviceId) {
+        return NextResponse.json({
+          error: `Security Error: ${employee.name} is registered on another phone (${employee.deviceName || 'Registered Phone'}). Please punch from your own registered phone.`,
+        }, { status: 403 });
+      }
+
+      if (!employee.deviceId) {
+        employee.deviceId = deviceId;
+        employee.deviceName = deviceName || 'Mobile Phone';
+        employee.deviceRegisteredAt = new Date();
+        await employee.save();
+      }
+    }
+
+    const { start, end } = getDayBounds();
+    const todayAttendance = await EmployeeAttendance.findOne({
+      employeeId,
+      date: { $gte: start, $lte: end },
+    });
+
+    if (action === 'punch-in') {
+      if (!siteId) {
+        return NextResponse.json({ error: 'Please select a job site' }, { status: 400 });
+      }
+      if (latitude === undefined || longitude === undefined) {
+        return NextResponse.json({ error: 'GPS location is required to punch in' }, { status: 400 });
+      }
+
+      const site = await Site.findById(siteId);
+      if (!site) {
+        return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+      }
+
+      // Calculate distance between employee GPS and site coordinates
+      const distance = calculateDistanceMeters(
+        Number(latitude),
+        Number(longitude),
+        site.location.latitude,
+        site.location.longitude
+      );
+
+      const allowedRadius = site.radiusMeters || 200;
+      if (distance > allowedRadius) {
+        return NextResponse.json({
+          error: `You are outside the site boundary (${distance}m away). You must be within ${allowedRadius}m of "${site.name}" to punch in.`,
+          distanceMeters: distance,
+          allowedRadius,
+          isWithinRadius: false,
+        }, { status: 400 });
+      }
+
+      // Check if already punched in
+      if (todayAttendance) {
+        if (todayAttendance.status === 'punched_in') {
+          return NextResponse.json({
+            error: `Already punched in today at ${new Date(todayAttendance.punchIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+            attendance: todayAttendance,
+          }, { status: 400 });
+        }
+        if (todayAttendance.status === 'completed') {
+          return NextResponse.json({
+            error: 'You have already completed your shift for today.',
+            attendance: todayAttendance,
+          }, { status: 400 });
+        }
+      }
+
+      // Create new attendance record
+      const punchRecord = await EmployeeAttendance.create({
+        employeeId,
+        date: start,
+        siteId: site._id,
+        siteName: site.name,
+        punchIn: new Date(),
+        punchInLocation: {
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          distanceMeters: distance,
+        },
+        punchInDeviceId: deviceId || null,
+        status: 'punched_in',
+        workHours: 0,
+        earnedDays: 0,
+        notes: notes || '',
+      });
+
+      return NextResponse.json({
+        message: `Successfully punched in at ${site.name}!`,
+        attendance: punchRecord,
+        distanceMeters: distance,
+      }, { status: 201 });
+    }
+
+    if (action === 'punch-out') {
+      if (!todayAttendance || todayAttendance.status !== 'punched_in') {
+        return NextResponse.json({
+          error: 'No active punch-in found for today. Please punch in first.',
+        }, { status: 400 });
+      }
+
+      const punchInTime = new Date(todayAttendance.punchIn);
+      const punchOutTime = new Date();
+
+      // Calculate distance if site & coordinates available
+      let distance = 0;
+      if (todayAttendance.siteId && latitude !== undefined && longitude !== undefined) {
+        const site = await Site.findById(todayAttendance.siteId);
+        if (site) {
+          distance = calculateDistanceMeters(
+            Number(latitude),
+            Number(longitude),
+            site.location.latitude,
+            site.location.longitude
+          );
+        }
+      }
+
+      const standardHours = (employee as any).standardHours || 8;
+      const metrics = calculateShiftMetrics(punchInTime, punchOutTime, standardHours);
+
+      todayAttendance.punchOut = punchOutTime;
+      todayAttendance.punchOutLocation = {
+        latitude: latitude ? Number(latitude) : undefined,
+        longitude: longitude ? Number(longitude) : undefined,
+        distanceMeters: distance,
+      };
+      todayAttendance.punchOutDeviceId = deviceId || null;
+      todayAttendance.workHours = metrics.workHours;
+      todayAttendance.earnedDays = metrics.earnedDays;
+      todayAttendance.overtimeHours = metrics.overtimeHours;
+      todayAttendance.status = 'completed';
+      if (notes) {
+        todayAttendance.notes = todayAttendance.notes ? `${todayAttendance.notes} | ${notes}` : notes;
+      }
+
+      await todayAttendance.save();
+
+      return NextResponse.json({
+        message: `Successfully punched out! Total hours worked: ${metrics.workHours} hrs (${metrics.earnedDays} days).`,
+        attendance: todayAttendance,
+        metrics,
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid action. Use "punch-in" or "punch-out".' }, { status: 400 });
+  } catch (err: any) {
+    console.error('Error in punch POST:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+  }
+}

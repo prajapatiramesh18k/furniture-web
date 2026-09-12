@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       query.date = { $gte: startDate, $lte: endDate };
     }
 
-    const payments = await EmployeePayment.find(query).sort({ date: -1 }).populate('employeeId', 'name');
+    const payments = await EmployeePayment.find(query).sort({ date: -1 }).populate('employeeId', 'name employeeId');
     return NextResponse.json(payments);
   } catch (error) {
     console.error('Error fetching payments:', error);

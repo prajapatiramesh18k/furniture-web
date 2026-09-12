@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { DEPARTMENTS, DEPARTMENT_ROLES } from '@/lib/constants/employeeRoles';
 import FloatingSelect from './FloatingSelect';
 import FloatingInput from './FloatingInput';
+import ConfirmationModal from './ConfirmationModal';
 
 export default function EmployeesTab() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -32,6 +33,21 @@ export default function EmployeesTab() {
   const [errorMsg, setErrorMsg] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    boldWord?: string;
+    afterBold?: string;
+    subtext?: string;
+    confirmText?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const [search, setSearch] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -43,6 +59,20 @@ export default function EmployeesTab() {
     setEditingEmployee(null);
     setPhoneError('');
     setFormData({ name: '', phone: '', department: '', role: '', dailyRate: '', standardHours: '8', status: 'Active', notes: '' });
+  };
+
+  const computeNextEmployeeId = () => {
+    let maxNum = 0;
+    for (const emp of employees) {
+      if (emp.employeeId) {
+        const match = emp.employeeId.match(/^AHF-(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+    }
+    return `AHF-${String(maxNum + 1).padStart(3, '0')}`;
   };
 
   useEffect(() => {
@@ -125,20 +155,30 @@ export default function EmployeesTab() {
     setFormOpen(true);
   };
 
-  const handleDeleteEmployee = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this employee?')) return;
-    try {
-      const res = await fetch(`/api/admin/employees/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchEmployees();
-        showToast('Employee Deleted Successfully');
-      } else {
-        showToast('Failed to delete employee', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('An error occurred', 'error');
-    }
+  const handleDeleteEmployee = (id: string, name?: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: 'Are you sure you want to',
+      boldWord: 'Delete',
+      afterBold: name ? `employee "${name}"?` : 'this employee?',
+      subtext: 'This will permanently remove the employee and their records.',
+      confirmText: 'Yes, Delete',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetch(`/api/admin/employees/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchEmployees();
+            showToast('Employee Deleted Successfully');
+          } else {
+            showToast('Failed to delete employee', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('An error occurred', 'error');
+        }
+      },
+    });
   };
 
   const handleQuickAttendance = async (empId: string, hours: number) => {
@@ -230,20 +270,30 @@ export default function EmployeesTab() {
     });
   };
 
-  const handleDeleteAttendance = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this attendance record?')) return;
-    try {
-      const res = await fetch(`/api/admin/employees/attendance/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchAttendance(selectedEmployee._id);
-        showToast('Attendance Deleted Successfully');
-      } else {
-        showToast('Failed to delete attendance', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('An error occurred', 'error');
-    }
+  const handleDeleteAttendance = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: 'Are you sure you want to',
+      boldWord: 'Delete',
+      afterBold: 'this attendance record?',
+      subtext: 'This will remove the selected work hours record.',
+      confirmText: 'Yes, Delete',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetch(`/api/admin/employees/attendance/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchAttendance(selectedEmployee._id);
+            showToast('Attendance Deleted Successfully');
+          } else {
+            showToast('Failed to delete attendance', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('An error occurred', 'error');
+        }
+      },
+    });
   };
 
   const handleAddPayment = async (e: React.FormEvent) => {
@@ -269,6 +319,43 @@ export default function EmployeesTab() {
     }
   };
 
+  const handleResetDevice = (id: string, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: 'Are you sure you want to',
+      boldWord: 'Reset',
+      afterBold: `the phone lock for "${name}"?`,
+      subtext: 'This will allow them to link and register a new smartphone on their next punch in.',
+      confirmText: 'Yes, Reset',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetch(`/api/admin/employees/${id}/reset-device`, {
+            method: 'POST',
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast(data.message || `Phone lock reset for ${name}`);
+            fetchEmployees();
+            if (selectedEmployee && selectedEmployee._id === id) {
+              setSelectedEmployee((prev: any) => ({
+                ...prev,
+                deviceId: null,
+                deviceName: '',
+                deviceRegisteredAt: null,
+              }));
+            }
+          } else {
+            showToast(data.error || 'Failed to reset device lock', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Network error while resetting device', 'error');
+        }
+      },
+    });
+  };
+
   if (selectedEmployee) {
     return (
       <div className="products-section">
@@ -285,7 +372,21 @@ export default function EmployeesTab() {
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2><i className="fas fa-user"></i> {selectedEmployee.name}</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span><i className="fas fa-user"></i> {selectedEmployee.name}</span>
+            <span style={{
+              backgroundColor: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              color: 'var(--primary-color)',
+              padding: '3px 10px',
+              borderRadius: '6px',
+              fontWeight: 800,
+              fontSize: '1.4rem',
+              letterSpacing: '0.5px',
+            }}>
+              {selectedEmployee.employeeId || '—'}
+            </span>
+          </h2>
           <button className="btn" onClick={() => setSelectedEmployee(null)}>Back to Employees</button>
         </div>
 
@@ -306,6 +407,22 @@ export default function EmployeesTab() {
           <div className="form-section">
             <div className="form-section-title"><i className="fas fa-info-circle"></i> Employee Details</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', fontSize: '1.4rem' }}>
+              <div>
+                <strong>Employee ID:</strong>{' '}
+                <span style={{
+                  padding: '3px 10px',
+                  borderRadius: '6px',
+                  fontSize: '1.3rem',
+                  fontWeight: 800,
+                  background: '#fcf8f2',
+                  border: '1px solid #e8dfd2',
+                  color: 'var(--primary-color)',
+                  display: 'inline-block',
+                  letterSpacing: '0.5px',
+                }}>
+                  {selectedEmployee.employeeId || '—'}
+                </span>
+              </div>
               <div>
                 <strong>Department:</strong>{' '}
                 {selectedEmployee.department ? (
@@ -350,13 +467,57 @@ export default function EmployeesTab() {
               <div><strong>Daily Rate:</strong> ₹{selectedEmployee.dailyRate} / day</div>
               <div><strong>Standard Hours:</strong> {selectedEmployee.standardHours}h</div>
             </div>
+
+            {/* Smartphone Device Lock Security Card */}
+            <div style={{ marginTop: '1.8rem', padding: '1.2rem 1.4rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-shield-alt" style={{ color: selectedEmployee.deviceId ? '#16a34a' : '#94a3b8', fontSize: '1.5rem' }}></i>
+                    <span>Smartphone Device Lock (Fraud Prevention)</span>
+                  </div>
+                  <div style={{ fontSize: '1.2rem', color: '#64748b', marginTop: '4px' }}>
+                    {selectedEmployee.deviceId ? (
+                      <span>
+                        Bound to: <strong style={{ color: '#0f172a' }}>{selectedEmployee.deviceName || 'Mobile Phone'}</strong>
+                        {selectedEmployee.deviceRegisteredAt && ` (Linked on ${new Date(selectedEmployee.deviceRegisteredAt).toLocaleDateString()})`}
+                      </span>
+                    ) : (
+                      <span>No phone bound yet. It will automatically lock to this worker's personal phone on their first punch in.</span>
+                    )}
+                  </div>
+                </div>
+
+                {selectedEmployee.deviceId && (
+                  <button
+                    type="button"
+                    onClick={() => handleResetDevice(selectedEmployee._id, selectedEmployee.name)}
+                    style={{
+                      padding: '6px 14px',
+                      backgroundColor: '#fff',
+                      border: '1.5px solid #ef4444',
+                      color: '#ef4444',
+                      borderRadius: '6px',
+                      fontSize: '1.2rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <i className="fas fa-unlock-alt"></i> Reset Device Lock
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {activeSubTab === 'attendance' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0 }}><i className="fas fa-calendar-check" style={{ color: 'var(--primary-color)' }}></i> Attendance History</h3>
+              <h3 style={{ margin: 0 }}><i className="fas fa-calendar-check" style={{ color: 'var(--primary-color)' }}></i> Attendance History — {selectedEmployee.name} ({selectedEmployee.employeeId || '—'})</h3>
             </div>
 
             {editingAttendance && (
@@ -409,46 +570,48 @@ export default function EmployeesTab() {
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', width: '100%', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <table className="orders-table" style={{ margin: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Attendance</th>
-                    <th>Hours</th>
-                    <th>Earned Days</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendance.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center' }}>No attendance records found</td></tr>}
-                  {attendance.map(a => (
-                    <tr key={a._id}>
-                      <td>{new Date(a.date).toLocaleDateString()}</td>
-                      <td>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          background: a.workHours > 0 ? '#e6f4ea' : '#fce8e6',
-                          color: a.workHours > 0 ? '#137333' : '#c5221f'
-                        }}>
-                          {a.workHours > 0 ? 'Present' : 'Absent'}
-                        </span>
-                      </td>
-                      <td>{a.workHours}h</td>
-                      <td>{a.earnedDays}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <button className="btn-edit" style={{ margin: 0, padding: '0.3rem 0.5rem' }} onClick={() => handleEditAttendance(a)}><i className="fas fa-edit"></i></button>
-                          <button className="delete-btn" style={{ margin: 0, padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteAttendance(a._id)}><i className="fas fa-trash"></i></button>
-                        </div>
-                      </td>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Date</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Attendance</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Hours</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Earned Days</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {attendance.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No attendance records found</td></tr>}
+                    {attendance.map(a => (
+                      <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '1rem 1.2rem' }}>{new Date(a.date).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem 1.2rem' }}>
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            background: a.workHours > 0 ? '#e6f4ea' : '#fce8e6',
+                            color: a.workHours > 0 ? '#137333' : '#c5221f'
+                          }}>
+                            {a.workHours > 0 ? 'Present' : 'Absent'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem 1.2rem' }}>{a.workHours}h</td>
+                        <td style={{ padding: '1rem 1.2rem' }}>{a.earnedDays}</td>
+                        <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button className="btn-edit" style={{ margin: 0, padding: '0.3rem 0.5rem' }} onClick={() => handleEditAttendance(a)}><i className="fas fa-edit"></i></button>
+                            <button className="delete-btn" style={{ margin: 0, padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteAttendance(a._id)}><i className="fas fa-trash"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -456,7 +619,7 @@ export default function EmployeesTab() {
         {activeSubTab === 'payments' && (
           <div>
             <form className="product-upload-form" onSubmit={handleAddPayment} style={{ marginBottom: '2rem' }}>
-              <div className="form-section-title"><i className="fas fa-money-bill"></i> Record Payment/Advance</div>
+              <div className="form-section-title"><i className="fas fa-money-bill"></i> Record Payment/Advance — {selectedEmployee.name} ({selectedEmployee.employeeId || '—'})</div>
               <div className="form-row" style={{ alignItems: 'center' }}>
                 <FloatingInput
                   label="Date"
@@ -494,44 +657,168 @@ export default function EmployeesTab() {
               <button type="submit" className="btn" style={{ marginTop: '1rem', padding: '0.8rem 2.2rem', fontSize: '1.4rem', width: 'auto' }}>Save Payment</button>
             </form>
 
-            <div style={{ overflowX: 'auto', width: '100%', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <table className="orders-table" style={{ margin: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Type</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map(p => (
-                    <tr key={p._id}>
-                      <td>{new Date(p.date).toLocaleDateString()}</td>
-                      <td>₹{p.amount.toLocaleString()}</td>
-                      <td>{p.paymentType}</td>
-                      <td>{p.notes || '-'}</td>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Date</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Amount</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Type</th>
+                      <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Notes</th>
                     </tr>
-                  ))}
-                  {payments.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center' }}>No payment records found</td></tr>}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {payments.map(p => (
+                      <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '1rem 1.2rem' }}>{new Date(p.date).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem 1.2rem', fontWeight: 600, color: '#0f172a' }}>₹{p.amount.toLocaleString()}</td>
+                        <td style={{ padding: '1rem 1.2rem' }}>{p.paymentType}</td>
+                        <td style={{ padding: '1rem 1.2rem', color: '#64748b' }}>{p.notes || '-'}</td>
+                      </tr>
+                    ))}
+                    {payments.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No payment records found</td></tr>}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          message={confirmModal.message}
+          boldWord={confirmModal.boldWord}
+          afterBold={confirmModal.afterBold}
+          subtext={confirmModal.subtext}
+          confirmText={confirmModal.confirmText}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        />
       </div>
     );
   }
 
+  const filteredEmployees = employees.filter(emp => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (emp.name && emp.name.toLowerCase().includes(q)) ||
+      (emp.employeeId && emp.employeeId.toLowerCase().includes(q)) ||
+      (emp.phone && emp.phone.includes(q)) ||
+      (emp.department && emp.department.toLowerCase().includes(q)) ||
+      (emp.role && emp.role.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="products-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2><i className="fas fa-users"></i> Employees</h2>
-        {!formOpen && (
-          <button className="btn" onClick={() => setFormOpen(true)}>
-            Add Employee
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <i className="fas fa-users"></i> Employees
+          <span style={{ fontSize: '1.25rem', color: '#64748b', fontWeight: 600, background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
+            {filteredEmployees.length}
+          </span>
+        </h2>
+
+        {/* Toolbar matching reference screenshot: Search keyword & '+' Add Button ONLY */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Search keyword input */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <i
+              className="fas fa-search"
+              style={{
+                position: 'absolute',
+                left: '11px',
+                color: '#94a3b8',
+                fontSize: '1.25rem',
+                pointerEvents: 'none',
+              }}
+            ></i>
+            <input
+              type="text"
+              placeholder="Search keyword"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: '0.65rem 2.2rem 0.65rem 2.8rem',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                color: '#0f172a',
+                outline: 'none',
+                background: '#ffffff',
+                minWidth: '220px',
+                height: '38px',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                title="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '1.4rem',
+                  lineHeight: 1,
+                  padding: 0,
+                }}
+              >
+                &times;
+              </button>
+            )}
+          </div>
+
+          {/* Plus '+' Button to Add Employee */}
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setFormOpen(true);
+            }}
+            title="Add New Employee"
+            style={{
+              width: '38px',
+              height: '38px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'var(--primary-color, #ce962e)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#ffffff',
+              fontSize: '1.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+              transition: 'filter 0.15s, transform 0.1s',
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.filter = 'brightness(0.9)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = 'none';
+            }}
+          >
+            <i className="fas fa-plus" style={{ fontSize: '1.35rem' }}></i>
           </button>
-        )}
+        </div>
       </div>
 
       {toast && (
@@ -577,12 +864,28 @@ export default function EmployeesTab() {
 
               <div className="form-row">
                 <FloatingInput
+                  label={editingEmployee ? "Employee ID (Permanent)" : "Employee ID (Auto-Generated)"}
+                  value={editingEmployee ? (editingEmployee.employeeId || 'AHF-???') : computeNextEmployeeId()}
+                  disabled
+                  readOnly
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    cursor: 'not-allowed',
+                    color: editingEmployee ? '#0f172a' : '#a27341',
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                  }}
+                />
+                <FloatingInput
                   label="Name"
                   required
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Ramesh Sharma"
                 />
+              </div>
+
+              <div className="form-row">
                 <FloatingInput
                   label="Contact Number"
                   prefixText="+91"
@@ -609,9 +912,6 @@ export default function EmployeesTab() {
                   }}
                   placeholder="Contact Number"
                 />
-              </div>
-
-              <div className="form-row">
                 <FloatingSelect
                   label="Department"
                   required
@@ -627,6 +927,9 @@ export default function EmployeesTab() {
                     }));
                   }}
                 />
+              </div>
+
+              <div className="form-row">
                 <FloatingSelect
                   label="Role"
                   required
@@ -680,99 +983,198 @@ export default function EmployeesTab() {
       )}
 
       {loading ? <p>Loading...</p> : (
-        <div style={{ overflowX: 'auto', width: '100%', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <table className="orders-table" style={{ margin: 0, minWidth: '950px' }}>
-            <thead>
-              <tr>
-                <th style={{ minWidth: '130px' }}>Name</th>
-                <th style={{ minWidth: '160px' }}>Department</th>
-                <th style={{ minWidth: '150px' }}>Role</th>
-                <th style={{ minWidth: '110px' }}>Phone</th>
-                <th style={{ minWidth: '80px' }}>Rate</th>
-                <th style={{ minWidth: '90px' }}>Status</th>
-                <th style={{ minWidth: '220px' }}>Today's Attendance</th>
-                <th style={{ minWidth: '110px', textAlign: 'center' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map(emp => (
-                <tr key={emp._id}>
-                  <td style={{ fontWeight: 600 }}>{emp.name}</td>
-                  <td>
-                    {emp.department ? (
-                      <span style={{
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        fontSize: '1.2rem',
-                        fontWeight: 600,
-                        background: '#f4ece1',
-                        color: 'var(--primary-color)',
-                        display: 'inline-block',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {emp.department}
-                      </span>
-                    ) : <span style={{ color: '#999' }}>-</span>}
-                  </td>
-                  <td>
-                    <span style={{ fontSize: '1.3rem', color: '#444', fontWeight: 500 }}>
-                      {emp.role || '-'}
-                    </span>
-                  </td>
-                  <td>
-                    {emp.phone ? (
-                      <span style={{ fontSize: '1.35rem', color: '#334155', whiteSpace: 'nowrap' }}>
-                        +91 {emp.phone.replace(/\D/g, '').slice(-10)}
-                      </span>
-                    ) : <span style={{ color: '#999' }}>-</span>}
-                  </td>
-                  <td>₹{emp.dailyRate}</td>
-                  <td>
-                    <span style={{ 
-                      padding: '4px 10px', 
-                      borderRadius: '20px', 
-                      fontSize: '13px', 
-                      fontWeight: 600,
-                      background: emp.status === 'Active' ? '#e6f4ea' : '#fce8e6',
-                      color: emp.status === 'Active' ? '#137333' : '#c5221f'
-                    }}>
-                      {emp.status}
-                    </span>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <select className="box" style={{ width: '60px', padding: '0.2rem', margin: 0, height: '32px' }} 
-                        value={quickHours[emp._id] || emp.standardHours}
-                        onChange={(e) => setQuickHours({ ...quickHours, [emp._id]: Number(e.target.value) })}>
-                        {[4, 6, 8, 9, 10, 12, 14].map(h => (
-                          <option key={h} value={h}>{h}h</option>
-                        ))}
-                      </select>
-                      <button className="btn" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.8rem', fontSize: '13px', background: 'var(--primary-color)', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleQuickAttendance(emp._id, quickHours[emp._id] || emp.standardHours)}>
-                        <i className="fas fa-check"></i> Present
-                      </button>
-                      <button className="btn" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.8rem', fontSize: '13px', background: '#333', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleQuickAttendance(emp._id, 0)}>
-                        <i className="fas fa-times"></i> Absent
-                      </button>
-                    </div>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-                      <button className="btn-edit" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => handleEditEmployee(emp)} title="Edit"><i className="fas fa-edit"></i></button>
-                      <button className="btn-edit" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => openEmployee(emp)} title="Manage details"><i className="fas fa-eye"></i></button>
-                      <button className="delete-btn" style={{ margin: 0, padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => handleDeleteEmployee(emp._id)} title="Delete"><i className="fas fa-trash"></i></button>
-                    </div>
-                  </td>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem', minWidth: '950px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '95px' }}>Emp ID</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '130px' }}>Name</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '160px' }}>Department</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '150px' }}>Role</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '110px' }}>Phone</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '80px' }}>Rate</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '90px' }}>Status</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '220px' }}>Today's Attendance</th>
+                  <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '110px', textAlign: 'center' }}>Action</th>
                 </tr>
-              ))}
-              {employees.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center' }}>No employees found</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b' }}>
+                      <i className="fas fa-search" style={{ fontSize: '2.4rem', marginBottom: '1rem', display: 'block', color: '#cbd5e1' }}></i>
+                      <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e293b' }}>
+                        No employees found matching {search ? `"${search}"` : 'selected filters'}
+                      </div>
+                      {search && (
+                        <button
+                          type="button"
+                          onClick={() => setSearch('')}
+                          style={{
+                            marginTop: '1.2rem',
+                            padding: '6px 16px',
+                            border: '1.5px solid #cbd5e1',
+                            borderRadius: '6px',
+                            background: '#fff',
+                            color: 'var(--primary-color, #ce962e)',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            fontSize: '1.25rem',
+                          }}
+                        >
+                          Clear Search
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map(emp => (
+                  <tr key={emp._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
+                      <span style={{
+                        backgroundColor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        color: 'var(--primary-color)',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 800,
+                        fontSize: '1.25rem',
+                        letterSpacing: '0.5px',
+                      }}>
+                        {emp.employeeId || '—'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem', fontWeight: 600, color: '#0f172a' }}>{emp.name}</td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      {emp.department ? (
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '1.2rem',
+                          fontWeight: 600,
+                          background: '#f4ece1',
+                          color: 'var(--primary-color)',
+                          display: 'inline-block',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {emp.department}
+                        </span>
+                      ) : <span style={{ color: '#999' }}>-</span>}
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      <span style={{ fontSize: '1.3rem', color: '#444', fontWeight: 500 }}>
+                        {emp.role || '-'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      {emp.phone ? (
+                        <div>
+                          <span style={{ fontSize: '1.35rem', color: '#334155', whiteSpace: 'nowrap' }}>
+                            +91 {emp.phone.replace(/\D/g, '').slice(-10)}
+                          </span>
+                          <div style={{ marginTop: '4px' }}>
+                            {emp.deviceId ? (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '1.05rem',
+                                  color: '#15803d',
+                                  background: '#dcfce7',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <i className="fas fa-lock" style={{ fontSize: '0.95rem' }}></i>
+                                <span>{emp.deviceName || 'Phone'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetDevice(emp._id, emp.name)}
+                                  title="Reset device lock so employee can use a new phone"
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#dc2626',
+                                    cursor: 'pointer',
+                                    padding: '0 2px',
+                                    fontSize: '1.1rem',
+                                    marginLeft: '2px',
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  <i className="fas fa-times-circle"></i>
+                                </button>
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '1.05rem', color: '#94a3b8' }}>
+                                <i className="fas fa-mobile-alt" style={{ marginRight: '3px' }}></i>No device
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : <span style={{ color: '#999' }}>-</span>}
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem', color: '#334155', fontWeight: 600 }}>₹{emp.dailyRate}</td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      <span style={{ 
+                        padding: '4px 10px', 
+                        borderRadius: '20px', 
+                        fontSize: '1.15rem', 
+                        fontWeight: 700,
+                        background: emp.status === 'Active' ? '#dcfce7' : '#fce8e6',
+                        color: emp.status === 'Active' ? '#137333' : '#c5221f',
+                        display: 'inline-block',
+                      }}>
+                        {emp.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select className="box" style={{ width: '60px', padding: '0.2rem', margin: 0, height: '32px' }} 
+                          value={quickHours[emp._id] || emp.standardHours}
+                          onChange={(e) => setQuickHours({ ...quickHours, [emp._id]: Number(e.target.value) })}>
+                          {[4, 6, 8, 9, 10, 12, 14].map(h => (
+                            <option key={h} value={h}>{h}h</option>
+                          ))}
+                        </select>
+                        <button className="btn" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.8rem', fontSize: '13px', background: 'var(--primary-color)', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleQuickAttendance(emp._id, quickHours[emp._id] || emp.standardHours)}>
+                          <i className="fas fa-check"></i> Present
+                        </button>
+                        <button className="btn" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.8rem', fontSize: '13px', background: '#333', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleQuickAttendance(emp._id, 0)}>
+                          <i className="fas fa-times"></i> Absent
+                        </button>
+                      </div>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                        <button className="btn-edit" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => handleEditEmployee(emp)} title="Edit"><i className="fas fa-edit"></i></button>
+                        <button className="btn-edit" style={{ margin: 0, width: 'auto', padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => openEmployee(emp)} title="Manage details"><i className="fas fa-eye"></i></button>
+                        <button className="delete-btn" style={{ margin: 0, padding: '0.4rem 0.6rem', display: 'inline-flex' }} onClick={() => handleDeleteEmployee(emp._id)} title="Delete"><i className="fas fa-trash"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       
-      {/* End of list view */}
-      {loading ? null : formOpen ? null : <div style={{ height: '2rem' }}></div>}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        boldWord={confirmModal.boldWord}
+        afterBold={confirmModal.afterBold}
+        subtext={confirmModal.subtext}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

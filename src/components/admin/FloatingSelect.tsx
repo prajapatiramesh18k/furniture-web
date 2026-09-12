@@ -94,15 +94,17 @@ export default function FloatingSelect({
   const borderColor = error
     ? '#ef4444'
     : isOpen
-    ? 'var(--primary-color, #1e40af)'
+    ? 'var(--primary-color, #ce962e)'
     : value
-    ? '#1e40af'
+    ? '#0f172a'
     : '#94a3b8';
 
   const labelColor = error
     ? '#ef4444'
-    : isOpen || value
-    ? '#1e40af'
+    : isOpen
+    ? 'var(--primary-color, #ce962e)'
+    : value
+    ? '#0f172a'
     : '#64748b';
 
   return (
@@ -139,7 +141,7 @@ export default function FloatingSelect({
           transition: 'all 0.2s ease',
           outline: 'none',
           boxShadow: isOpen
-            ? '0 0 0 3px rgba(30, 64, 175, 0.12)'
+            ? '0 0 0 3px rgba(15, 23, 42, 0.08)'
             : 'none',
         }}
       >
@@ -264,8 +266,8 @@ export default function FloatingSelect({
                     padding: '10px 16px',
                     fontSize: '1.4rem',
                     fontWeight: isSelected ? 600 : 500,
-                    color: isSelected ? '#1e40af' : '#334155',
-                    backgroundColor: isSelected ? '#e2e8f0' : 'transparent',
+                    color: isSelected ? '#0f172a' : '#334155',
+                    backgroundColor: isSelected ? '#f1f5f9' : 'transparent',
                     cursor: 'pointer',
                     transition: 'background-color 0.15s ease, color 0.15s ease',
                     display: 'flex',
@@ -280,7 +282,7 @@ export default function FloatingSelect({
                       height="16"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#1e40af"
+                      stroke="#0f172a"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"

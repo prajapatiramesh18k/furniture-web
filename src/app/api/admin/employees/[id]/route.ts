@@ -22,6 +22,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const data = await request.json();
     if (data._id) delete data._id;
+    if (data.employeeId) delete data.employeeId; // ID is read-only and immutable after creation
     if (data.phone) {
       data.phone = data.phone.replace(/\D/g, '').slice(-10);
     }

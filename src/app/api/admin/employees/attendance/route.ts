@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       query.date = { $gte: startDate, $lte: endDate };
     }
 
-    const attendance = await EmployeeAttendance.find(query).sort({ date: -1 }).populate('employeeId', 'name');
+    const attendance = await EmployeeAttendance.find(query).sort({ date: -1 }).populate('employeeId', 'name employeeId');
     return NextResponse.json(attendance);
   } catch (error) {
     console.error('Error fetching attendance:', error);

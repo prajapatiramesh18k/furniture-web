@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
-    const settlements = await EmployeeSettlement.find(query).sort({ settlementDate: -1 }).populate('employeeId', 'name');
+    const settlements = await EmployeeSettlement.find(query).sort({ settlementDate: -1 }).populate('employeeId', 'name employeeId');
     return NextResponse.json(settlements);
   } catch (error) {
     console.error('Error fetching settlements:', error);

@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const employeeSchema = new mongoose.Schema({
+  employeeId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+  },
   name: {
     type: String,
     required: true,
@@ -45,6 +51,18 @@ const employeeSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: '',
+  },
+  deviceId: {
+    type: String,
+    default: null,
+  },
+  deviceName: {
+    type: String,
+    default: '',
+  },
+  deviceRegisteredAt: {
+    type: Date,
+    default: null,
   },
 }, { timestamps: true, strict: false });
 

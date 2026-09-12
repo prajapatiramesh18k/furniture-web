@@ -101,6 +101,14 @@ function ReceiptDocumentContent({
         <div className="rcpt-details-grid" style={isPdf ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: '#faf8f5', border: '1px solid #e8dfd2', borderRadius: '8px', padding: '0.8rem 1.4rem', gap: '0.8rem 1.5rem' } : undefined}>
           <div>
             <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Employee ID
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#a27341', marginTop: '2px', letterSpacing: '0.5px' }}>
+              {employee.employeeId || '—'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Employee Name
             </div>
             <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a', marginTop: '2px' }}>

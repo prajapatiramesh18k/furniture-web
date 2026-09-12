@@ -28,15 +28,17 @@ export default function FloatingInput({
   const borderColor = error
     ? '#ef4444'
     : isFocused
-    ? 'var(--primary-color, #1e40af)'
+    ? 'var(--primary-color, #ce962e)'
     : hasValue
-    ? '#1e40af'
+    ? '#0f172a'
     : '#94a3b8';
 
   const labelColor = error
     ? '#ef4444'
-    : isFocused || hasValue
-    ? '#1e40af'
+    : isFocused
+    ? 'var(--primary-color, #ce962e)'
+    : hasValue
+    ? '#0f172a'
     : '#64748b';
 
   return (
@@ -70,7 +72,7 @@ export default function FloatingInput({
             backgroundColor: disabled ? '#f8fafc' : '#ffffff',
             border: `1.5px solid ${disabled ? '#e2e8f0' : borderColor}`,
             borderRadius: '8px',
-            boxShadow: isFocused ? '0 0 0 3px rgba(30, 64, 175, 0.12)' : 'none',
+            boxShadow: isFocused ? '0 0 0 3px rgba(15, 23, 42, 0.08)' : 'none',
             transition: 'all 0.2s ease',
             overflow: 'hidden',
           }}
@@ -82,7 +84,7 @@ export default function FloatingInput({
               justifyContent: 'center',
               padding: '0 1.4rem',
               backgroundColor: '#f8fafc',
-              borderRight: `1.5px solid ${isFocused ? 'rgba(30, 64, 175, 0.25)' : '#e2e8f0'}`,
+              borderRight: `1.5px solid ${isFocused ? 'rgba(15, 23, 42, 0.25)' : '#e2e8f0'}`,
               color: '#475569',
               fontSize: '1.4rem',
               fontWeight: 600,
@@ -139,7 +141,7 @@ export default function FloatingInput({
             fontWeight: 600,
             color: '#1e293b',
             outline: 'none',
-            boxShadow: isFocused ? '0 0 0 3px rgba(30, 64, 175, 0.12)' : 'none',
+            boxShadow: isFocused ? '0 0 0 3px rgba(15, 23, 42, 0.08)' : 'none',
             transition: 'all 0.2s ease',
             margin: 0,
             ...style,

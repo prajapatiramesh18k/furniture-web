@@ -1,7 +1,5 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import FloatingSelect from './FloatingSelect';
-import FloatingInput from './FloatingInput';
 
 export default function PayrollTab() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -16,6 +14,7 @@ export default function PayrollTab() {
   const [downloading, setDownloading] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [cardOpen, setCardOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -38,6 +37,18 @@ export default function PayrollTab() {
       console.error(err);
     }
   };
+
+  const filteredEmployees = employees.filter(emp => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase().trim();
+    return (
+      (emp.name && emp.name.toLowerCase().includes(q)) ||
+      (emp.employeeId && emp.employeeId.toLowerCase().includes(q)) ||
+      (emp.phone && emp.phone.includes(q)) ||
+      (emp.department && emp.department.toLowerCase().includes(q)) ||
+      (emp.role && emp.role.toLowerCase().includes(q))
+    );
+  });
 
   const handleSelectEmployee = async (emp: any) => {
     setSelectedEmployee(emp);
@@ -187,8 +198,9 @@ export default function PayrollTab() {
 
     const messageText = `*ANANYA HOUSE OF FURNITURE*\n` +
       `*Employee Payment Receipt — ${monthName} ${year}*\n\n` +
-      `Dear *${selectedEmployee.name}*,\n` +
+      `Dear *${selectedEmployee.name}* (ID: ${selectedEmployee.employeeId || '—'}),\n` +
       `Your payment receipt for *${monthName} ${year}* has been generated.\n\n` +
+      `• *Employee ID:* ${selectedEmployee.employeeId || '—'}\n` +
       `• *Receipt No:* ${receiptNo}\n` +
       `• *Period:* ${monthName} ${year}\n` +
       `• *Net Paid / Settled:* ₹${netPaid?.toLocaleString()}\n\n` +
@@ -242,72 +254,243 @@ export default function PayrollTab() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2><i className="fas fa-file-invoice-dollar" style={{ color: 'var(--primary-color)' }}></i> Monthly Settlement</h2>
-      </div>
+      {/* Header Toolbar: Title on left, Month/Year dropdown + Search keyword on right inline */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <i className="fas fa-file-invoice-dollar" style={{ color: 'var(--primary-color)' }}></i> Monthly Settlement
+          <span style={{ fontSize: '1.25rem', color: '#64748b', fontWeight: 600, background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
+            {filteredEmployees.length}
+          </span>
+        </h2>
 
-      <div className="product-upload-form" style={{ marginBottom: '2rem', padding: '1.5rem 2rem', background: '#fff', borderRadius: '12px' }}>
-        <div className="form-row" style={{ margin: 0, alignItems: 'center' }}>
-          <FloatingSelect
-            label="Month"
-            value={String(month)}
-            options={Array.from({ length: 12 }, (_, i) => ({
-              label: new Date(0, i).toLocaleString('default', { month: 'long' }),
-              value: String(i + 1),
-            }))}
-            onChange={(val) => { setMonth(Number(val)); setSelectedEmployee(null); setCardOpen(false); }}
-          />
-          <FloatingInput
-            label="Year"
-            type="number"
-            value={year}
-            onChange={(e) => { setYear(Number(e.target.value)); setSelectedEmployee(null); setCardOpen(false); }}
-          />
+        {/* Inline Controls: Month Dropdown, Year Input, and Search Keyword */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Month Dropdown */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <select
+              value={String(month)}
+              onChange={(e) => { setMonth(Number(e.target.value)); setSelectedEmployee(null); setCardOpen(false); }}
+              style={{
+                height: '38px',
+                padding: '0 2.4rem 0 1rem',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                background: '#ffffff',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'none',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {Array.from({ length: 12 }, (_, i) => {
+                const name = new Date(0, i).toLocaleString('default', { month: 'long' });
+                return <option key={i + 1} value={String(i + 1)}>{name}</option>;
+              })}
+            </select>
+            <i className="fas fa-chevron-down" style={{ position: 'absolute', right: '10px', fontSize: '1.1rem', color: '#64748b', pointerEvents: 'none' }}></i>
+          </div>
+
+          {/* Year Dropdown */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <select
+              value={year}
+              onChange={(e) => { setYear(Number(e.target.value)); setSelectedEmployee(null); setCardOpen(false); }}
+              style={{
+                height: '38px',
+                padding: '0 2.4rem 0 1rem',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                background: '#ffffff',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'none',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {Array.from({ length: 10 }, (_, i) => {
+                const y = new Date().getFullYear() - 3 + i;
+                return <option key={y} value={y}>{y}</option>;
+              })}
+            </select>
+            <i className="fas fa-chevron-down" style={{ position: 'absolute', right: '10px', fontSize: '1.1rem', color: '#64748b', pointerEvents: 'none' }}></i>
+          </div>
+
+          {/* Search keyword input matching Job Sites and Employees list */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <i
+              className="fas fa-search"
+              style={{
+                position: 'absolute',
+                left: '11px',
+                color: '#94a3b8',
+                fontSize: '1.25rem',
+                pointerEvents: 'none',
+              }}
+            ></i>
+            <input
+              type="text"
+              placeholder="Search keyword"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: '0.65rem 2.2rem 0.65rem 2.8rem',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                color: '#0f172a',
+                outline: 'none',
+                background: '#ffffff',
+                minWidth: '220px',
+                height: '38px',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                title="Clear search"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '1.4rem',
+                  lineHeight: 1,
+                  padding: 0,
+                }}
+              >
+                &times;
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Employee List */}
-      <div style={{ overflowX: 'auto', width: '100%', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-        <table className="orders-table" style={{ margin: 0, minWidth: '650px' }}>
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Daily Rate</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map(emp => (
-              <tr key={emp._id}>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                  {(emp.department || emp.role) && (
-                    <div style={{ fontSize: '1.2rem', color: '#666', marginTop: '2px' }}>
-                      {emp.department}{emp.department && emp.role ? ' • ' : ''}{emp.role}
-                    </div>
-                  )}
-                </td>
-                <td>₹{emp.dailyRate}</td>
-                <td>
-                  <span style={{
-                    padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
-                    background: emp.status === 'Active' ? '#e6f4ea' : '#fce8e6',
-                    color: emp.status === 'Active' ? '#137333' : '#c5221f'
-                  }}>
-                    {emp.status}
-                  </span>
-                </td>
-                <td>
-                  <button className="btn-edit" style={{ margin: 0, padding: '0.4rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleSelectEmployee(emp)}>
-                    <i className="fas fa-eye"></i> View Payroll
-                  </button>
-                </td>
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem', minWidth: '700px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '95px' }}>Emp ID</th>
+                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Employee</th>
+                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Daily Rate</th>
+                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Status</th>
+                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Action</th>
               </tr>
-            ))}
-            {employees.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center' }}>No employees found</td></tr>}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b' }}>
+                    <i className="fas fa-search" style={{ fontSize: '2.4rem', marginBottom: '1rem', display: 'block', color: '#cbd5e1' }}></i>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e293b' }}>
+                      No employees found matching {search ? `"${search}"` : 'records'}
+                    </div>
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() => setSearch('')}
+                        style={{
+                          marginTop: '1.2rem',
+                          padding: '6px 16px',
+                          border: '1.5px solid #cbd5e1',
+                          borderRadius: '6px',
+                          background: '#fff',
+                          color: 'var(--primary-color, #ce962e)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontSize: '1.25rem',
+                        }}
+                      >
+                        Clear Search
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                filteredEmployees.map(emp => (
+                  <tr key={emp._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
+                      <span style={{
+                        backgroundColor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        color: 'var(--primary-color)',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 800,
+                        fontSize: '1.25rem',
+                        letterSpacing: '0.5px',
+                      }}>
+                        {emp.employeeId || '—'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{emp.name}</div>
+                      {(emp.department || emp.role) && (
+                        <div style={{ fontSize: '1.2rem', color: '#64748b', marginTop: '2px' }}>
+                          {emp.department}{emp.department && emp.role ? ' • ' : ''}{emp.role}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem', color: '#334155', fontWeight: 600 }}>₹{emp.dailyRate}</td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '1.15rem', fontWeight: 700,
+                        background: emp.status === 'Active' ? '#dcfce7' : '#fce8e6',
+                        color: emp.status === 'Active' ? '#137333' : '#c5221f'
+                      }}>
+                        {emp.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      <button className="btn-edit" style={{ margin: 0, padding: '0.4rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleSelectEmployee(emp)}>
+                        <i className="fas fa-eye"></i> View Payroll
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Payroll Card Modal */}
@@ -324,8 +507,20 @@ export default function PayrollTab() {
             
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid #eee', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '12px 12px 0 0' }}>
-              <h3 style={{ margin: 0, fontSize: '1.6rem' }}>
-                <i className="fas fa-calculator" style={{ color: 'var(--primary-color)' }}></i> Payroll — {selectedEmployee.name} ({monthName} {year})
+              <h3 style={{ margin: 0, fontSize: '1.6rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <span><i className="fas fa-calculator" style={{ color: 'var(--primary-color)' }}></i> Payroll — {selectedEmployee.name}</span>
+                <span style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  color: 'var(--primary-color)',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontWeight: 800,
+                  fontSize: '1.35rem',
+                }}>
+                  {selectedEmployee.employeeId || '—'}
+                </span>
+                <span style={{ color: '#64748b', fontSize: '1.3rem', fontWeight: 600 }}>({monthName} {year})</span>
               </h3>
               <button onClick={handleCloseCard} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', color: '#888', lineHeight: 1 }}>&times;</button>
             </div>
@@ -425,6 +620,14 @@ export default function PayrollTab() {
                       gap: '0.8rem 1.5rem',
                       textTransform: 'none'
                     }}>
+                      <div>
+                        <div style={{ fontSize: '1.05rem', color: '#777', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem', letterSpacing: '0.5px' }}>
+                          Employee ID
+                        </div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary-color)', letterSpacing: '0.5px' }}>
+                          {selectedEmployee.employeeId || '—'}
+                        </div>
+                      </div>
                       <div>
                         <div style={{ fontSize: '1.05rem', color: '#777', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem', letterSpacing: '0.5px' }}>
                           Employee Name
