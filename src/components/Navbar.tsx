@@ -417,6 +417,15 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedI
                 <i className="fas fa-chevron-right account-menu-arrow"></i>
               </button>
             )}
+            {user.isAdmin && (
+              <button className="account-menu-item" onClick={() => navigateTo('/employee-management')}>
+                <div className="account-menu-icon">
+                  <i className="fas fa-users-cog"></i>
+                </div>
+                <span>Employee Management</span>
+                <i className="fas fa-chevron-right account-menu-arrow"></i>
+              </button>
+            )}
             <button className="account-menu-item" onClick={() => navigateTo('/orders')}>
               <div className="account-menu-icon">
                 <i className="fas fa-box"></i>

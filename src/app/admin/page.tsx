@@ -540,8 +540,12 @@ export default function AdminPage() {
         <button className={activeTab === 'orders' ? 'active' : ''} onClick={() => setActiveTab('orders')}>
           <i className="fas fa-shopping-cart"></i> Orders ({orders.length})
         </button>
-        <button className={activeTab === 'contacts' ? 'active' : ''} onClick={() => setActiveTab('contacts')}>
-          <i className="fas fa-envelope"></i> Contacts ({contacts.length})
+        <button
+          className={`admin-nav-item ${activeTab === 'contacts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contacts')}
+        >
+          <i className="fas fa-envelope"></i>
+          <span>Messages</span>
         </button>
       </div>
 

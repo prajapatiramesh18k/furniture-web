@@ -18385,3 +18385,30 @@ input[type="number"] {
   height: 1px !important;
   overflow: hidden !important;
 }
+
+/* === Payroll Receipt Styling & html2canvas Fixes === */
+.payroll-receipt {
+  background: #ffffff !important;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif !important;
+  color: #222222 !important;
+  text-transform: none !important;
+  letter-spacing: 0.2px !important;
+  word-spacing: normal !important;
+  line-height: 1.5 !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.payroll-receipt * {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: 0.2px !important;
+  transition: none !important;
+  box-sizing: border-box !important;
+}
+
+.payroll-receipt strong,
+.payroll-receipt b {
+  font-weight: 700 !important;
+}
+
+
