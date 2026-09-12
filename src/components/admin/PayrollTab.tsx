@@ -149,10 +149,8 @@ export default function PayrollTab() {
 
     const safeName = (selectedEmployee.name || 'Employee').replace(/\s+/g, '_');
     const fileName = `Payment_Receipt_${safeName}_${monthName}_${year}.pdf`;
-    const blob = pdf.output('blob');
-    const file = new File([blob], fileName, { type: 'application/pdf' });
 
-    return { pdf, fileName, blob, file };
+    return { pdf, fileName };
   };
 
   const handleDownloadReceipt = async () => {
@@ -181,7 +179,10 @@ export default function PayrollTab() {
       ? (preview.settlementAmount !== undefined && preview.settlementAmount !== null ? preview.settlementAmount : preview.balanceAmount)
       : preview.balanceAmount;
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    let origin = typeof window !== 'undefined' ? window.location.origin : '';
+    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      origin = 'https://furniture-next-pi.vercel.app';
+    }
     const onlineReceiptUrl = `${origin}/receipt?employeeId=${selectedEmployee._id}&month=${month}&year=${year}`;
 
     const messageText = `*ANANYA HOUSE OF FURNITURE*\n` +
