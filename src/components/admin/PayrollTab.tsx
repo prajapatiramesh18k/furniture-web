@@ -222,12 +222,47 @@ export default function PayrollTab() {
       import('html2canvas'),
       import('jspdf'),
     ]);
-    const canvas = await html2canvas(receiptRef.current, {
-      scale: 2.5,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
+
+    // Create a temporary off-screen container with fixed 800px standard A4 width
+    // This guarantees that regardless of whether downloaded on mobile (360px) or desktop,
+    // the layout is ALWAYS pristine, full-width, perfectly spaced, with zero cut-off.
+    const printContainer = document.createElement('div');
+    printContainer.style.position = 'fixed';
+    printContainer.style.top = '0';
+    printContainer.style.left = '0';
+    printContainer.style.width = '800px';
+    printContainer.style.minWidth = '800px';
+    printContainer.style.maxWidth = '800px';
+    printContainer.style.zIndex = '-99999';
+    printContainer.style.background = '#ffffff';
+    printContainer.style.pointerEvents = 'none';
+
+    const clone = receiptRef.current.cloneNode(true) as HTMLElement;
+    clone.style.width = '800px';
+    clone.style.minWidth = '800px';
+    clone.style.maxWidth = '800px';
+    clone.style.margin = '0';
+    clone.style.padding = '0';
+    clone.style.boxSizing = 'border-box';
+
+    printContainer.appendChild(clone);
+    document.body.appendChild(printContainer);
+
+    let canvas;
+    try {
+      canvas = await html2canvas(clone, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 800,
+      });
+    } finally {
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+    }
+
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -245,10 +280,10 @@ export default function PayrollTab() {
     const renderW = canvas.width * ratio;
     const renderH = canvas.height * ratio;
     const posX = margin + (maxW - renderW) / 2;
-    const posY = margin + Math.max(0, (maxH - renderH) / 6);
+    const posY = margin + Math.max(0, (maxH - renderH) / 8);
 
     const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH);
+    pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH, undefined, 'FAST');
 
     const safeName = (selectedEmployee.name || 'Employee').replace(/\s+/g, '_');
     const fileName = `Payment_Receipt_${safeName}_${monthName}_${year}.pdf`;
@@ -316,7 +351,7 @@ export default function PayrollTab() {
     padding: '1.8rem 2.2rem 1.4rem',
     borderBottom: '3px solid var(--primary-color)',
     gap: '1.5rem',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
     textTransform: 'none',
     letterSpacing: '0.2px',
@@ -692,45 +727,47 @@ export default function PayrollTab() {
                 )}
 
                 {/* === RECEIPT START === */}
-                <div
-                  ref={receiptRef}
-                  className="payroll-receipt"
-                  style={{
-                    background: '#ffffff',
-                    padding: '0',
-                    width: '100%',
-                    maxWidth: '820px',
-                    margin: '0 auto',
-                    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
-                    textTransform: 'none',
-                    letterSpacing: '0.2px',
-                    wordSpacing: 'normal',
-                    color: '#222'
-                  }}
-                >
-                  
-                  {/* Receipt Header (Left details + right logo) */}
-                  <div style={rcptHeader}>
-                    {/* Left: PAYMENT RECEIPT MONTH, YEAR, Company Name & Full Address */}
-                    <div style={{ textAlign: 'left', flex: '1 1 340px' }}>
-                      <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--main-color)', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        PAYMENT RECEIPT {monthName.toUpperCase()}
-                      </h2>
-                      <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary-color)', margin: '0.2rem 0 1rem', letterSpacing: '1px' }}>
-                        {year}
+                <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <div
+                    ref={receiptRef}
+                    className="payroll-receipt"
+                    style={{
+                      background: '#ffffff',
+                      padding: '0',
+                      width: '100%',
+                      minWidth: '720px',
+                      maxWidth: '820px',
+                      margin: '0 auto',
+                      fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
+                      textTransform: 'none',
+                      letterSpacing: '0.2px',
+                      wordSpacing: 'normal',
+                      color: '#222'
+                    }}
+                  >
+                    
+                    {/* Receipt Header (Left details + right logo) */}
+                    <div style={rcptHeader}>
+                      {/* Left: PAYMENT RECEIPT MONTH, YEAR, Company Name & Full Address */}
+                      <div style={{ textAlign: 'left', flex: '1 1 auto', minWidth: 0 }}>
+                        <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--main-color)', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          PAYMENT RECEIPT {monthName.toUpperCase()}
+                        </h2>
+                        <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary-color)', margin: '0.2rem 0 1rem', letterSpacing: '1px' }}>
+                          {year}
+                        </div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--main-color)', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.5px' }}>
+                          ANANYA HOUSE OF FURNITURE
+                        </div>
+                        <div style={{ fontSize: '1.15rem', color: '#555', lineHeight: 1.7, textTransform: 'none', width: '100%' }}>
+                          Diva-Shil Road, Khardipada, Thane, Maharashtra, India - 400612<br />
+                          <span style={{ fontWeight: 600, color: '#333' }}>Tel :</span> +91 93218 12823, +91 83187 27813<br />
+                          <span style={{ fontWeight: 600, color: '#333' }}>Email :</span> ananyahouseoffurniture@gmail.com
+                        </div>
                       </div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--main-color)', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.5px' }}>
-                        ANANYA HOUSE OF FURNITURE
-                      </div>
-                      <div style={{ fontSize: '1.15rem', color: '#555', lineHeight: 1.7, textTransform: 'none', width: '100%' }}>
-                        Diva-Shil Road, Khardipada, Thane, Maharashtra, India - 400612<br />
-                        <span style={{ fontWeight: 600, color: '#333' }}>Tel :</span> +91 93218 12823, +91 83187 27813<br />
-                        <span style={{ fontWeight: 600, color: '#333' }}>Email :</span> ananyahouseoffurniture@gmail.com
-                      </div>
-                    </div>
 
-                    {/* Right: Simple Logo with Name */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', flex: '0 0 auto', alignSelf: 'center', marginTop: '2.5rem' }}>
+                      {/* Right: Simple Logo with Name */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', flex: '0 0 auto', alignSelf: 'center', marginTop: '1rem' }}>
                       <svg width="54" height="54" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="28" height="28" rx="5" fill="#a27341"/>
                         <path d="M7 21V11.5L14 8.5L21 11.5V21" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
@@ -922,15 +959,15 @@ export default function PayrollTab() {
                   </div>
 
                   {/* Signatures */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1.6rem 2.2rem 0.6rem', marginTop: '1rem', textTransform: 'none' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ borderTop: '1.5px solid #333', width: '200px', marginBottom: '0.6rem' }}></div>
-                      <p style={{ fontSize: '1.2rem', color: '#555', margin: 0, textTransform: 'none' }}>Employee Signature</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1.6rem 2.2rem 0.6rem', marginTop: '1rem', textTransform: 'none', gap: '1.5rem' }}>
+                    <div style={{ textAlign: 'center', minWidth: '160px' }}>
+                      <div style={{ borderTop: '1.5px solid #333', width: '100%', maxWidth: '200px', margin: '0 auto 0.6rem' }}></div>
+                      <p style={{ fontSize: '1.2rem', color: '#555', margin: 0, textTransform: 'none', whiteSpace: 'nowrap' }}>Employee Signature</p>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ borderTop: '1.5px solid #333', width: '200px', marginBottom: '0.6rem' }}></div>
-                      <p style={{ fontSize: '1.2rem', color: '#555', margin: '0 0 0.4rem', textTransform: 'none' }}>Authorized By</p>
-                      <p style={{ fontSize: '1.45rem', fontWeight: 900, color: '#000000', margin: 0, textTransform: 'none', letterSpacing: '0.3px' }}>
+                    <div style={{ textAlign: 'center', minWidth: '160px' }}>
+                      <div style={{ borderTop: '1.5px solid #333', width: '100%', maxWidth: '200px', margin: '0 auto 0.6rem' }}></div>
+                      <p style={{ fontSize: '1.2rem', color: '#555', margin: '0 0 0.4rem', textTransform: 'none', whiteSpace: 'nowrap' }}>Authorized By</p>
+                      <p style={{ fontSize: '1.45rem', fontWeight: 900, color: '#000000', margin: 0, textTransform: 'none', letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>
                         Mahesh Prajapati
                       </p>
                     </div>
@@ -942,7 +979,8 @@ export default function PayrollTab() {
                     <p style={{ fontSize: '1.15rem', color: '#888', margin: 0, fontStyle: 'italic', textTransform: 'none' }}>Thank you for your work with us.</p>
                   </div>
                 </div>
-                {/* === RECEIPT END === */}
+              </div>
+              {/* === RECEIPT END === */}
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid #eee', flexWrap: 'wrap', alignItems: 'center' }} data-html2canvas-ignore="true">

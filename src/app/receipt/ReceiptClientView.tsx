@@ -260,8 +260,8 @@ function ReceiptDocumentContent({
         <div style={{ textAlign: 'center' }}>
           <div style={{ height: '32px' }}></div>
           <div className="rcpt-sig-line" style={{ borderTop: '1.5px solid #334155', width: isPdf ? '200px' : '170px', margin: '0 auto 0.35rem' }}></div>
-          <p style={{ fontSize: '1.15rem', color: '#64748b', margin: '0 0 0.15rem' }}>Authorized By</p>
-          <p style={{ fontSize: '1.35rem', fontWeight: 900, color: '#000000', margin: 0, letterSpacing: '0.3px' }}>
+          <p style={{ fontSize: '1.15rem', color: '#64748b', margin: '0 0 0.15rem', whiteSpace: 'nowrap' }}>Authorized By</p>
+          <p style={{ fontSize: '1.35rem', fontWeight: 900, color: '#000000', margin: 0, letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>
             Mahesh Prajapati
           </p>
         </div>
@@ -322,6 +322,7 @@ export default function ReceiptClientView({
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        windowWidth: 800,
       });
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -339,10 +340,10 @@ export default function ReceiptClientView({
       const renderW = canvas.width * ratio;
       const renderH = canvas.height * ratio;
       const posX = margin + (maxW - renderW) / 2;
-      const posY = margin + Math.max(0, (maxH - renderH) / 6);
+      const posY = margin + Math.max(0, (maxH - renderH) / 8);
 
       const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH);
+      pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH, undefined, 'FAST');
 
       const safeName = (employee?.name || 'Employee').replace(/\s+/g, '_');
       pdf.save(`Payment_Receipt_${safeName}_${monthName}_${year}.pdf`);
@@ -681,7 +682,7 @@ export default function ReceiptClientView({
       </div>
 
       {/* Offscreen Fixed 800px A4 Printable Container (Solely for html2canvas -> jsPDF) */}
-      <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '800px', zIndex: -100, pointerEvents: 'none', opacity: 0 }}>
+      <div style={{ position: 'fixed', left: 0, top: 0, width: '800px', zIndex: -99999, pointerEvents: 'none', background: '#ffffff' }}>
         <div
           ref={pdfReceiptRef}
           style={{
