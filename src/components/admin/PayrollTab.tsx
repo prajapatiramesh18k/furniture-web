@@ -245,8 +245,14 @@ export default function PayrollTab() {
     clone.style.padding = '0';
     clone.style.boxSizing = 'border-box';
 
+    clone.style.overflow = 'visible';
+    clone.style.overflowX = 'visible';
+    clone.style.overflowY = 'visible';
     printContainer.appendChild(clone);
     document.body.appendChild(printContainer);
+
+    // Wait one frame so the browser fully lays out the 800px clone before capture
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     let canvas;
     try {
