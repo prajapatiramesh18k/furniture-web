@@ -344,6 +344,36 @@ export default function EmployeesTab() {
     });
   };
 
+  const handleStopShift = async (a: any) => {
+    // Calculate live elapsed hours from punchIn to now
+    let hours = selectedEmployee?.standardHours || 8;
+    if (a.punchIn) {
+      const elapsed = (Date.now() - new Date(a.punchIn).getTime()) / 3600000;
+      hours = Math.max(0, Math.round(elapsed * 2) / 2); // round to nearest 0.5
+    }
+    try {
+      const res = await fetch(`/api/admin/employees/attendance/${a._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: selectedEmployee._id,
+          workHours: hours,
+          notes: a.notes || 'Shift stopped by admin',
+        }),
+      });
+      if (res.ok) {
+        fetchAttendance(selectedEmployee._id);
+        showToast(`Shift stopped. ${hours}h recorded.`);
+      } else {
+        const err = await res.json();
+        showToast(err.error || 'Failed to stop shift', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('An error occurred', 'error');
+    }
+  };
+
   const handleOpenAddPayment = () => {
     setEditingPayment(null);
     setPaymentForm({
@@ -872,6 +902,29 @@ export default function EmployeesTab() {
                                 onClick={() => handleDeleteAttendance(a._id)}
                                 title="Delete Record"
                               />
+                              {(isWorking || (a.punchIn && !a.punchOut)) && (
+                                <button
+                                  type="button"
+                                  style={{
+                                    backgroundColor: '#fee2e2',
+                                    border: '1px solid #fca5a5',
+                                    borderRadius: '8px',
+                                    padding: '4px 10px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    cursor: 'pointer',
+                                    color: '#dc2626',
+                                    fontSize: '1.15rem',
+                                    fontWeight: 700,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  onClick={() => handleStopShift(a)}
+                                  title="Stop ongoing shift and save hours"
+                                >
+                                  <i className="fas fa-stop-circle"></i> Stop
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

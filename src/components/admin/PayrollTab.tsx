@@ -208,9 +208,23 @@ export default function PayrollTab() {
     });
   };
 
+  const toTitleCase = (str: string) =>
+    str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
   const generateReceiptNumber = () => {
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `AHF-${year}-${pad(month)}-${selectedEmployee?.name?.substring(0, 3).toUpperCase() || '000'}`;
+    const padMonth = month.toString().padStart(2, '0');
+    let empCode = '0001';
+    if (selectedEmployee?.employeeId) {
+      const numMatch = selectedEmployee.employeeId.match(/\d+/);
+      if (numMatch) {
+        empCode = numMatch[0].padStart(4, '0');
+      } else {
+        empCode = selectedEmployee.employeeId.slice(-4).padStart(4, '0');
+      }
+    } else if (selectedEmployee?._id) {
+      empCode = selectedEmployee._id.toString().slice(-4);
+    }
+    return `AHF-PAY-${year}-${padMonth}-${empCode}`;
   };
 
   const generateReceiptPdf = async () => {
@@ -291,7 +305,7 @@ export default function PayrollTab() {
     const imgData = canvas.toDataURL('image/png');
     pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH, undefined, 'FAST');
 
-    const safeName = (selectedEmployee.name || 'Employee').replace(/\s+/g, '_');
+    const safeName = toTitleCase(selectedEmployee.name || 'Employee').replace(/\s+/g, '_');
     const fileName = `Payment_Receipt_${safeName}_${monthName}_${year}.pdf`;
 
     return { pdf, fileName };
@@ -838,7 +852,7 @@ export default function PayrollTab() {
                           Employee Name
                         </div>
                         <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--main-color)' }}>
-                          {selectedEmployee.name}
+                          {toTitleCase(selectedEmployee.name)}
                         </div>
                       </div>
                       <div>
@@ -859,10 +873,10 @@ export default function PayrollTab() {
                       </div>
                       <div>
                         <div style={{ fontSize: '1.05rem', color: '#777', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.2rem', letterSpacing: '0.5px' }}>
-                          Phone Number
+                          Pay Period
                         </div>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 600, color: '#333' }}>
-                          {selectedEmployee.phone ? `+91 ${selectedEmployee.phone.replace(/\D/g, '').slice(-10)}` : 'N/A'}
+                        <div style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--primary-color)' }}>
+                          {monthName} {year}
                         </div>
                       </div>
                       <div>
@@ -930,14 +944,14 @@ export default function PayrollTab() {
                             </tr>
                           ))}
                           <tr style={{ background: '#faf8f5' }}>
-                            <td style={rcptTdBold} colSpan={2}>Total Previous Advances</td>
+                            <td style={rcptTdBold} colSpan={2}>Total Previous Payments</td>
                             <td style={rcptTdBoldRight}>₹{preview.totalPaid?.toLocaleString()}</td>
                           </tr>
                         </tbody>
                       </table>
                     ) : (
                       <div style={{ padding: '1.4rem 1.6rem', background: '#faf8f5', borderRadius: '6px', border: '1px dashed #d8cbba', color: '#666', fontSize: '1.25rem', textAlign: 'center', textTransform: 'none' }}>
-                        No previous advance payments recorded for this period.
+                        No previous payments recorded for this period.
                       </div>
                     )}
                   </div>
@@ -948,18 +962,11 @@ export default function PayrollTab() {
                     <table style={rcptTable}>
                       <tbody>
                         <tr><td style={rcptTd}>Total Earnings</td><td style={rcptTdRight}>₹{preview.grossAmount?.toLocaleString()}</td></tr>
-                        <tr><td style={{ ...rcptTd, color: '#c5221f' }}>Previous Advances / Deductions</td><td style={{ ...rcptTdRight, color: '#c5221f' }}>- ₹{preview.totalPaid?.toLocaleString()}</td></tr>
-                        {preview.isPreview ? (
-                          <tr style={{ background: '#faf8f5' }}>
-                            <td style={rcptTdBold}>Final Amount {preview.balanceAmount >= 0 ? 'Due' : 'Overpaid'}</td>
-                            <td style={{ ...rcptTdBoldRight, color: preview.balanceAmount >= 0 ? '#137333' : '#c5221f' }}>₹{Math.abs(preview.balanceAmount)?.toLocaleString()}</td>
-                          </tr>
-                        ) : (
-                          <tr style={{ background: '#faf8f5' }}>
-                            <td style={rcptTdBold}>Total Paid</td>
-                            <td style={{ ...rcptTdBoldRight, color: '#137333' }}>₹{(preview.settlementAmount !== undefined && preview.settlementAmount !== null ? preview.settlementAmount : preview.balanceAmount)?.toLocaleString()}</td>
-                          </tr>
-                        )}
+                        <tr><td style={{ ...rcptTd, color: '#c5221f' }}>Previous Payments</td><td style={{ ...rcptTdRight, color: '#c5221f' }}>- ₹{preview.totalPaid?.toLocaleString()}</td></tr>
+                        <tr style={{ background: '#faf8f5' }}>
+                          <td style={rcptTdBold}>Net Amount Paid</td>
+                          <td style={{ ...rcptTdBoldRight, color: '#137333' }}>₹{Math.max(0, (preview.grossAmount || 0) - (preview.totalPaid || 0))?.toLocaleString()}</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
