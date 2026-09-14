@@ -28,4 +28,6 @@ const ReviewSchema = new Schema<IReview>({
   completedDate: { type: String },
 });
 
+ReviewSchema.index({ approved: 1, createdAt: -1 });
+
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

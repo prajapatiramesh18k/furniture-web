@@ -14,4 +14,6 @@ const GalleryImageSchema = new Schema<IGalleryImage>({
   uploadedAt: { type: Date, default: Date.now },
 });
 
+GalleryImageSchema.index({ category: 1, uploadedAt: -1 });
+
 export default mongoose.models.GalleryImage || mongoose.model<IGalleryImage>('GalleryImage', GalleryImageSchema);

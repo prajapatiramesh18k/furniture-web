@@ -5,7 +5,7 @@ import Site from '@/lib/models/Site';
 export async function GET() {
   try {
     await dbConnect();
-    const sites = await Site.find().sort({ createdAt: -1 }).lean();
+    const sites = await Site.find().sort({ createdAt: -1 }).limit(500).lean();
     return NextResponse.json(sites);
   } catch (err: any) {
     console.error('Error fetching sites:', err);

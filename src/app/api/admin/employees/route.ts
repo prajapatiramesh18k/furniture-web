@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Employee from '@/lib/models/Employee';
-import { ensureAllEmployeesHaveIds, generateNextEmployeeId } from '@/lib/employee-id-utils';
+import { generateNextEmployeeId } from '@/lib/employee-id-utils';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await dbConnect();
-    // Safely ensure all existing employees have a unique sequential ID
-    await ensureAllEmployeesHaveIds();
+    // NOTE: ID backfill migration removed from hot path (was a full-collection
+    // scan + writes on every list fetch). Run via script when needed.
+    const limitParam = parseInt(new URL(request.url).searchParams.get('limit') || '500', 10);
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 1000) : 500;
 
-    const employees = await Employee.find().sort({ createdAt: -1 });
-    return NextResponse.json(employees);
+    const employees = await Employee.find()
+      .select('employeeId name phone department role dailyRate standardHours status joiningDate createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    return NextResponse.json(employees, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     console.error('Error fetching employees:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

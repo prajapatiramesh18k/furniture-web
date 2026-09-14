@@ -27,5 +27,8 @@ const ProductSchema = new Schema<IProduct>({
 });
 
 ProductSchema.index({ slug: 1 });
+ProductSchema.index({ category: 1 });
+ProductSchema.index({ name: 1 });
+ProductSchema.index({ createdAt: -1 });
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-
-let mongoConnected = false;
-
-async function connectDB() {
-  if (mongoConnected) return;
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ananya');
-    mongoConnected = true;
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    throw err;
-  }
-}
+import dbConnect from '@/lib/mongodb';
 
 const QUOTE_NOTIFY_EMAIL =
   process.env.QUOTE_NOTIFY_EMAIL || 'ananyahouseoffurniture@gmail.com';
@@ -155,7 +142,7 @@ async function sendQuoteEmail(payload: QuotePayload) {
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     const body = await req.json();
 
@@ -218,7 +205,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    await connectDB();
+    await dbConnect();
 
     const Contact = (await import('@/models/Contact')).default;
     const contacts = await Contact.find().sort({ createdAt: -1 });

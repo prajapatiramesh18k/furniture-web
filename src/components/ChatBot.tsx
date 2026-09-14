@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, UIMessage, isTextUIPart } from 'ai';
 
@@ -7,8 +7,10 @@ export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat' }), []);
+
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
+    transport,
   });
 
   const isLoading = status === 'streaming' || status === 'submitted';

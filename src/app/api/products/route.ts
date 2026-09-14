@@ -18,13 +18,54 @@ const staticProducts = [
   { id: 13, slug: 'bookshelf', name: 'Bookshelf', image: '/images/product-4.jpg', images: ['/images/product-4.jpg', '/images/product-11.png', '/images/product-5.jpg'], price: 8999, originalPrice: 12999, rating: 4.6, category: 'dining-room', description: '6-seater dining table set with comfortable chairs, perfect for family meals.' },
 ];
 
+// Short-lived in-memory cache so repeat homepage hits skip Mongo entirely.
+interface CacheEntry {
+  data: unknown;
+  expire: number;
+}
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL = 60_000; // 60s
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q');
+  const q = searchParams.get('q')?.trim() || '';
+  const limitParam = parseInt(searchParams.get('limit') || '0', 10);
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 0;
+
+  // Search queries bypass the full-list cache (key includes query)
+  const cacheKey = `products:${q.toLowerCase()}:${limit}`;
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expire > Date.now()) {
+    return NextResponse.json(cached.data, {
+      headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' },
+    });
+  }
 
   try {
     await dbConnect();
-    const dbProducts = await Product.find().lean();
+
+    // Push search down to Mongo with indexed prefix-friendly regex instead of
+    // fetching the whole collection and filtering in Node.
+    const filter = q
+      ? {
+          $or: [
+            { name: { $regex: escapeRegex(q), $options: 'i' } },
+            { category: { $regex: escapeRegex(q), $options: 'i' } },
+          ],
+        }
+      : {};
+
+    let query = Product.find(filter)
+      .select('name slug image images price originalPrice rating category description')
+      .sort({ createdAt: -1 })
+      .lean();
+    if (limit > 0) query = query.limit(limit);
+    const dbProducts = await query;
+
     const dbFormatted = dbProducts.map(p => ({
       id: p._id.toString(),
       slug: p.slug || (typeof p.name === 'string' ? p.name.toLowerCase().replace(/\s+/g, '-') : p._id.toString()),
@@ -38,23 +79,26 @@ export async function GET(request: NextRequest) {
       description: p.description,
     }));
 
-    const allProducts = [...staticProducts, ...dbFormatted];
-
-    // Filter by search query if provided
-    let products = allProducts;
-    if (q && q.trim()) {
-      const query = q.toLowerCase().trim();
-      products = allProducts.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query)
+    // Static catalog search stays in-memory (tiny, 13 items)
+    let products: unknown[];
+    if (q) {
+      const queryLower = q.toLowerCase();
+      const staticFiltered = staticProducts.filter(p =>
+        p.name.toLowerCase().includes(queryLower) ||
+        p.category.toLowerCase().includes(queryLower) ||
+        p.description.toLowerCase().includes(queryLower)
       );
+      products = [...staticFiltered, ...dbFormatted];
+    } else {
+      products = [...staticProducts, ...dbFormatted];
     }
 
-    return NextResponse.json(
-      { products: q ? products : allProducts },
-      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
-    );
+    const payload = { products };
+    cache.set(cacheKey, { data: payload, expire: Date.now() + CACHE_TTL });
+
+    return NextResponse.json(payload, {
+      headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch {
     return NextResponse.json({ products: staticProducts });
   }

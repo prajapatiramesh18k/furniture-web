@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import SubmitReview from '@/components/SubmitReview';
+
+const SubmitReview = dynamic(() => import('@/components/SubmitReview'), { ssr: false });
 
 // Stable auth state restored from sessionStorage on first load
 function getSessionAuth(): { name: string; email: string; isAdmin: boolean } | null {
@@ -111,7 +113,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debounced search
+  // Debounced search with request cancellation
   useEffect(() => {
     if (searchTimeoutRef.current !== null) clearTimeout(searchTimeoutRef.current);
     if (!searchQuery.trim()) {
@@ -120,17 +122,21 @@ export default function Navbar() {
       return;
     }
     setSearchLoading(true);
+    const controller = new AbortController();
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/products?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`/api/products?q=${encodeURIComponent(searchQuery)}`, {
+          signal: controller.signal,
+        });
         const data = await res.json();
         setSearchResults((data.products || []).slice(0, 6));
-      } catch {
-        setSearchResults([]);
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') setSearchResults([]);
       }
       setSearchLoading(false);
     }, 300);
     return () => {
+      controller.abort();
       if (searchTimeoutRef.current !== null) clearTimeout(searchTimeoutRef.current);
     };
   }, [searchQuery]);
@@ -147,8 +153,8 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (err) {
-      console.log('Logout failed');
+    } catch {
+      // best-effort logout — continue with local cleanup
     }
     setSessionAuth(null);
     setUserLoggedIn(false);
@@ -349,8 +355,8 @@ function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedI
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (err) {
-      console.log('Logout failed');
+    } catch {
+      // best-effort logout — continue with local cleanup
     }
     try {
       sessionStorage.removeItem('auth-user');

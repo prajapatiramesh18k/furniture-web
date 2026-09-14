@@ -17,6 +17,34 @@ export default function PayrollTab() {
   const [cardOpen, setCardOpen] = useState(false);
   const [search, setSearch] = useState('');
   const receiptRef = useRef<HTMLDivElement>(null);
+  const RECEIPT_DESIGN_WIDTH = 800;
+  const receiptViewportRef = useRef<HTMLDivElement>(null);
+  const [receiptScale, setReceiptScale] = useState(1);
+  const [receiptScaledHeight, setReceiptScaledHeight] = useState<number | undefined>(undefined);
+
+  // Scale the fixed 800px A4 receipt down to fit narrow (mobile) viewports
+  // so the full receipt is always visible with no horizontal scrolling/cut-off.
+  useEffect(() => {
+    if (!cardOpen || !preview) return;
+    const updateScale = () => {
+      const viewportW = receiptViewportRef.current?.clientWidth ?? 0;
+      const available = viewportW > 0 ? viewportW - 24 : window.innerWidth - 64;
+      const scale = available >= RECEIPT_DESIGN_WIDTH ? 1 : Math.max(0.3, available / RECEIPT_DESIGN_WIDTH);
+      setReceiptScale(scale);
+      // Measure after paint so the wrapper collapses to the scaled height
+      requestAnimationFrame(() => {
+        const h = receiptRef.current?.offsetHeight ?? 0;
+        if (h > 0) setReceiptScaledHeight(Math.ceil(h * scale));
+      });
+    };
+    updateScale();
+    const t = setTimeout(updateScale, 150);
+    window.addEventListener('resize', updateScale);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', updateScale);
+    };
+  }, [cardOpen, preview, selectedEmployee?._id, month, year]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
@@ -40,14 +68,26 @@ export default function PayrollTab() {
   const monthName = new Date(0, month - 1).toLocaleString('default', { month: 'long' });
 
   useEffect(() => {
-    fetchEmployees();
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/employees?limit=500', { signal: controller.signal, cache: 'no-store' });
+        const data = await res.json();
+        if (Array.isArray(data)) setEmployees(data);
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') console.error(err);
+      }
+    };
+    load();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/api/admin/employees');
+      const res = await fetch('/api/admin/employees?limit=500', { cache: 'no-store' });
       const data = await res.json();
-      setEmployees(data);
+      if (Array.isArray(data)) setEmployees(data);
     } catch (err) {
       console.error(err);
     }
@@ -258,6 +298,11 @@ export default function PayrollTab() {
     clone.style.margin = '0';
     clone.style.padding = '0';
     clone.style.boxSizing = 'border-box';
+    // Strip the on-screen mobile scale transform so the PDF always captures full-size A4
+    clone.style.transform = 'none';
+    clone.style.zoom = '1';
+    clone.style.height = 'auto';
+    clone.style.maxHeight = 'none';
 
     clone.style.overflow = 'visible';
     clone.style.overflowX = 'visible';
@@ -271,7 +316,7 @@ export default function PayrollTab() {
     let canvas;
     try {
       canvas = await html2canvas(clone, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -747,22 +792,36 @@ export default function PayrollTab() {
                 )}
 
                 {/* === RECEIPT START === */}
-                <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                {/* A4-scaled preview: fixed 800px design width, scaled down on mobile so full content is visible */}
+                <div
+                  ref={receiptViewportRef}
+                  style={{
+                    width: '100%',
+                    overflow: 'hidden',
+                    background: '#f1f5f9',
+                    padding: '12px',
+                    boxSizing: 'border-box',
+                    height: receiptScaledHeight ? receiptScaledHeight + 24 : undefined,
+                  }}
+                >
                   <div
                     ref={receiptRef}
                     className="payroll-receipt"
                     style={{
                       background: '#ffffff',
                       padding: '0',
-                      width: '100%',
-                      minWidth: '720px',
-                      maxWidth: '820px',
-                      margin: '0 auto',
+                      width: `${RECEIPT_DESIGN_WIDTH}px`,
+                      minWidth: `${RECEIPT_DESIGN_WIDTH}px`,
+                      maxWidth: `${RECEIPT_DESIGN_WIDTH}px`,
+                      margin: '0',
+                      transform: receiptScale !== 1 ? `scale(${receiptScale})` : undefined,
+                      transformOrigin: 'top left',
                       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
                       textTransform: 'none',
                       letterSpacing: '0.2px',
                       wordSpacing: 'normal',
-                      color: '#222'
+                      color: '#222',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                     }}
                   >
                     

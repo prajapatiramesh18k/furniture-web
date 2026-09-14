@@ -37,11 +37,6 @@ export async function POST(request: NextRequest) {
 
     const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
 
-    console.log('=== PASSWORD RESET ===');
-    console.log('Email:', email);
-    console.log('Reset URL:', resetUrl);
-    console.log('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
-
     // Send email if RESEND_API_KEY is configured
     if (process.env.RESEND_API_KEY) {
       try {
@@ -85,8 +80,6 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Resend error:', error);
-        } else {
-          console.log('Email sent successfully:', data);
         }
       } catch (emailError) {
         console.error('Failed to send email:', emailError);

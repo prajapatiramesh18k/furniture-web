@@ -55,13 +55,15 @@ export default function LiveAttendanceTab() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchLiveData = useCallback(async () => {
+  const fetchLiveData = useCallback(async (signal?: AbortSignal) => {
+    // Skip background polls when the tab is hidden to save server + battery
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
     setLoading(true);
     try {
       let url = `/api/admin/attendance/live?date=${selectedDate}`;
       if (selectedSiteId) url += `&siteId=${selectedSiteId}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal, cache: 'no-store' });
       const data = await res.json();
 
       if (res.ok) {
@@ -72,6 +74,7 @@ export default function LiveAttendanceTab() {
         showToast(data.error || 'Failed to fetch live attendance', 'error');
       }
     } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
       console.error(err);
       showToast('Network error while loading live attendance', 'error');
     }
@@ -79,10 +82,14 @@ export default function LiveAttendanceTab() {
   }, [selectedDate, selectedSiteId]);
 
   useEffect(() => {
-    fetchLiveData();
-    // Auto-refresh every 30 seconds for live monitoring
-    const interval = setInterval(fetchLiveData, 30000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchLiveData(controller.signal);
+    // Auto-refresh every 30 seconds for live monitoring (paused when hidden)
+    const interval = setInterval(() => fetchLiveData(), 30000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [fetchLiveData]);
 
   const handleOpenAdjust = (rec: LiveRecord) => {
@@ -263,7 +270,7 @@ export default function LiveAttendanceTab() {
         </div>
 
         <button
-          onClick={fetchLiveData}
+          onClick={() => fetchLiveData()}
           disabled={loading}
           style={{
             backgroundColor: '#f1f5f9',

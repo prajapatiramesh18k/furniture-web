@@ -30,6 +30,9 @@ const employeePaymentSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+employeePaymentSchema.index({ employeeId: 1, date: -1 });
+employeePaymentSchema.index({ date: -1 });
+
 const EmployeePayment = mongoose.models.EmployeePayment || mongoose.model('EmployeePayment', employeePaymentSchema);
 
 export default EmployeePayment;

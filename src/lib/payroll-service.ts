@@ -46,18 +46,18 @@ export async function calculateMonthlyPayroll(employeeId: string, dailyRate: num
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-  // Fetch employee, attendance records, and payments in parallel
+  // Fetch employee, attendance records, and payments in parallel (lean + projected)
   const [employee, attendanceRecords, paymentRecords] = await Promise.all([
-    Employee.findById(employeeId).select('standardHours'),
+    Employee.findById(employeeId).select('standardHours').lean(),
     EmployeeAttendance.find({
       employeeId,
       date: { $gte: startDate, $lte: endDate }
-    }),
+    }).select('workHours earnedDays status punchIn').lean(),
     EmployeePayment.find({
       employeeId,
       paymentType: { $ne: 'Settlement' },
       date: { $gte: startDate, $lte: endDate }
-    })
+    }).select('amount').lean()
   ]);
 
   const standardHours = employee?.standardHours || 8;

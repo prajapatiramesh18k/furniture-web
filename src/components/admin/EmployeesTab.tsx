@@ -111,7 +111,21 @@ export default function EmployeesTab() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    const controller = new AbortController();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/employees?limit=500', { signal: controller.signal, cache: 'no-store' });
+        const data = await res.json();
+        if (Array.isArray(data)) setEmployees(data);
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') console.error(err);
+      }
+      setLoading(false);
+    };
+    load();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -127,9 +141,9 @@ export default function EmployeesTab() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/employees');
+      const res = await fetch('/api/admin/employees?limit=500', { cache: 'no-store' });
       const data = await res.json();
-      setEmployees(data);
+      if (Array.isArray(data)) setEmployees(data);
     } catch (err) {
       console.error(err);
     }

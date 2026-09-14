@@ -16,13 +16,13 @@ export async function GET(request: Request) {
     
     // If we request for a specific employee, generate the current preview
     if (employeeId && month && year) {
-      const employee = await Employee.findById(employeeId);
+      const employee = await Employee.findById(employeeId).select('dailyRate standardHours').lean() as { dailyRate: number; standardHours?: number } | null;
       if (!employee) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
       // Check if already settled
-      const existingSettlement = await EmployeeSettlement.findOne({ employeeId, month: Number(month), year: Number(year) });
+      const existingSettlement = await EmployeeSettlement.findOne({ employeeId, month: Number(month), year: Number(year) }).lean();
       if (existingSettlement) {
-        return NextResponse.json({ ...existingSettlement.toObject(), isPreview: false });
+        return NextResponse.json({ ...existingSettlement, isPreview: false });
       }
 
       // Generate preview
@@ -36,7 +36,10 @@ export async function GET(request: Request) {
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
-    const settlements = await EmployeeSettlement.find(query).sort({ settlementDate: -1 }).populate('employeeId', 'name employeeId');
+    const settlements = await EmployeeSettlement.find(query)
+      .sort({ settlementDate: -1 })
+      .limit(200)
+      .lean();
     return NextResponse.json(settlements);
   } catch (error) {
     console.error('Error fetching settlements:', error);

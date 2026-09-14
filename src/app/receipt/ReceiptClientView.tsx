@@ -318,7 +318,7 @@ export default function ReceiptClientView({
         import('jspdf'),
       ]);
       const canvas = await html2canvas(pdfReceiptRef.current, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -682,17 +682,19 @@ export default function ReceiptClientView({
       </div>
 
       {/* Offscreen Fixed 800px A4 Printable Container (Solely for html2canvas -> jsPDF) */}
-      <div style={{ position: 'fixed', left: 0, top: 0, width: '800px', zIndex: -99999, pointerEvents: 'none', background: '#ffffff' }}>
+      <div style={{ position: 'fixed', left: '-10000px', top: 0, width: '800px', pointerEvents: 'none', background: '#ffffff', opacity: 1 }}>
         <div
           ref={pdfReceiptRef}
           style={{
             width: '800px',
             minWidth: '800px',
+            maxWidth: '800px',
             backgroundColor: '#ffffff',
             padding: 0,
             fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
             color: '#1b1b1b',
             boxSizing: 'border-box',
+            overflow: 'visible',
           }}
         >
           <ReceiptDocumentContent

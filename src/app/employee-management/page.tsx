@@ -1,15 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CloseButton from '@/components/CloseButton';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EmployeesTab from '@/components/admin/EmployeesTab';
-import PayrollTab from '@/components/admin/PayrollTab';
-import SitesTab from '@/components/admin/SitesTab';
-import LiveAttendanceTab from '@/components/admin/LiveAttendanceTab';
+
+// Code-split the 5k-line admin tabs so the page loads fast and each tab
+// downloads only when opened.
+const EmployeesTab = dynamic(() => import('@/components/admin/EmployeesTab'), {
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading employees…</div>,
+});
+const PayrollTab = dynamic(() => import('@/components/admin/PayrollTab'), {
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading payroll…</div>,
+});
+const SitesTab = dynamic(() => import('@/components/admin/SitesTab'), {
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading sites…</div>,
+});
+const LiveAttendanceTab = dynamic(() => import('@/components/admin/LiveAttendanceTab'), {
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading live attendance…</div>,
+});
 
 export default function EmployeeManagementPage() {
   const router = useRouter();

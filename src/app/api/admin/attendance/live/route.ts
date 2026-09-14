@@ -4,12 +4,22 @@ import Employee from '@/lib/models/Employee';
 import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
 import Site from '@/lib/models/Site';
 
+// Collapse concurrent 30s polls into one DB hit per 10s window.
+const liveCache = new Map<string, { data: unknown; expire: number }>();
+const LIVE_TTL = 10_000;
+
 export async function GET(req: Request) {
   try {
-    await dbConnect();
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date');
     const siteId = searchParams.get('siteId');
+    const cacheKey = `live:${dateParam || 'today'}:${siteId || 'all'}`;
+    const hit = liveCache.get(cacheKey);
+    if (hit && hit.expire > Date.now()) {
+      return NextResponse.json(hit.data, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    await dbConnect();
 
     const targetDate = dateParam ? new Date(dateParam) : new Date();
     const startOfDay = new Date(targetDate);
@@ -17,13 +27,8 @@ export async function GET(req: Request) {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Fetch all active employees
-    const employees = await Employee.find({ status: { $regex: /^active$/i } })
-      .select('employeeId name department role phone dailyRate standardHours deviceId deviceName deviceRegisteredAt')
-      .sort({ name: 1 })
-      .lean();
-
-    // Query today's attendance
+    // Fetch all active employees + today's attendance + sites in parallel.
+    // No populate: siteName is stored on the record; sites list is fetched once.
     const attendanceQuery: any = {
       date: { $gte: startOfDay, $lte: endOfDay },
     };
@@ -31,9 +36,18 @@ export async function GET(req: Request) {
       attendanceQuery.siteId = siteId;
     }
 
-    const attendanceRecords = await EmployeeAttendance.find(attendanceQuery)
-      .populate('siteId', 'name address location radiusMeters')
-      .lean();
+    const [employees, attendanceRecords, sites] = await Promise.all([
+      Employee.find({ status: 'Active' })
+        .select('employeeId name department role phone dailyRate standardHours deviceId deviceName')
+        .sort({ name: 1 })
+        .limit(1000)
+        .lean(),
+      EmployeeAttendance.find(attendanceQuery)
+        .select('employeeId date siteId siteName status workHours earnedDays overtimeHours punchIn punchOut notes')
+        .limit(2000)
+        .lean(),
+      Site.find({ isActive: true }).select('name address').limit(500).lean(),
+    ]);
 
     const attendanceMap = new Map();
     for (const record of attendanceRecords) {
@@ -88,10 +102,7 @@ export async function GET(req: Request) {
       };
     });
 
-    // Fetch active sites list for filter dropdown
-    const sites = await Site.find({ isActive: true }).select('name address').lean();
-
-    return NextResponse.json({
+    const payload = {
       summary: {
         totalEmployees: employees.length,
         currentlyWorking: currentlyWorkingCount,
@@ -101,6 +112,11 @@ export async function GET(req: Request) {
       date: startOfDay,
       records: liveList,
       sites,
+    };
+    liveCache.set(cacheKey, { data: payload, expire: Date.now() + LIVE_TTL });
+
+    return NextResponse.json(payload, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (err: any) {
     console.error('Error in live attendance API:', err);

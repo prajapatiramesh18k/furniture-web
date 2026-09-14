@@ -87,9 +87,11 @@ export default function Testimonials() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch('/api/reviews')
-      .then(res => res.json())
+    let cancelled = false;
+    import('@/lib/api-cache')
+      .then(({ cachedGetJSON }) => cachedGetJSON<Review[]>('/api/reviews?limit=50'))
       .then(data => {
+        if (cancelled) return;
         if (Array.isArray(data) && data.length > 0) {
           setReviews(data);
         } else {
@@ -98,9 +100,13 @@ export default function Testimonials() {
         setLoaded(true);
       })
       .catch(() => {
+        if (cancelled) return;
         setReviews(fallbackReviews);
         setLoaded(true);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

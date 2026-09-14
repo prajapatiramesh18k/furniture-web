@@ -46,6 +46,9 @@ const siteSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+siteSchema.index({ isActive: 1 });
+siteSchema.index({ createdAt: -1 });
+
 const Site = mongoose.models.Site || mongoose.model('Site', siteSchema);
 
 export default Site;

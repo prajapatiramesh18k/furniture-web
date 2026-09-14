@@ -65,6 +65,7 @@ const employeeSettlementSchema = new mongoose.Schema({
 
 // Prevent multiple settlements for the same month/year per employee
 employeeSettlementSchema.index({ employeeId: 1, month: 1, year: 1 }, { unique: true });
+employeeSettlementSchema.index({ settlementDate: -1 });
 
 const EmployeeSettlement = mongoose.models.EmployeeSettlement || mongoose.model('EmployeeSettlement', employeeSettlementSchema);
 

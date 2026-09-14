@@ -66,6 +66,10 @@ const employeeSchema = new mongoose.Schema({
   },
 }, { timestamps: true, strict: false });
 
+employeeSchema.index({ status: 1 });
+employeeSchema.index({ department: 1 });
+employeeSchema.index({ createdAt: -1 });
+
 // In Next.js dev mode, delete cached model to ensure schema updates take effect
 if (mongoose.models && (mongoose.models as any).Employee) {
   delete (mongoose.models as any).Employee;

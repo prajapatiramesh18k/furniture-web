@@ -65,25 +65,6 @@ export const SECONDARY_MARKETS = ['Ahmedabad', 'Bopal'] as const;
 export const ESTABLISHED_YEAR = 2012;
 export const WARRANTY = '5-year warranty on manufacturing defects';
 
-/**
- * REQUIRES BUSINESS VERIFICATION — site currently shows conflicting customer counts
- * (500+, 2,500+, 5,000+). Do not publish a chosen figure until business confirms one value.
- */
-export const TRUST_CLAIMS_PENDING_VERIFICATION = {
-  customerCountVariants: ['500+', '2,500+', '5,000+'],
-  experienceCopyVariants: ['seven years', '14+ years'],
-  craftsmenCount: '25+',
-  ratedClaim: '5★ Rated',
-} as const;
-
-export const PRIMARY_POSITIONING =
-  'Custom Furniture & Interiors in Mumbai, Navi Mumbai & Thane';
-
-export const SUPPORTING_SERVICES_LINE =
-  'Modular Kitchens • Wardrobes • TV Units • Custom Furniture';
-
-export const MAIN_OFFER = 'Free Site Visit + 3D Design Consultation';
-
 export const DEFAULT_WHATSAPP_NUMBER =
   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || PHONES.whatsappPrimary.e164;
 

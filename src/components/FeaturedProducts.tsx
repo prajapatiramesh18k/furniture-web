@@ -2,16 +2,24 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useWishlist } from '@/context/WishlistContext';
+import { cachedGetJSON } from '@/lib/api-cache';
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<any[]>([]);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => setProducts((data.products || []).slice(0, 6)))
-      .catch(() => setProducts([]));
+    let cancelled = false;
+    cachedGetJSON<{ products: any[] }>('/api/products?limit=50')
+      .then(data => {
+        if (!cancelled) setProducts((data.products || []).slice(0, 6));
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const renderStars = (rating: number) => {

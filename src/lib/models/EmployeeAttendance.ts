@@ -70,6 +70,8 @@ const employeeAttendanceSchema = new mongoose.Schema({
 
 // Prevent duplicate attendance for the same employee on the same date
 employeeAttendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+employeeAttendanceSchema.index({ date: -1 });
+employeeAttendanceSchema.index({ status: 1, date: -1 });
 
 if (process.env.NODE_ENV !== 'production' && mongoose.models.EmployeeAttendance) {
   delete (mongoose.models as any).EmployeeAttendance;

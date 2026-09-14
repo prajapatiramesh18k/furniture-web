@@ -18,8 +18,15 @@ export async function GET(request: Request) {
       query.date = { $gte: startDate, $lte: endDate };
     }
 
-    const payments = await EmployeePayment.find(query).sort({ date: -1 }).populate('employeeId', 'name employeeId');
-    return NextResponse.json(payments);
+    // lean + bounded limit; no populate (client already holds employee names)
+    const payments = await EmployeePayment.find(query)
+      .select('employeeId date amount paymentType notes createdBy createdAt')
+      .sort({ date: -1 })
+      .limit(500)
+      .lean();
+    return NextResponse.json(payments, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     console.error('Error fetching payments:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

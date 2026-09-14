@@ -4,7 +4,15 @@ node_modules
 .playwright-mcp
 .claude
 
-# Environment variables (local only)
+# Build artifacts
+tsconfig.tsbuildinfo
+*.log
+.DS_Store
+
+# Environment variables (local only — never commit secrets)
 .env.local
 .env.*.local
-.env*
+.env.development
+.env.production
+# Keep the template tracked
+!.env.example

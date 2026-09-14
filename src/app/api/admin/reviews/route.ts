@@ -11,7 +11,7 @@ const fallbackReviews = [
 export async function GET() {
   try {
     await dbConnect();
-    const reviews = await Review.find().sort({ createdAt: -1 });
+    const reviews = await Review.find().sort({ createdAt: -1 }).limit(200).lean();
     return NextResponse.json({ reviews });
   } catch (error) {
     // Return fallback data if DB is not connected

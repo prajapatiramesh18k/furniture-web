@@ -289,8 +289,8 @@ export default function AdminPage() {
         if (data.user?.isAdmin) {
           setIsAdmin(true);
         }
-      } catch (err) {
-        console.log('Auth check failed');
+      } catch {
+        // auth check best-effort — stay on loading -> login gate
       }
       setLoading(false);
     };
@@ -319,8 +319,8 @@ export default function AdminPage() {
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (err) {
-      console.log('Logout failed');
+    } catch {
+      // best-effort logout
     }
     window.location.replace('/');
   };

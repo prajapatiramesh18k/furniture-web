@@ -20,8 +20,15 @@ export async function GET(request: Request) {
       query.date = { $gte: startDate, $lte: endDate };
     }
 
-    const attendance = await EmployeeAttendance.find(query).sort({ date: -1 }).populate('employeeId', 'name employeeId');
-    return NextResponse.json(attendance);
+    // lean + bounded limit; no populate (client already holds employee names)
+    const attendance = await EmployeeAttendance.find(query)
+      .select('employeeId date siteId siteName status workHours earnedDays overtimeHours notes punchIn punchOut createdAt')
+      .sort({ date: -1 })
+      .limit(500)
+      .lean();
+    return NextResponse.json(attendance, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     console.error('Error fetching attendance:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
