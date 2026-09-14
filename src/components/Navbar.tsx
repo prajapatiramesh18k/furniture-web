@@ -58,9 +58,7 @@ export default function Navbar() {
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [userLoggedIn, setUserLoggedIn] = useState(() => getSessionAuth() !== null);
-  const [userName, setUserName] = useState(() => getSessionAuth()?.name || '');
-  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean } | null>(() => getSessionAuth());
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean; role?: string } | null>(() => getSessionAuth());
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -84,11 +82,9 @@ export default function Navbar() {
       const sessionUser = getSessionAuth();
       if (sessionUser) {
         setUserLoggedIn(true);
-        setUserName(sessionUser.name);
         setAuthUser(sessionUser);
       } else {
         setUserLoggedIn(false);
-        setUserName('');
         setAuthUser(null);
       }
     };
@@ -150,17 +146,13 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // best-effort logout — continue with local cleanup
+  const handleAccountClick = () => {
+    if (!userLoggedIn || !authUser) {
+      router.push('/login');
+      return;
     }
-    setSessionAuth(null);
-    setUserLoggedIn(false);
-    setUserName('');
-    window.dispatchEvent(new Event('auth-change'));
-    window.location.href = '/';
+    const role = String((authUser as { role?: string }).role || (authUser.isAdmin ? 'admin' : 'customer')).toLowerCase();
+    router.push(role === 'customer' ? '/account' : '/admin/dashboard');
   };
 
   return (
@@ -248,13 +240,13 @@ export default function Navbar() {
             )}
           </div>
 
-          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => { setCartOpen(!cartOpen); setAccountOpen(false); setWishlistOpen(false); }}>
+          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => { setCartOpen(!cartOpen); setWishlistOpen(false); }}>
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
           </div>
           <button
             id="account-btn"
             className="fas fa-user"
-            onClick={() => { setAccountOpen(!accountOpen); setCartOpen(false); setWishlistOpen(false); }}
+            onClick={handleAccountClick}
             aria-label="Account"
           />
           <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
@@ -272,12 +264,6 @@ export default function Navbar() {
         <>
           <div className="sidebar-backdrop" onClick={() => setWishlistOpen(false)} />
           <WishlistSidebar onClose={() => setWishlistOpen(false)} />
-        </>
-      )}
-      {accountOpen && (
-        <>
-          <div className="sidebar-backdrop" onClick={() => setAccountOpen(false)} />
-          <AccountSidebar onClose={() => setAccountOpen(false)} onOpenCart={() => { setAccountOpen(false); setCartOpen(true); }} onOpenWishlist={() => { setAccountOpen(false); setWishlistOpen(true); }} user={authUser} userLoggedIn={userLoggedIn} />
         </>
       )}
     </>
@@ -337,175 +323,6 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
           <button className="btn checkout-btn" onClick={handleCheckout}>
             <i className="fas fa-lock"></i> Proceed to Checkout
           </button>
-        </>
-      )}
-    </div>
-  );
-}
-
-function AccountSidebar({ onClose, onOpenCart, onOpenWishlist, user, userLoggedIn }: {
-  onClose: () => void;
-  onOpenCart: () => void;
-  onOpenWishlist: () => void;
-  user: { name: string; email: string; isAdmin: boolean } | null;
-  userLoggedIn: boolean;
-}) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // best-effort logout — continue with local cleanup
-    }
-    try {
-      sessionStorage.removeItem('auth-user');
-    } catch {}
-    window.dispatchEvent(new Event('auth-change'));
-    onClose();
-    router.push('/');
-  };
-
-  const handleWishlist = () => {
-    onClose();
-    onOpenWishlist();
-  };
-
-  const handleCart = () => {
-    onClose();
-    onOpenCart();
-  };
-
-  const navigateTo = (path: string) => {
-    onClose();
-    router.push(path);
-  };
-
-  return (
-    <div className="account-sidebar sidebar-panel active">
-      <div className="account-sidebar-header">
-        <h3>My Account</h3>
-        <button className="account-sidebar-close" onClick={onClose}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      {userLoggedIn && user ? (
-        <>
-          <div className="account-user-info">
-            <div className="account-avatar">
-              <i className="fas fa-user-circle"></i>
-            </div>
-            <div className="account-user-details">
-              <h4>{user.name || 'User'}</h4>
-              <p>{user.email}</p>
-            </div>
-          </div>
-
-          <div className="account-menu">
-            {user.isAdmin && (
-              <button className="account-menu-item" onClick={() => navigateTo('/admin')}>
-                <div className="account-menu-icon">
-                  <i className="fas fa-shield-alt"></i>
-                </div>
-                <span>Admin Panel</span>
-                <i className="fas fa-chevron-right account-menu-arrow"></i>
-              </button>
-            )}
-            {user.isAdmin && (
-              <button className="account-menu-item" onClick={() => navigateTo('/quotation-maker')}>
-                <div className="account-menu-icon">
-                  <i className="fas fa-file-invoice"></i>
-                </div>
-                <span>Quotation Maker</span>
-                <i className="fas fa-chevron-right account-menu-arrow"></i>
-              </button>
-            )}
-            {user.isAdmin && (
-              <button className="account-menu-item" onClick={() => navigateTo('/employee-management')}>
-                <div className="account-menu-icon">
-                  <i className="fas fa-users-cog"></i>
-                </div>
-                <span>Employee Management</span>
-                <i className="fas fa-chevron-right account-menu-arrow"></i>
-              </button>
-            )}
-            <button className="account-menu-item" onClick={() => navigateTo('/orders')}>
-              <div className="account-menu-icon">
-                <i className="fas fa-box"></i>
-              </div>
-              <span>My Orders</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-            <button className="account-menu-item" onClick={handleWishlist}>
-              <div className="account-menu-icon">
-                <i className="fas fa-heart"></i>
-              </div>
-              <span>Wishlist</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-            <button className="account-menu-item" onClick={handleCart}>
-              <div className="account-menu-icon">
-                <i className="fas fa-shopping-cart"></i>
-              </div>
-              <span>Cart</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-            <button className="account-menu-item" onClick={() => navigateTo('/contact')}>
-              <div className="account-menu-icon">
-                <i className="fas fa-headset"></i>
-              </div>
-              <span>Help & Support</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-          </div>
-
-          <div className="account-footer">
-            <button className="account-logout-btn" onClick={handleLogout}>
-              <i className="fas fa-sign-out-alt"></i>
-              <span>Logout</span>
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="account-guest-content">
-            <div className="account-avatar account-avatar-guest">
-              <i className="fas fa-user-circle"></i>
-            </div>
-            <h4>Welcome, Guest!</h4>
-            <p>Sign in to access your orders and preferences</p>
-            <button className="account-login-btn" onClick={() => navigateTo('/login')}>
-              <i className="fas fa-sign-in-alt"></i>
-              Login / Sign Up
-            </button>
-          </div>
-
-          <div className="account-menu">
-            <button className="account-menu-item" onClick={handleCart}>
-              <div className="account-menu-icon">
-                <i className="fas fa-shopping-cart"></i>
-              </div>
-              <span>Cart</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-            <button className="account-menu-item" onClick={handleWishlist}>
-              <div className="account-menu-icon">
-                <i className="fas fa-heart"></i>
-              </div>
-              <span>Wishlist</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-            <button className="account-menu-item" onClick={() => navigateTo('/contact')}>
-              <div className="account-menu-icon">
-                <i className="fas fa-headset"></i>
-              </div>
-              <span>Help & Support</span>
-              <i className="fas fa-chevron-right account-menu-arrow"></i>
-            </button>
-          </div>
         </>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-auth';
 import dbConnect from '@/lib/mongodb';
 import Review from '@/lib/models/Review';
 
@@ -20,6 +21,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const gate = await requireAdmin(request, 'reviews');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const body = await request.json();
@@ -32,6 +35,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const gate = await requireAdmin(request, 'reviews');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);

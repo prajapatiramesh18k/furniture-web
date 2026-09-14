@@ -203,7 +203,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(req, 'dashboard');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
 

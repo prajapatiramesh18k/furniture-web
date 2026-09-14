@@ -15,7 +15,7 @@ export default function Services() {
         {marketingServices.map((service) => (
           <div key={service.slug} className="box">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={service.image} alt={`${service.name} — Ananya House of Furniture`} />
+            <img src={service.image} alt={`${service.name} — Ananya House of Furniture`} loading="lazy" decoding="async" />
             <h3>{service.name}</h3>
             <p>{service.description}</p>
             <Link href={`/${service.slug}`} className="btn">

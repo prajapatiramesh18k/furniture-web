@@ -5,6 +5,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'ananya-furniture-secret-key-2024';
 export interface UserPayload {
   userId: string;
   email: string;
+  isAdmin?: boolean;
+  role?: string;
 }
 
 export function verifyToken(token: string): UserPayload | null {

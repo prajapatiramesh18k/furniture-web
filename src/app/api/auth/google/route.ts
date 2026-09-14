@@ -46,11 +46,14 @@ export async function POST(request: NextRequest) {
     
     // If not, create them
     if (!user) {
+      const count = await User.countDocuments();
+      const firstUser = count === 0;
       user = new User({
         name: payload.name || 'Google User',
         email: payload.email.toLowerCase(),
         googleId: payload.sub,
-        isAdmin: false,
+        isAdmin: firstUser,
+        role: firstUser ? 'admin' : 'customer',
       });
       await user.save();
     } else if (!user.googleId) {
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'customer') },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -72,6 +75,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        role: user.role || (user.isAdmin ? 'admin' : 'customer'),
       },
     });
 

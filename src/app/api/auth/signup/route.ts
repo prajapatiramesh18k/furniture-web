@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
       password: hashedPassword,
       isAdmin,
+      role: isAdmin ? 'admin' : 'customer',
     });
 
     return NextResponse.json({
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        role: user.role,
       },
     });
   } catch (error) {

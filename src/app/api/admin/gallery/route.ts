@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-auth';
 import dbConnect from '@/lib/mongodb';
 import GalleryImage from '@/lib/models/GalleryImage';
 
@@ -40,6 +41,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAdmin(request, 'collections');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const body = await request.json();
@@ -56,6 +59,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const gate = await requireAdmin(request, 'collections');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const id = request.nextUrl.searchParams.get('id');

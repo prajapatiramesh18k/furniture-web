@@ -26,6 +26,27 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  role: {
+    type: String,
+    enum: ['admin', 'manager', 'staff', 'customer'],
+    default: 'customer',
+  },
+  permissions: {
+    type: [String],
+    default: [],
+  },
+  phone: {
+    type: String,
+    default: '',
+  },
+  avatar: {
+    type: String,
+    default: '',
+  },
+  active: {
+    type: Boolean,
+    default: true,
+  },
   resetToken: {
     type: String,
   },

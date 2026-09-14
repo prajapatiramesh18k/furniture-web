@@ -22,7 +22,7 @@ const teamData: TeamMember[] = [
     name: 'Mahesh Prajapati',
     role: 'Head of Manufacturing',
     description: 'Leads furniture production with precision and craftsmanship',
-    image: 'images/Mahesh Prajapti.jpeg',
+    image: '/images/Mahesh Prajapti.jpeg',
     social: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#' },
   },
   {
@@ -30,7 +30,7 @@ const teamData: TeamMember[] = [
     name: 'Pirtesh Koli',
     role: 'Architect & Interior Designer',
     description: 'Designs modern, functional, and aesthetic spaces.',
-    image: 'images/pirtesh.jpeg',
+    image: '/images/pirtesh.jpeg',
     social: { facebook: '#', twitter: '#', instagram: '#', linkedin: '#' },
   },
   {
@@ -38,7 +38,7 @@ const teamData: TeamMember[] = [
     name: 'Ramesh Kumar',
     role: 'Web Developer & Designer',
     description: 'Handles website, digital experience, and online presence.',
-    image: 'images/team-2.jpg',
+    image: '/images/team-2.jpg',
     social: {
       facebook: 'https://www.facebook.com/profile.php?id=100009901991682&mibextid=ZbWKwL',
       twitter: 'https://x.com/RAMESHK41243561?t=FbeG012Bhdo--6srXgVeuQ&s=09',

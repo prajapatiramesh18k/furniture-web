@@ -37,11 +37,12 @@ export async function POST(request: NextRequest) {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'customer') },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    const role = user.role || (user.isAdmin ? 'admin' : 'customer');
     const response = NextResponse.json({
       success: true,
       user: {
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        role,
       },
     });
 

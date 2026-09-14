@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import ConfirmationModal from './ConfirmationModal';
+import { toTitleCase } from '@/lib/text';
 
 export default function PayrollTab() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -248,9 +249,6 @@ export default function PayrollTab() {
     });
   };
 
-  const toTitleCase = (str: string) =>
-    str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-
   const generateReceiptNumber = () => {
     const padMonth = month.toString().padStart(2, '0');
     let empCode = '0001';
@@ -390,7 +388,7 @@ export default function PayrollTab() {
 
     const messageText = `*ANANYA HOUSE OF FURNITURE*\n` +
       `*Employee Payment Receipt — ${monthName} ${year}*\n\n` +
-      `Dear *${selectedEmployee.name}* (ID: ${selectedEmployee.employeeId || '—'}),\n` +
+      `Dear *${toTitleCase(selectedEmployee.name)}* (ID: ${selectedEmployee.employeeId || '—'}),\n` +
       `Your payment receipt for *${monthName} ${year}* has been generated.\n\n` +
       `• *Employee ID:* ${selectedEmployee.employeeId || '—'}\n` +
       `• *Receipt No:* ${receiptNo}\n` +
@@ -668,7 +666,7 @@ export default function PayrollTab() {
                       </span>
                     </td>
                     <td style={{ padding: '1rem 1.2rem' }}>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{emp.name}</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{toTitleCase(emp.name)}</div>
                       {(emp.department || emp.role) && (
                         <div style={{ fontSize: '1.2rem', color: '#64748b', marginTop: '2px' }}>
                           {emp.department}{emp.department && emp.role ? ' • ' : ''}{emp.role}
@@ -724,7 +722,7 @@ export default function PayrollTab() {
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid #eee', position: 'sticky', top: 0, background: '#fff', zIndex: 10, borderRadius: '12px 12px 0 0' }}>
               <h3 style={{ margin: 0, fontSize: '1.6rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                <span><i className="fas fa-calculator" style={{ color: 'var(--primary-color)' }}></i> Payroll — {selectedEmployee.name}</span>
+                <span><i className="fas fa-calculator" style={{ color: 'var(--primary-color)' }}></i> Payroll — {toTitleCase(selectedEmployee.name)}</span>
                 <span style={{
                   backgroundColor: '#f8fafc',
                   border: '1.5px solid #e2e8f0',

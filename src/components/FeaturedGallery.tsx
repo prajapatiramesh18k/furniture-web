@@ -17,7 +17,7 @@ export default function FeaturedGallery() {
         {featuredImages.map((img) => (
           <Link key={img.id} href={`/gallery?category=${img.slug}`} className="fg-card">
             <div className="fg-card-img">
-              <img src={img.url} alt={img.alt} />
+              <img src={img.url} alt={img.alt} loading="lazy" decoding="async" />
               <div className="fg-card-overlay">
                 <span className="fg-category">{img.category}</span>
               </div>

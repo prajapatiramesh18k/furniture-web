@@ -20,7 +20,7 @@ const fallbackReviews: Review[] = [
     location: 'Thane, Mumbai',
     rating: 5,
     text: 'Got our complete 2BHK done with modular kitchen, wardrobes, and TV unit. The quality is exceptional and the delivery was on time. Highly recommend!',
-    photo: 'images/team-1.png',
+    photo: '/images/team-1.png',
     date: 'Dec 2024',
     propertyType: '2bhk',
     services: ['Modular Kitchen', 'Wardrobes', 'TV Units'],
@@ -31,7 +31,7 @@ const fallbackReviews: Review[] = [
     location: 'Mira Road, Mumbai',
     rating: 5,
     text: 'Transformed our 3BHK bedroom with custom wardrobes and bed panelling. The craftsmanship is top-notch. The team was very helpful throughout!',
-    photo: 'images/team-3.png',
+    photo: '/images/team-3.png',
     date: 'Nov 2024',
     propertyType: '3bhk',
     services: ['Wardrobes', 'Bed Panelling', 'Modular Bed'],
@@ -42,7 +42,7 @@ const fallbackReviews: Review[] = [
     location: 'Andheri, Mumbai',
     rating: 5,
     text: 'Ordered a modular kitchen and it\'s perfect! Best decision for our home. Great quality at reasonable prices. The pooja unit they made is beautiful too.',
-    photo: 'images/team-3.png',
+    photo: '/images/team-3.png',
     date: 'Oct 2024',
     propertyType: '1bhk',
     services: ['Modular Kitchen', 'Pooja Unit'],
@@ -53,7 +53,7 @@ const fallbackReviews: Review[] = [
     location: 'Mulund, Mumbai',
     rating: 5,
     text: 'Amazing service! Got a complete kids room setup with wardrobe and study table. Beautiful furniture that fits perfectly. Will definitely order again!',
-    photo: 'images/team-4.png',
+    photo: '/images/team-4.png',
     date: 'Sep 2024',
     propertyType: '2bhk',
     services: ['Wardrobes', 'Kids Furniture', 'Bookshelf'],
@@ -64,7 +64,7 @@ const fallbackReviews: Review[] = [
     location: 'Bandra, Mumbai',
     rating: 5,
     text: 'Got our new office space furnished with workstations and meeting room furniture. Everything exceeded expectations. Professional service!',
-    photo: 'images/team-5.png',
+    photo: '/images/team-5.png',
     date: 'Aug 2024',
     propertyType: 'office',
     services: ['Office Furniture', 'Complete Interior'],
@@ -75,7 +75,7 @@ const fallbackReviews: Review[] = [
     location: 'Dadar, Mumbai',
     rating: 4.5,
     text: 'Great experience! Complete living room makeover with TV unit, crockery unit, and shoe rack. The team understood our requirements perfectly!',
-    photo: 'images/team-6.png',
+    photo: '/images/team-6.png',
     date: 'Jul 2024',
     propertyType: '4bhk',
     services: ['TV Units', 'Crockery Unit', 'Shoe Rack'],
@@ -168,7 +168,7 @@ export default function Testimonials() {
                     src={review.photo}
                     alt={review.name}
                     className="testimonial-image"
-                  />
+                  loading="lazy" decoding="async" />
                 )}
                 <h3 className="testimonial-name">{review.name}</h3>
                 <p className="testimonial-location">

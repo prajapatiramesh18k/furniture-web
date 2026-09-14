@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const fallbackProducts = [
   { _id: '1', name: 'Bedside Table', price: 4999, originalPrice: 6999, rating: 4.5, category: 'bedroom', description: 'Elegant wooden bedside table with 2 drawers.', image: '/images/product-1.jpg' },
@@ -37,6 +38,8 @@ function generateSlug(name: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAdmin(request, 'products');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const body = await request.json();
@@ -49,6 +52,9 @@ export async function POST(request: NextRequest) {
       category: body.category,
       description: body.description || '',
       image: body.image,
+      sku: body.sku || '',
+      stock: body.stock ?? 10,
+      status: body.status || 'active',
     });
     await product.save();
     return NextResponse.json(product, { status: 201 });
@@ -59,6 +65,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const gate = await requireAdmin(request, 'products');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const body = await request.json();
@@ -71,6 +79,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const gate = await requireAdmin(request, 'products');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);

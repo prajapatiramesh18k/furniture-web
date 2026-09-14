@@ -10,6 +10,9 @@ export interface IProduct extends Document {
   description: string;
   image: string;
   images?: string[];
+  sku?: string;
+  stock?: number;
+  status?: string;
   createdAt: Date;
 }
 
@@ -23,6 +26,9 @@ const ProductSchema = new Schema<IProduct>({
   description: { type: String, default: '' },
   image: { type: String, required: true },
   images: { type: [String], default: undefined },
+  sku: { type: String, default: '' },
+  stock: { type: Number, default: 10 },
+  status: { type: String, default: 'active' },
   createdAt: { type: Date, default: Date.now },
 });
 

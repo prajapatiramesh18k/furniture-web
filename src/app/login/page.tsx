@@ -46,7 +46,13 @@ function LoginFormContent() {
         if (res.ok) {
           try { sessionStorage.setItem('auth-user', JSON.stringify(data.user)); } catch {}
           window.dispatchEvent(new Event('auth-change'));
-          router.push('/');
+          // Staff enter the portal; customers get their own custom page.
+          const u = data.user || {};
+          const role = String(u.role || (u.isAdmin ? 'admin' : 'customer')).toLowerCase();
+          const params = new URLSearchParams(window.location.search);
+          const dest = params.get('next') || (role === 'customer' ? '/account' : '/admin/dashboard');
+          router.replace(dest);
+          return;
         } else {
           showToast(data.error || 'Google login failed', 'error');
         }
@@ -103,7 +109,13 @@ function LoginFormContent() {
             sessionStorage.setItem('auth-user', JSON.stringify(data.user));
           } catch {}
           window.dispatchEvent(new Event('auth-change'));
-          router.push('/');
+          // Staff enter the portal; customers get their own custom page.
+          const u = data.user || {};
+          const role = String(u.role || (u.isAdmin ? 'admin' : 'customer')).toLowerCase();
+          const params = new URLSearchParams(window.location.search);
+          const dest = params.get('next') || (role === 'customer' ? '/account' : '/admin/dashboard');
+          router.replace(dest);
+          return;
         } else {
           showToast(data.error || 'Invalid email or password', 'error');
         }

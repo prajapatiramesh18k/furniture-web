@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { DEPARTMENTS, DEPARTMENT_ROLES } from '@/lib/constants/employeeRoles';
 import FloatingSelect from './FloatingSelect';
 import FloatingInput from './FloatingInput';
 import ConfirmationModal from './ConfirmationModal';
 import DeleteButton from './DeleteButton';
+import { toTitleCase } from '@/lib/text';
 
 const formatCustomDateTime = (dateVal: string | Date | undefined, timeSource?: string | Date | undefined) => {
   if (!dateVal) return '—';
@@ -82,6 +84,35 @@ export default function EmployeesTab() {
     onConfirm: () => {},
   });
 
+  // Today's attendance per employee: 'present' | 'absent' — locks the buttons once marked.
+  const [todayMap, setTodayMap] = useState<Record<string, 'present' | 'absent'>>({});
+
+  const fetchTodayMap = async () => {
+    try {
+      const now = new Date();
+      const res = await fetch(
+        `/api/admin/employees/attendance?month=${now.getMonth() + 1}&year=${now.getFullYear()}`,
+        { cache: 'no-store' }
+      );
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+      const ty = now.getFullYear();
+      const tm = now.getMonth();
+      const td = now.getDate();
+      const map: Record<string, 'present' | 'absent'> = {};
+      for (const r of data) {
+        const d = new Date(r.date);
+        // Compare in UTC — manual records are stored as UTC-midnight day stamps.
+        if (d.getUTCFullYear() === ty && d.getUTCMonth() === tm && d.getUTCDate() === td && r.employeeId) {
+          map[String(r.employeeId)] = Number(r.workHours) > 0 ? 'present' : 'absent';
+        }
+      }
+      setTodayMap(map);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const [search, setSearch] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -118,6 +149,7 @@ export default function EmployeesTab() {
         const res = await fetch('/api/admin/employees?limit=500', { signal: controller.signal, cache: 'no-store' });
         const data = await res.json();
         if (Array.isArray(data)) setEmployees(data);
+        fetchTodayMap();
       } catch (err) {
         if ((err as Error)?.name !== 'AbortError') console.error(err);
       }
@@ -144,6 +176,7 @@ export default function EmployeesTab() {
       const res = await fetch('/api/admin/employees?limit=500', { cache: 'no-store' });
       const data = await res.json();
       if (Array.isArray(data)) setEmployees(data);
+      fetchTodayMap();
     } catch (err) {
       console.error(err);
     }
@@ -244,6 +277,7 @@ export default function EmployeesTab() {
       });
       if (res.ok) {
         showToast('Attendance marked successfully for today!');
+        setTodayMap((m) => ({ ...m, [empId]: hours === 0 ? 'absent' : 'present' }));
       } else {
         const err = await res.json();
         showToast(err.error || 'Failed to mark attendance', 'error');
@@ -536,23 +570,50 @@ export default function EmployeesTab() {
       )}
 
       {selectedEmployee ? (
-        <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <span><i className="fas fa-user"></i> {selectedEmployee.name}</span>
-            <span style={{
-              backgroundColor: '#f8fafc',
-              border: '1.5px solid #e2e8f0',
-              color: 'var(--primary-color)',
-              padding: '3px 10px',
-              borderRadius: '6px',
-              fontWeight: 800,
-              fontSize: '1.4rem',
-              letterSpacing: '0.5px',
-            }}>
-              {selectedEmployee.employeeId || '—'}
-            </span>
-          </h2>
+        <div
+          onClick={() => {
+            setSelectedEmployee(null);
+            setEditingPayment(null);
+            setEditingAttendance(null);
+          }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(62,42,18,.55)', zIndex: 500,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+            animation: 'fadeIn 0.25s ease-out',
+          }}
+        >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#fff', borderRadius: 16, width: 'min(880px, 100%)', maxHeight: '90vh',
+            overflowY: 'auto', boxShadow: '0 30px 80px rgba(62,42,18,.35)',
+            animation: 'fadeInUp 0.3s ease-out',
+          }}
+        >
+        <div style={{
+          background: 'linear-gradient(135deg,#a27341 0%,#8a5f32 100%)', color: '#fff',
+          padding: '16px 22px', borderRadius: '16px 16px 0 0', display: 'flex',
+          alignItems: 'center', gap: 14, position: 'sticky', top: 0, zIndex: 5,
+        }}>
+          <span style={{
+            width: 46, height: 46, borderRadius: '50%', background: 'rgba(255,255,255,.25)',
+            border: '1px solid rgba(255,255,255,.55)', display: 'inline-flex', alignItems: 'center',
+            justifyContent: 'center', fontWeight: 800, fontSize: 18, flexShrink: 0,
+          }}>
+            {toTitleCase(selectedEmployee.name || '?')[0].toUpperCase()}
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 12, opacity: 0.85, letterSpacing: '0.08em' }}>EMPLOYEE</div>
+            <div style={{ fontSize: 19, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {toTitleCase(selectedEmployee.name)}{' '}
+              <span style={{
+                background: 'rgba(255,255,255,.22)', border: '1px solid rgba(255,255,255,.4)',
+                padding: '2px 10px', borderRadius: 6, fontSize: 12, letterSpacing: '0.05em', verticalAlign: 'middle',
+              }}>
+                {selectedEmployee.employeeId || '—'}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -561,23 +622,17 @@ export default function EmployeesTab() {
               setEditingAttendance(null);
             }}
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '2.5rem',
-              lineHeight: 1,
-              cursor: 'pointer',
-              color: '#888',
-              padding: '0 4px',
-              transition: 'color 0.2s',
+              background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.4)', color: '#fff',
+              fontSize: '2rem', lineHeight: 1, cursor: 'pointer', width: 36, height: 36,
+              borderRadius: '50%', flexShrink: 0,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-color)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#888')}
             title="Close"
             aria-label="Close"
           >
             &times;
           </button>
         </div>
+        <div style={{ padding: 22 }}>
 
         <div className="admin-tabs" style={{ marginBottom: '2rem' }}>
           {['overview', 'attendance', 'payments'].map(tab => (
@@ -680,7 +735,7 @@ export default function EmployeesTab() {
                 {selectedEmployee.deviceId && (
                   <button
                     type="button"
-                    onClick={() => handleResetDevice(selectedEmployee._id, selectedEmployee.name)}
+                    onClick={() => handleResetDevice(selectedEmployee._id, toTitleCase(selectedEmployee.name))}
                     style={{
                       padding: '6px 14px',
                       backgroundColor: '#fff',
@@ -706,7 +761,7 @@ export default function EmployeesTab() {
         {activeSubTab === 'attendance' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
-              <h3 style={{ margin: 0 }}><i className="fas fa-calendar-check" style={{ color: 'var(--primary-color)' }}></i> Attendance History — {selectedEmployee.name} ({selectedEmployee.employeeId || '—'})</h3>
+              <h3 style={{ margin: 0 }}><i className="fas fa-calendar-check" style={{ color: 'var(--primary-color)' }}></i> Attendance History — {toTitleCase(selectedEmployee.name)} ({selectedEmployee.employeeId || '—'})</h3>
               <button
                 type="button"
                 className="btn"
@@ -955,7 +1010,7 @@ export default function EmployeesTab() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <h3 style={{ margin: 0 }}>
-                <i className="fas fa-money-bill-wave" style={{ color: 'var(--primary-color)' }}></i> Payment History — {selectedEmployee.name} ({selectedEmployee.employeeId || '—'})
+                <i className="fas fa-money-bill-wave" style={{ color: 'var(--primary-color)' }}></i> Payment History — {toTitleCase(selectedEmployee.name)} ({selectedEmployee.employeeId || '—'})
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button
@@ -1095,7 +1150,9 @@ export default function EmployeesTab() {
             </div>
           </div>
         )}
-      </div>
+        </div>
+        </div>
+        </div>
     ) : (
       <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -1444,7 +1501,7 @@ export default function EmployeesTab() {
                         {emp.employeeId || '—'}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem 1.2rem', fontWeight: 600, color: '#0f172a' }}>{emp.name}</td>
+                    <td style={{ padding: '1rem 1.2rem', fontWeight: 600, color: '#0f172a' }}>{toTitleCase(emp.name)}</td>
                     <td style={{ padding: '1rem 1.2rem' }}>
                       {emp.department ? (
                         <span style={{
@@ -1493,7 +1550,7 @@ export default function EmployeesTab() {
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleResetDevice(emp._id, emp.name);
+                                    handleResetDevice(emp._id, toTitleCase(emp.name));
                                   }}
                                   title="Reset device lock so employee can use a new phone"
                                   style={{
@@ -1535,68 +1592,75 @@ export default function EmployeesTab() {
                     </td>
                     <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleQuickAttendance(emp._id, emp.standardHours || 8);
-                          }}
-                          title={`Mark Present (${emp.standardHours || 8}h)`}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '5px 12px',
-                            borderRadius: '20px',
-                            fontSize: '1.15rem',
-                            fontWeight: 700,
-                            backgroundColor: '#dcfce7',
-                            color: '#15803d',
-                            border: '1px solid #bbf7d0',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            lineHeight: '1.2',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#bbf7d0';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '#dcfce7';
-                          }}
-                        >
-                          <i className="fas fa-check" style={{ fontSize: '1.05rem' }}></i> Present
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleQuickAttendance(emp._id, 0);
-                          }}
-                          title="Mark Absent"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '5px 12px',
-                            borderRadius: '20px',
-                            fontSize: '1.15rem',
-                            fontWeight: 700,
-                            backgroundColor: '#fee2e2',
-                            color: '#dc2626',
-                            border: '1px solid #fecaca',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            lineHeight: '1.2',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fecaca';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fee2e2';
-                          }}
-                        >
-                          <i className="fas fa-times" style={{ fontSize: '1.05rem' }}></i> Absent
-                        </button>
+                        {(() => {
+                          const st = todayMap[emp._id];
+                            const pill: CSSProperties = {
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            padding: '5px 12px', borderRadius: '20px', fontSize: '1.15rem',
+                            fontWeight: 700, lineHeight: '1.2',
+                          };
+                          if (st === 'present') {
+                            return (
+                              <span
+                                title="Present marked for today — locked"
+                                style={{ ...pill, backgroundColor: '#15803d', color: '#fff', border: '1px solid #15803d', cursor: 'default' }}
+                              >
+                                <i className="fas fa-lock" style={{ fontSize: '0.95rem' }}></i>
+                                <i className="fas fa-check" style={{ fontSize: '1.05rem' }}></i> Present
+                              </span>
+                            );
+                          }
+                          if (st === 'absent') {
+                            return (
+                              <>
+                                <button
+                                  type="button" disabled
+                                  title="Today is already marked Absent — locked"
+                                  style={{ ...pill, backgroundColor: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed', opacity: 0.7 }}
+                                >
+                                  <i className="fas fa-ban" style={{ fontSize: '1rem' }}></i> Present
+                                </button>
+                                <span
+                                  title="Absent marked for today — locked"
+                                  style={{ ...pill, backgroundColor: '#dc2626', color: '#fff', border: '1px solid #dc2626', cursor: 'default' }}
+                                >
+                                  <i className="fas fa-lock" style={{ fontSize: '0.95rem' }}></i>
+                                  <i className="fas fa-times" style={{ fontSize: '1.05rem' }}></i> Absent
+                                </span>
+                              </>
+                            );
+                          }
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickAttendance(emp._id, emp.standardHours || 8);
+                                }}
+                                title={`Mark Present (${emp.standardHours || 8}h)`}
+                                style={{ ...pill, backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#bbf7d0'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#dcfce7'; }}
+                              >
+                                <i className="fas fa-check" style={{ fontSize: '1.05rem' }}></i> Present
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickAttendance(emp._id, 0);
+                                }}
+                                title="Mark Absent"
+                                style={{ ...pill, backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fecaca'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fee2e2'; }}
+                              >
+                                <i className="fas fa-times" style={{ fontSize: '1.05rem' }}></i> Absent
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
@@ -1729,7 +1793,7 @@ export default function EmployeesTab() {
                     {editingPayment ? 'Edit Payment / Advance' : 'Record Payment / Advance'}
                   </span>
                   <div style={{ fontSize: '1.2rem', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-                    Employee: <strong style={{ color: '#0f172a' }}>{selectedEmployee.name}</strong> ({selectedEmployee.employeeId || '—'})
+                    Employee: <strong style={{ color: '#0f172a' }}>{toTitleCase(selectedEmployee.name)}</strong> ({selectedEmployee.employeeId || '—'})
                   </div>
                 </div>
                 <button

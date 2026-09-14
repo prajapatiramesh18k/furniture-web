@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Quotation from "@/lib/models/Quotation";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "ananya-furniture-secret-key-2024";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,23 +25,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Optional: Protect this route so only admins can view all quotations
-    // For now, we will check if the user is an admin using their auth-token cookie.
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { isAdmin: boolean };
-      if (!decoded.isAdmin) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    } catch {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    // Only staff with quotations access can view all quotations.
+    const { requireAdmin } = await import('@/lib/admin-auth');
+    const gate = await requireAdmin(request, 'quotations');
+    if ('error' in gate) return gate.error;
 
     await dbConnect();
 
@@ -57,6 +40,32 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching quotations:", error);
     return NextResponse.json(
       { error: error?.message || "Failed to fetch quotations" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(request, 'quotations');
+  if ('error' in gate) return gate.error;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Quotation id is required' }, { status: 400 });
+    }
+    await dbConnect();
+    const deleted = await Quotation.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, message: 'Quotation deleted' });
+  } catch (error: any) {
+    console.error('Error deleting quotation:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to delete quotation' },
       { status: 500 },
     );
   }

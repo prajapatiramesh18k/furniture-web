@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toTitleCase } from '@/lib/text';
 
 interface LiveRecord {
   employee: {
@@ -355,7 +356,7 @@ export default function LiveAttendanceTab() {
                           }}>
                             {rec.employee.employeeId || '—'}
                           </span>
-                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{rec.employee.name}</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{toTitleCase(rec.employee.name)}</span>
                         </div>
                         <div style={{ fontSize: '1.15rem', color: '#64748b', marginTop: '2px' }}>
                           <span style={{ color: '#a27341', fontWeight: 600 }}>{rec.employee.department || 'N/A'}</span> • {rec.employee.role || 'Worker'}
@@ -483,7 +484,7 @@ export default function LiveAttendanceTab() {
             </div>
 
             <p style={{ fontSize: '1.25rem', color: '#64748b', marginBottom: '1.4rem' }}>
-              Employee: <strong style={{ color: '#0f172a' }}>{selectedRecord.employee.name}</strong> on <strong>{selectedDate}</strong>
+              Employee: <strong style={{ color: '#0f172a' }}>{toTitleCase(selectedRecord.employee.name)}</strong> on <strong>{selectedDate}</strong>
             </p>
 
             <form onSubmit={handleSaveAdjustment} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>

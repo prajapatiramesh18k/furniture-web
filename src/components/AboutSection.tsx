@@ -7,7 +7,7 @@ const aboutData = {
   heading: 'We Enhance the Beauty of Your Home',
   description:
     'Founded in 2012, we have been passionate about making furniture that transforms spaces. Each piece is painstakingly crafted by our skilled artisans to ensure durability and timeless beauty. We back eco-friendly practices and neighborhood communities. Let Us Redefine Your Home by Choosing From Our Collections Today.',
-  image: 'images/about.jpg',
+  image: '/images/about.jpg',
   fullContent:
     'Founded in 2012, we have grown from a small workshop to a trusted name in custom furniture across Thane and Maharashtra. Our journey began with a simple vision: to create furniture that doesn\'t just fill a space but transforms it into a home.\n\nWhat sets us apart is our unwavering commitment to quality. Every piece that leaves our workshop undergoes rigorous quality checks. We source our wood from sustainable forests and use eco-friendly finishes that are safe for your family and the environment.\n\nOur team of 25+ skilled artisans brings decades of combined experience in woodworking, upholstery, and interior design. From traditional joinery techniques passed down through generations to modern CNC precision, we blend the best of both worlds.\n\nWe believe in transparent pricing with no hidden costs. Our in-house manufacturing means you get factory-direct prices without compromising on quality. Every purchase comes with our comprehensive 5-year warranty.',
   stats: [
@@ -53,7 +53,7 @@ export default function AboutSection({ standalone = false }: AboutSectionProps) 
         <div className="about-full-hero">
           <CloseButton href="/" />
           <div className="about-full-image">
-            <img src="images/about.jpg" alt="About Ananya House of Furniture" />
+            <img src="/images/about.jpg" alt="About Ananya House of Furniture" loading="lazy" decoding="async" />
             <div className="about-full-image-overlay" />
           </div>
           <div className="about-full-intro">
@@ -105,7 +105,7 @@ export default function AboutSection({ standalone = false }: AboutSectionProps) 
       <h1 className="heading"> <span>about</span> us</h1>
       <div className="row">
         <div className="image">
-          <img src="images/about.jpg" alt="About Ananya" />
+          <img src="/images/about.jpg" alt="About Ananya" loading="lazy" decoding="async" />
         </div>
         <div className="content">
           <span>{aboutData.tagline}</span>

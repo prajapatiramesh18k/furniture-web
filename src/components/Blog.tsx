@@ -4,7 +4,7 @@ const blogData = [
   {
     id: 1,
     title: 'Complete Guide to Buying the Right Bed for Your Bedroom',
-    image: 'images/blog-1.jpg',
+    image: '/images/blog-1.jpg',
     excerpt:
       'Offers practical advice on selecting the perfect bed size, material, and design based on client needs and space.',
     fullContent:
@@ -13,13 +13,13 @@ const blogData = [
     readTime: '5 min read',
     date: '5th July, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-2.jpg',
+    authorImage: '/images/team-2.jpg',
     tags: ['Beds', 'Bedroom', 'Buying Guide'],
   },
   {
     id: 2,
     title: 'Furniture Care 101: Tips to Maintain Wooden Furniture',
-    image: 'images/blog-2.jpg',
+    image: '/images/blog-2.jpg',
     excerpt:
       'Helps clients keep their furniture in top condition with easy maintenance tips, enhancing the longevity of their investment.',
     fullContent:
@@ -28,13 +28,13 @@ const blogData = [
     readTime: '4 min read',
     date: '10th March, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-5.png',
+    authorImage: '/images/team-5.png',
     tags: ['Wooden Furniture', 'Maintenance', 'Care Tips'],
   },
   {
     id: 3,
     title: '5 Simple Ways to Make a Small Space Look Bigger with Furniture',
-    image: 'images/blog-3.jpg',
+    image: '/images/blog-3.jpg',
     excerpt:
       'Provides smart furniture arrangement ideas that maximize space, ideal for clients with smaller homes or apartments.',
     fullContent:
@@ -43,7 +43,7 @@ const blogData = [
     readTime: '3 min read',
     date: '11th April, 2023',
     author: 'Ananya Design Team',
-    authorImage: 'images/team-6.png',
+    authorImage: '/images/team-6.png',
     tags: ['Small Spaces', 'Interior Design', 'Space Saving'],
   },
 ];
@@ -67,7 +67,7 @@ export default function Blog() {
             className="box"
           >
             <div className="image">
-              <img src={post.image} alt={post.title} />
+              <img src={post.image} alt={post.title} loading="lazy" decoding="async" />
               <span className="blog-category">{post.category}</span>
             </div>
             <div className="content">

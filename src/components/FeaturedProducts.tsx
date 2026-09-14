@@ -52,7 +52,7 @@ export default function FeaturedProducts() {
                 <i className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`}></i>
               </button>
               <Link href={`/products/${product.slug || product.id}`}>
-                <img src={product.image} alt={product.name} />
+                <img src={product.image} alt={product.name} loading="lazy" decoding="async" />
               </Link>
             </div>
             <div className="fp-card-info">
