@@ -485,26 +485,26 @@ input, textarea, select {
     color: #a27341;
 }
 
-/* Accessible icon buttons (cart/menu/account render as <button>) */
+/* Icon buttons render as <button> — match the previous div look.
+   NOTE: do NOT set font-family here; Font Awesome serves its glyphs
+   through the element font and any override blanks the icons. */
 .header .icons button {
     background: none;
     border: none;
+    padding: 0;
     cursor: pointer;
     font-size: 1.7rem;
     color: #2c2420;
     margin-left: 1.8rem;
     transition: color 0.2s;
-    min-width: 4.4rem;
-    min-height: 4.4rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    font-family: inherit;
 }
 
 .header .icons button:hover {
     color: #a27341;
+}
+
+#cart-btn {
+    position: relative;
 }
 
 /* Active nav link */
@@ -16195,6 +16195,22 @@ summary:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 6px 25px rgba(162, 115, 65, 0.4);
   background: linear-gradient(135deg, #8B5A2B, #a27341);
+}
+
+/* Sticky top stack: navbar first, announcement bar below it */
+.top-stack {
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+}
+
+.top-stack .header {
+    position: static;
+    box-shadow: none;
+}
+
+.top-stack .announcement-bar {
+    box-shadow: var(--box-shadow);
 }
 
 /* ============================================

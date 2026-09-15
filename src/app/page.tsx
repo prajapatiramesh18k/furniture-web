@@ -32,8 +32,10 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      <AnnouncementBar />
-      <NavbarWrapper />
+      <div className="top-stack">
+        <NavbarWrapper />
+        <AnnouncementBar />
+      </div>
       <Hero />
       <FeaturedProducts />
       <FeaturedGallery />
