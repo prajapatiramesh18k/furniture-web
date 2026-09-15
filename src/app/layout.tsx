@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import ChatBot from "@/components/ChatBot";
+import MobileCallBar from "@/components/MobileCallBar";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -92,6 +93,7 @@ export default function RootLayout({
           <WishlistProvider>{children}</WishlistProvider>
         </CartProvider>
         <ChatBot />
+        <MobileCallBar />
         <ScrollRestoration />
         <Analytics />
         {gaId ? <GoogleAnalytics gaId={gaId} /> : null}

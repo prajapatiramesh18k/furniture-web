@@ -42,7 +42,7 @@ export default function FAQ() {
 
   return (
     <section className="faq" id="faq">
-      <h1 className="heading">Frequently Asked <span>Questions</span></h1>
+      <h2 className="heading">Frequently Asked <span>Questions</span></h2>
       <div className="faq-container">
         {faqData.map((faq, index) => (
           <div

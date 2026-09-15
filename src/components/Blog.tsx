@@ -57,7 +57,7 @@ const slugMap: Record<number, string> = {
 export default function Blog() {
   return (
     <section className="blog" id="blog">
-      <h1 className="heading"> our <span> blogs</span></h1>
+      <h2 className="heading"> our <span> blogs</span></h2>
 
       <div className="box-container">
         {blogData.map((post) => (

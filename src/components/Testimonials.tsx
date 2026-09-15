@@ -157,7 +157,7 @@ export default function Testimonials() {
 
   return (
     <section className="testimonials" id="testimonials">
-      <h1 className="heading">What Our <span>Clients Say</span></h1>
+      <h2 className="heading">What Our <span>Clients Say</span></h2>
       <div className="testimonials-slider swiper">
         <div className="swiper-wrapper">
           {reviews.map(review => (

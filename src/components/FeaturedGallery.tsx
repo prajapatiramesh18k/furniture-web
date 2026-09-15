@@ -12,7 +12,7 @@ const featuredImages = [
 export default function FeaturedGallery() {
   return (
     <section className="featured-gallery">
-      <h1 className="heading">our <span>design gallery</span></h1>
+      <h2 className="heading">our <span>design gallery</span></h2>
       <div className="featured-gallery-grid">
         {featuredImages.map((img) => (
           <Link key={img.id} href={`/gallery?category=${img.slug}`} className="fg-card">

@@ -58,7 +58,7 @@ export default function AboutSection({ standalone = false }: AboutSectionProps) 
           </div>
           <div className="about-full-intro">
             <p className="about-full-tagline">{aboutData.tagline}</p>
-            <h1>{aboutData.heading}</h1>
+            <h2>{aboutData.heading}</h2>
             <p className="about-full-desc">{aboutData.description}</p>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function AboutSection({ standalone = false }: AboutSectionProps) 
 
   return (
     <section className="about" id="about">
-      <h1 className="heading"> <span>about</span> us</h1>
+      <h2 className="heading"> <span>about</span> us</h2>
       <div className="row">
         <div className="image">
           <img src="/images/about.jpg" alt="About Ananya" loading="lazy" decoding="async" />

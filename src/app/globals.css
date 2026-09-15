@@ -804,6 +804,265 @@ input, textarea, select {
 
 
 
+/* Sticky mobile bottom bar: CALL | WHATSAPP | GET QUOTE (public pages, mobile only) */
+.mobile-call-bar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-call-bar {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2900;
+        background: rgba(255, 255, 255, 0.97);
+        border-top: 1px solid #e8dfd2;
+        box-shadow: 0 -6px 24px rgba(62, 42, 18, 0.15);
+        padding: 0.6rem 0.8rem calc(0.6rem + env(safe-area-inset-bottom));
+        gap: 0.6rem;
+    }
+
+    .mcb-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.1rem;
+        border-radius: 1rem;
+        padding: 0.7rem 0.4rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .mcb-btn i {
+        font-size: 1.7rem;
+    }
+
+    .mcb-btn small {
+        font-size: 0.95rem;
+        font-weight: 500;
+        opacity: 0.85;
+    }
+
+    .mcb-call {
+        background: linear-gradient(135deg, #a27341 0%, #8a5f32 100%);
+        color: #fff;
+    }
+
+    .mcb-wa {
+        background: #1faa55;
+        color: #fff;
+    }
+
+    .mcb-quote {
+        background: #2b1d12;
+        color: #f3d9a4;
+    }
+
+    /* Lift floating widgets above the bar */
+    .whatsapp-float {
+        bottom: 8.2rem !important;
+    }
+}
+
+/* Homepage service-area cards (links to city hubs) */
+.service-areas {
+    max-width: 1100px;
+    margin: 3rem auto 0;
+    text-align: center;
+}
+
+.service-areas h3 {
+    font-size: 2rem;
+    color: #2c2420;
+}
+
+.service-areas p {
+    font-size: 1.35rem;
+    color: #6b6b6b;
+    margin: 0.6rem 0 1.6rem;
+}
+
+.service-areas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.service-area-card {
+    display: block;
+    background: #fff;
+    border: 1px solid #e7dcc6;
+    border-radius: 1.2rem;
+    padding: 1.4rem 1.6rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.service-area-card:hover {
+    border-color: #a27341;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(62, 42, 18, 0.12);
+}
+
+.service-area-card strong {
+    display: block;
+    font-size: 1.5rem;
+    color: #2e2117;
+    margin-bottom: 0.4rem;
+}
+
+.service-area-card span {
+    font-size: 1.2rem;
+    color: #98816a;
+}
+
+/* City hub pages (/mumbai, /thane, /navi-mumbai) */
+.city-hub {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+}
+
+.city-hero {
+    background: linear-gradient(135deg, #3d2a1a 0%, #2b1d12 100%);
+    border: 1px solid rgba(201, 161, 95, 0.4);
+    border-radius: 2rem;
+    padding: 3rem;
+    color: #fff8ec;
+    margin-bottom: 2.5rem;
+}
+
+.city-eyebrow {
+    font-size: 1.1rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #c9a15f;
+    font-weight: 600;
+    margin: 0 0 1rem;
+}
+
+.city-hero h1 {
+    font-size: 3.2rem;
+    line-height: 1.2;
+    margin: 0 0 1.2rem;
+}
+
+.city-lead {
+    font-size: 1.5rem;
+    line-height: 1.7;
+    color: rgba(239, 227, 205, 0.92);
+    margin: 0 0 2rem;
+    max-width: 70rem;
+}
+
+.city-section {
+    margin-bottom: 2.5rem;
+}
+
+.city-section h2 {
+    font-size: 2.2rem;
+    margin: 0 0 1rem;
+    color: #2c2420;
+}
+
+.city-section p {
+    font-size: 1.45rem;
+    line-height: 1.75;
+    color: #4a4238;
+}
+
+.city-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin: 1.2rem 0;
+}
+
+.city-chip {
+    background: #faf5ea;
+    border: 1px solid #e7dcc6;
+    color: #7a5327;
+    border-radius: 999px;
+    padding: 0.7rem 1.6rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.city-note {
+    font-size: 1.25rem !important;
+    color: #98816a !important;
+}
+
+.city-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1.2rem;
+}
+
+.city-links a {
+    display: block;
+    background: #fff;
+    border: 1px solid #e7dcc6;
+    border-radius: 1rem;
+    padding: 1.1rem 1.4rem;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #2e2117;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.city-links a:hover {
+    border-color: #a27341;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(62, 42, 18, 0.12);
+}
+
+.city-trust {
+    list-style: none;
+    padding: 0;
+    margin: 1.2rem 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.city-trust li {
+    font-size: 1.4rem;
+    color: #2e2117;
+    padding-left: 2.4rem;
+    position: relative;
+}
+
+.city-trust li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #2e7d4f;
+    font-weight: 800;
+}
+
+@media (max-width: 600px) {
+    .city-hub {
+        padding: 2rem 1.4rem 4rem;
+    }
+    .city-hero {
+        padding: 2rem 1.6rem;
+    }
+    .city-hero h1 {
+        font-size: 2.4rem;
+    }
+}
+
 /* Mobile responsive for account sidebar */
 @media (max-width: 480px) {
     .account-sidebar {

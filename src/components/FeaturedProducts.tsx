@@ -40,7 +40,7 @@ export default function FeaturedProducts() {
 
   return (
     <section className="featured-products" id="products">
-      <h1 className="heading">our <span>products</span></h1>
+      <h2 className="heading">our <span>products</span></h2>
       <div className="featured-products-grid">
         {products.map((product) => (
           <div key={product.id} className="featured-product-card">

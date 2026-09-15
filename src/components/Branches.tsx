@@ -40,7 +40,7 @@ const branches = [
 export default function Branches() {
   return (
     <section className="branches-section" id="branches">
-      <h1 className="heading">Our <span>Branches</span></h1>
+      <h2 className="heading">Our <span>Branches</span></h2>
       <p className="branches-subtitle">
         Two locations. Same quality. Visit us at the branch closest to you.
       </p>
@@ -110,6 +110,27 @@ export default function Branches() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="service-areas">
+        <h3>Areas we serve</h3>
+        <p>
+          Free site visits for qualifying projects across our service areas — mention your
+          neighbourhood on call or WhatsApp.
+        </p>
+        <div className="service-areas-grid">
+          <a href="/mumbai" className="service-area-card">
+            <strong>Mumbai</strong>
+            <span>Bandra · Andheri · Goregaon · Malad · Borivali · Mulund · Ghatkopar</span>
+          </a>
+          <a href="/thane" className="service-area-card">
+            <strong>Thane</strong>
+            <span>Thane West/East · Mumbra · Diva · Kalwa · Shilphata · Dombivli · Kalyan</span>
+          </a>
+          <a href="/navi-mumbai" className="service-area-card">
+            <strong>Navi Mumbai</strong>
+            <span>Vashi · Nerul · Belapur · Kharghar · Panvel · Airoli · Ulwe</span>
+          </a>
+        </div>
       </div>
     </section>
   );
