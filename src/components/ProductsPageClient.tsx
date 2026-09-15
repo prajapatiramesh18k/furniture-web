@@ -153,9 +153,21 @@ export default function ProductsPageClient({
                 No products in this category.
               </p>
             ) : (
-              filteredProducts.map((product) => (
+              filteredProducts.map((product) => {
+                const discount =
+                  Number(product.originalPrice) > Number(product.price)
+                    ? Math.round(
+                        ((Number(product.originalPrice) - Number(product.price)) /
+                          Number(product.originalPrice)) *
+                          100
+                      )
+                    : null;
+                return (
                 <div key={product.id} className="products-page-card">
                   <div className="products-page-card-img">
+                    {discount && (
+                      <span className="product-discount-badge">-{discount}% OFF</span>
+                    )}
                     <button
                       type="button"
                       className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
@@ -206,7 +218,8 @@ export default function ProductsPageClient({
                     </div>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 

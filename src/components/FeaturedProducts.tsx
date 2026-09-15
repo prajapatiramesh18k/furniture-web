@@ -42,9 +42,21 @@ export default function FeaturedProducts() {
     <section className="featured-products" id="products">
       <h2 className="heading">our <span>products</span></h2>
       <div className="featured-products-grid">
-        {products.map((product) => (
+        {products.map((product) => {
+          const discount =
+            Number(product.originalPrice) > Number(product.price)
+              ? Math.round(
+                  ((Number(product.originalPrice) - Number(product.price)) /
+                    Number(product.originalPrice)) *
+                    100
+                )
+              : null;
+          return (
           <div key={product.id} className="featured-product-card">
             <div className="fp-card-img">
+              {discount && (
+                <span className="product-discount-badge">-{discount}% OFF</span>
+              )}
               <button
                 className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
                 onClick={() => toggleWishlist({ id: product.id, name: product.name, image: product.image, price: product.price, slug: product.slug })}
@@ -72,7 +84,8 @@ export default function FeaturedProducts() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="fp-view-all">
         <Link href="/products" className="btn">

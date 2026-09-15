@@ -331,7 +331,7 @@ export const marketingServices: MarketingService[] = [
       'Bedroom Furniture in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
       'Custom beds, wardrobes, side tables and bedroom sets for Mumbai, Navi Mumbai & Thane. Free site visit and 3D design consultation.',
-    image: '/images/product-7.jpg',
+    image: '/images/kids-bedroom.jpeg',
     intro:
       'Bedroom furniture should fit mattress size, wardrobe depth and circulation — especially in Mumbai apartments. We design beds, wardrobes, dressers and coordinated sets that work as one layout.',
     benefits: [
