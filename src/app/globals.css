@@ -10077,6 +10077,9 @@ input, textarea, select {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
   transition: box-shadow 0.3s, transform 0.3s;
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .services-page-card:hover {
