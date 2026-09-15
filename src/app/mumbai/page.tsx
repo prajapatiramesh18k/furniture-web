@@ -3,7 +3,9 @@ import NavbarWrapper from '@/components/NavbarWrapper';
 import Footer from '@/components/Footer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
+import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
+import { breadcrumbJsonLd, serviceJsonLd } from '@/lib/json-ld';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -37,9 +39,26 @@ const combos = [
 
 const areas = ['Bandra', 'Andheri', 'Goregaon', 'Malad', 'Borivali', 'Mulund', 'Ghatkopar'];
 
+export const revalidate = 86400;
+
 export default function MumbaiPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Mumbai', path: '/mumbai' },
+          ]),
+          serviceJsonLd({
+            name: 'Custom Furniture & Interiors in Mumbai',
+            description:
+              'Custom furniture, modular kitchens, wardrobes and home interiors in Mumbai.',
+            path: '/mumbai',
+            areaServed: ['Mumbai'],
+          }),
+        ]}
+      />
       <NavbarWrapper />
       <main className="city-hub">
         <section className="city-hero">

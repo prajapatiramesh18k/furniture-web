@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import ProductsPageClient from '@/components/ProductsPageClient';
 import { products as staticProducts } from '@/lib/products-data';
+import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
+import { breadcrumbJsonLd } from '@/lib/json-ld';
 
 export const metadata: Metadata = {
   title: 'Furniture Products — Beds, Wardrobes, Kitchens & More',
@@ -81,6 +83,26 @@ export default async function ProductsPage() {
   const products = await getProductsForPage();
 
   return (
+    <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Products', path: '/products' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: 'Furniture products',
+            itemListElement: products.slice(0, 20).map((p, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: p.name,
+              url: absoluteUrl(`/products/${p.slug || p.id}`),
+            })),
+          },
+        ]}
+      />
     <Suspense
       fallback={
         <div className="products-page">
@@ -95,7 +117,7 @@ export default async function ProductsPage() {
               <div key={product.id} className="products-page-card">
                 <div className="products-page-card-img">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.image} alt={product.name} />
+                  <img src={product.image} alt={product.name} loading="lazy" decoding="async" width={600} height={400} />
                 </div>
                 <div className="products-page-card-body">
                   <h2>{product.name}</h2>
@@ -108,5 +130,6 @@ export default async function ProductsPage() {
     >
       <ProductsPageClient initialProducts={products} />
     </Suspense>
+    </>
   );
 }

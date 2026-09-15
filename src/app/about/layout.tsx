@@ -1,5 +1,3 @@
-'use client';
-
 import NavbarWrapper from '@/components/NavbarWrapper';
 import Footer from '@/components/Footer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';

@@ -187,8 +187,8 @@ export default function CheckoutPage() {
           <h2>Shipping Information</h2>
 
           {error && (
-            <div className="checkout-error">
-              <i className="fas fa-exclamation-circle"></i> {error}
+            <div className="checkout-error" role="alert" aria-live="assertive">
+              <i aria-hidden="true" className="fas fa-exclamation-circle"></i> {error}
             </div>
           )}
 
@@ -200,6 +200,8 @@ export default function CheckoutPage() {
                 id="name"
                 name="name"
                 placeholder="Enter your full name"
+                required
+                autoComplete="name"
                 value={customerInfo.name}
                 onChange={handleInputChange}
               />
@@ -212,6 +214,10 @@ export default function CheckoutPage() {
                 name="phone"
                 placeholder="10-digit mobile number"
                 maxLength={10}
+                required
+                autoComplete="tel"
+                inputMode="numeric"
+                pattern="[0-9]{10}"
                 value={customerInfo.phone}
                 onChange={handleInputChange}
               />
@@ -223,6 +229,7 @@ export default function CheckoutPage() {
                 id="email"
                 name="email"
                 placeholder="your@email.com"
+                autoComplete="email"
                 value={customerInfo.email}
                 onChange={handleInputChange}
               />
@@ -234,6 +241,8 @@ export default function CheckoutPage() {
                 name="address"
                 placeholder="House no., street, area"
                 rows={3}
+                required
+                autoComplete="street-address"
                 value={customerInfo.address}
                 onChange={handleInputChange}
               />
@@ -245,6 +254,8 @@ export default function CheckoutPage() {
                 id="city"
                 name="city"
                 placeholder="e.g. Mumbai"
+                required
+                autoComplete="address-level2"
                 value={customerInfo.city}
                 onChange={handleInputChange}
               />
@@ -257,6 +268,10 @@ export default function CheckoutPage() {
                 name="pincode"
                 placeholder="6-digit pincode"
                 maxLength={6}
+                required
+                autoComplete="postal-code"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
                 value={customerInfo.pincode}
                 onChange={handleInputChange}
               />
@@ -271,7 +286,7 @@ export default function CheckoutPage() {
           <div className="cos-items">
             {cart.map((item) => (
               <div key={item.id} className="cos-item">
-                <img src={item.image} alt={item.name} />
+                <img src={item.image} alt={item.name} width={64} height={64} loading="lazy" decoding="async" />
                 <div className="cos-item-info">
                   <span className="cos-item-name">{item.name}</span>
                   <span className="cos-item-qty">Qty: {item.quantity}</span>

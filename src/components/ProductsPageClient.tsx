@@ -193,6 +193,10 @@ export default function ProductsPageClient({
                       <img
                         src={product.image}
                         alt={`${product.name} — custom furniture by Ananya House of Furniture`}
+                        loading="lazy"
+                        decoding="async"
+                        width={600}
+                        height={400}
                       />
                       <div className="products-page-card-overlay">
                         <span>View Details</span>

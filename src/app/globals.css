@@ -135,7 +135,7 @@
 }
 
 body {
-    padding-top: 7.2rem;
+    padding-top: 0;
 }
 
 /* Admin portal has its own sticky header (no public navbar) — remove the offset there. */
@@ -208,7 +208,7 @@ input, textarea, select {
     align-items: center;
     justify-content: space-between;
     box-shadow: var(--box-shadow);
-    position: fixed;
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
@@ -483,6 +483,55 @@ input, textarea, select {
 
 .header .icons div:hover {
     color: #a27341;
+}
+
+/* Accessible icon buttons (cart/menu/account render as <button>) */
+.header .icons button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.7rem;
+    color: #2c2420;
+    margin-left: 1.8rem;
+    transition: color 0.2s;
+    min-width: 4.4rem;
+    min-height: 4.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-family: inherit;
+}
+
+.header .icons button:hover {
+    color: #a27341;
+}
+
+/* Active nav link */
+.header .navbar a.active {
+    color: #a27341;
+}
+
+/* Screen-reader-only helper */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Visible keyboard focus */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+    outline: 2px solid #a27341;
+    outline-offset: 2px;
 }
 
 #menu-btn {
@@ -809,7 +858,22 @@ input, textarea, select {
     display: none;
 }
 
+@media (max-width: 1024px) {
+    .header .logo {
+        padding-left: 2rem;
+    }
+    .header .navbar a {
+        margin-left: 1.2rem;
+    }
+    .nav-search-input {
+        width: 12rem;
+    }
+}
+
 @media (max-width: 768px) {
+    body {
+        padding-bottom: 6.5rem;
+    }
     .mobile-call-bar {
         display: flex;
         position: fixed;
@@ -1255,12 +1319,41 @@ input, textarea, select {
 
 .home .slide{
     min-height: 100vh;
+    min-height: 100svh;
     background-size: cover !important;
     background-position: center !important;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+}
+
+@media (max-width: 768px) {
+    .home .slide {
+        min-height: 78svh;
+    }
+    .hero-heading {
+        font-size: 3rem !important;
+    }
+    .hero-stats {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 2rem;
+    }
+    .hero-stat-divider {
+        width: 5rem;
+        height: 2px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .gallery-popup-images {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .service-detail-hero,
+    .service-detail-body {
+        grid-template-columns: 1fr;
+    }
 }
 
 .hero-overlay {
@@ -2694,6 +2787,7 @@ input, textarea, select {
   color: #a27341;
 }
 
+.contact-form-header h2,
 .contact-form-header h3 {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 1.8rem;
@@ -12974,6 +13068,10 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  padding: 0;
+  width: 100%;
+  font-family: inherit;
 }
 
 .gallery-page-item img {
@@ -13082,7 +13180,7 @@ input, textarea, select {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.92);
-  z-index: 9999;
+  z-index: 20000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13090,8 +13188,9 @@ input, textarea, select {
 }
 
 .gallery-lightbox img {
-  max-width: 90vw;
-  max-height: 75vh;
+  max-width: 96vw;
+  max-height: 86vh;
+  max-height: 86dvh;
   object-fit: contain;
   border-radius: 6px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
@@ -13108,6 +13207,9 @@ input, textarea, select {
   z-index: 10001;
   opacity: 0.8;
   transition: opacity 0.2s;
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
 }
 
 .gallery-lightbox-close:hover { opacity: 1; }
@@ -16164,6 +16266,11 @@ input, textarea, select {
   opacity: 0.7;
   transition: opacity 0.2s;
   line-height: 1;
+  min-width: 4.4rem;
+  min-height: 4.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .announcement-bar-close:hover {

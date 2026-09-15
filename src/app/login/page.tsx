@@ -220,11 +220,13 @@ function LoginFormContent() {
           <form className="login-form" onSubmit={handleSubmit}>
             {!isLogin && (
               <div className="login-field animate-field" key={`name-${isLogin}`}>
-                <label>Full Name</label>
+                <label htmlFor="login-name">Full Name</label>
                 <input
+                  id="login-name"
                   type="text"
                   className="login-input"
                   placeholder="Enter your name"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -233,11 +235,13 @@ function LoginFormContent() {
             )}
 
             <div className="login-field animate-field">
-              <label>Email Address</label>
+              <label htmlFor="login-email">Email Address</label>
               <input
+                id="login-email"
                 type="email"
                 className="login-input"
                 placeholder="Enter your email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -245,12 +249,14 @@ function LoginFormContent() {
             </div>
 
             <div className="login-field animate-field">
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
               <div className="password-input-wrap">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   className="login-input"
                   placeholder="Enter your password"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -258,9 +264,11 @@ function LoginFormContent() {
                 <button
                   type="button"
                   className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <i className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
+                  <i aria-hidden="true" className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
                 </button>
               </div>
             </div>
@@ -328,8 +336,8 @@ function LoginFormContent() {
               </svg>
               Google
             </button>
-            <button className="social-btn">
-              <i className="fab fa-facebook-f"></i>
+            <button type="button" className="social-btn" aria-label="Continue with Facebook (coming soon)" title="Facebook login coming soon">
+              <i aria-hidden="true" className="fab fa-facebook-f"></i>
               Facebook
             </button>
           </div>

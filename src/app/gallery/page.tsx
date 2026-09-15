@@ -252,24 +252,37 @@ export default function GalleryPage() {
               <div
                 key={img._id}
                 className="gallery-page-item"
+                role="button"
+                tabIndex={0}
                 onClick={() => openLightbox(index)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openLightbox(index);
+                  }
+                }}
+                aria-label={`Open ${img.category} design ${index + 1}`}
               >
-                <img src={img.url} alt={img.category} loading="lazy" decoding="async" />
+                <img src={img.url} alt={`${img.category} design ${index + 1} by Ananya House of Furniture`} loading="lazy" decoding="async" width={600} height={450} />
                 <div className="gallery-page-item-overlay">
                   <div className="gpo-actions">
                     <button
+                      type="button"
                       className="gpo-btn"
                       onClick={(e) => { e.stopPropagation(); downloadImage(img.url); }}
                       title="Download"
+                      aria-label={`Download ${img.category} design ${index + 1}`}
                     >
-                      <i className="fas fa-expand"></i>
+                      <i aria-hidden="true" className="fas fa-expand"></i>
                     </button>
                     <button
+                      type="button"
                       className="gpo-btn gpo-wa"
                       onClick={(e) => { e.stopPropagation(); sendWhatsApp(img.url); }}
                       title="Enquire on WhatsApp"
+                      aria-label={`Enquire about ${img.category} design ${index + 1} on WhatsApp`}
                     >
-                      <i className="fab fa-whatsapp"></i>
+                      <i aria-hidden="true" className="fab fa-whatsapp"></i>
                     </button>
                   </div>
                 </div>
@@ -311,16 +324,16 @@ export default function GalleryPage() {
 
       {/* Lightbox */}
       {lightboxOpen && images[currentIndex] && (
-        <div className="gallery-lightbox" onClick={() => setLightboxOpen(false)}>
-          <span className="gallery-lightbox-close" onClick={() => setLightboxOpen(false)}>&times;</span>
-          <button className="gallery-lightbox-nav prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>&#10094;</button>
+        <div className="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" onClick={() => setLightboxOpen(false)}>
+          <button type="button" className="gallery-lightbox-close" aria-label="Close viewer" onClick={() => setLightboxOpen(false)}>&times;</button>
+          <button type="button" className="gallery-lightbox-nav prev" aria-label="Previous image" onClick={(e) => { e.stopPropagation(); prevImage(); }}>&#10094;</button>
           <img
             src={images[currentIndex].url}
-            alt=""
+            alt={`${images[currentIndex].category} design by Ananya House of Furniture`}
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }}
+            style={{ maxWidth: '96vw', maxHeight: '86vh', objectFit: 'contain' }}
           />
-          <button className="gallery-lightbox-nav next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>&#10095;</button>
+          <button type="button" className="gallery-lightbox-nav next" aria-label="Next image" onClick={(e) => { e.stopPropagation(); nextImage(); }}>&#10095;</button>
           <div className="gallery-lightbox-actions" onClick={(e) => e.stopPropagation()}>
             <a href={images[currentIndex].url} download className="gallery-lightbox-dl">
               <i className="fas fa-download"></i> Download

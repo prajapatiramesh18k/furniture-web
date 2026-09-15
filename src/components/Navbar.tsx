@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -51,6 +51,7 @@ interface SearchProduct {
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { getCartCount } = useCart();
   const { getWishlistCount } = useWishlist();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -170,27 +171,36 @@ export default function Navbar() {
             <span className="logo-sub">House of Furniture Pvt Ltd.</span>
           </span>
         </Link>
-        <nav className={`navbar ${menuOpen ? 'active' : ''}`} id="navbar">
-          {navigation.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              suppressHydrationWarning
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className={`navbar ${menuOpen ? 'active' : ''}`} id="navbar" aria-label="Primary">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                suppressHydrationWarning
+                onClick={() => setMenuOpen(false)}
+                aria-current={isActive ? 'page' : undefined}
+                className={isActive ? 'active' : undefined}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="icons">
           {/* Inline Search Box */}
           <div className="nav-search-wrapper" ref={searchRef}>
-            <form onSubmit={handleSearch} className="nav-search-form">
-              <i className="fas fa-search nav-search-icon"></i>
+            <form onSubmit={handleSearch} className="nav-search-form" role="search">
+              <i aria-hidden="true" className="fas fa-search nav-search-icon"></i>
+              <label className="sr-only" htmlFor="nav-search">Search furniture</label>
               <input
-                type="text"
+                id="nav-search"
+                type="search"
+                autoComplete="off"
                 className="nav-search-input"
                 placeholder="Search furniture..."
+                aria-label="Search furniture"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -215,7 +225,7 @@ export default function Navbar() {
                           setShowResults(false);
                         }}
                       >
-                        <img src={product.image} alt={product.name} />
+                        <img src={product.image} alt="" width={48} height={48} loading="lazy" decoding="async" />
                         <div className="nav-search-item-info">
                           <span className="nav-search-item-name">{product.name}</span>
                           <span className="nav-search-item-price">Rs.{product.price.toLocaleString()}</span>
@@ -240,16 +250,31 @@ export default function Navbar() {
             )}
           </div>
 
-          <div id="cart-btn" className="fas fa-shopping-cart" onClick={() => { setCartOpen(!cartOpen); setWishlistOpen(false); }}>
+          <button
+            type="button"
+            id="cart-btn"
+            className="fas fa-shopping-cart"
+            aria-label={`Open cart, ${cartCount} items`}
+            aria-expanded={cartOpen}
+            onClick={() => { setCartOpen(!cartOpen); setWishlistOpen(false); }}
+          >
             <span id="cart-count" suppressHydrationWarning style={{ display: mounted && cartCount > 0 ? 'flex' : 'none' }}>{cartCount}</span>
-          </div>
+          </button>
           <button
             id="account-btn"
             className="fas fa-user"
             onClick={handleAccountClick}
             aria-label="Account"
           />
-          <div id="menu-btn" className="fas fa-bars" onClick={() => setMenuOpen(!menuOpen)}></div>
+          <button
+            type="button"
+            id="menu-btn"
+            className="fas fa-bars"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="navbar"
+            onClick={() => setMenuOpen(!menuOpen)}
+          ></button>
         </div>
       </header>
 
@@ -293,20 +318,20 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
           <div className="cart-items-list">
             {cart.map((item) => (
               <div key={item.id} className="cart-item">
-                <img src={item.image} alt={item.name} />
+                <img src={item.image} alt={item.name} width={80} height={80} loading="lazy" decoding="async" />
                 <div className="content">
                   <h3>{item.name}</h3>
                   <div className="price-cart-row">
                     <span className="cart-item-price">Rs.{item.price.toLocaleString()}</span>
                     <div className="qty-controls">
-                      <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}><i className="fas fa-minus"></i></button>
+                      <button type="button" className="qty-btn" aria-label={`Decrease quantity of ${item.name}`} onClick={() => updateQuantity(item.id, -1)}><i aria-hidden="true" className="fas fa-minus"></i></button>
                       <span className="qty-value">{item.quantity}</span>
-                      <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}><i className="fas fa-plus"></i></button>
+                      <button type="button" className="qty-btn" aria-label={`Increase quantity of ${item.name}`} onClick={() => updateQuantity(item.id, 1)}><i aria-hidden="true" className="fas fa-plus"></i></button>
                     </div>
                   </div>
                   <span className="cart-item-total">Rs.{(item.price * item.quantity).toLocaleString()}</span>
                 </div>
-                <span className="cart-remove fas fa-times" onClick={() => removeFromCart(item.id)}></span>
+                <button type="button" className="cart-remove fas fa-times" aria-label={`Remove ${item.name} from cart`} onClick={() => removeFromCart(item.id)}></button>
               </div>
             ))}
           </div>
@@ -358,16 +383,16 @@ function WishlistSidebar({ onClose }: { onClose: () => void }) {
           <div className="cart-items-list">
             {wishlist.map((item) => (
               <div key={item.id} className="cart-item">
-                <img src={item.image} alt={item.name} />
+                <img src={item.image} alt={item.name} width={80} height={80} loading="lazy" decoding="async" />
                 <div className="content">
                   <h3>{item.name}</h3>
                   <span className="cart-item-price">Rs.{item.price.toLocaleString()}</span>
                 </div>
                 <div className="wishlist-actions">
-                  <button className="qty-btn" onClick={() => handleAddToCart(item)} title="Add to cart">
-                    <i className="fas fa-shopping-cart"></i>
+                  <button type="button" className="qty-btn" onClick={() => handleAddToCart(item)} title="Add to cart" aria-label={`Move ${item.name} to cart`}>
+                    <i aria-hidden="true" className="fas fa-shopping-cart"></i>
                   </button>
-                  <button className="cart-remove fas fa-times" onClick={() => removeFromWishlist(item.id)}></button>
+                  <button type="button" className="cart-remove fas fa-times" aria-label={`Remove ${item.name} from wishlist`} onClick={() => removeFromWishlist(item.id)}></button>
                 </div>
               </div>
             ))}

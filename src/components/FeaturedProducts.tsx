@@ -58,13 +58,16 @@ export default function FeaturedProducts() {
                 <span className="product-discount-badge">-{discount}% OFF</span>
               )}
               <button
+                type="button"
                 className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
+                aria-label={isInWishlist(product.id) ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+                aria-pressed={isInWishlist(product.id)}
                 onClick={() => toggleWishlist({ id: product.id, name: product.name, image: product.image, price: product.price, slug: product.slug })}
               >
-                <i className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`}></i>
+                <i aria-hidden="true" className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`}></i>
               </button>
               <Link href={`/products/${product.slug || product.id}`}>
-                <img src={product.image} alt={product.name} loading="lazy" decoding="async" />
+                <img src={product.image} alt={product.name} loading="lazy" decoding="async" width={600} height={440} />
               </Link>
             </div>
             <div className="fp-card-info">

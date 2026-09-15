@@ -210,7 +210,7 @@ export default function ContactPage() {
 
             <div className="info-hero">
               <div className="info-hero-img">
-                <img src="/images/contact.png" alt="Ananya House of Furniture showroom" />
+                <img src="/images/contact.png" alt="Ananya House of Furniture showroom" width={640} height={480} loading="lazy" decoding="async" />
                 <div className="info-hero-overlay">
                   <span className="info-hero-badge"><i className="fas fa-star"></i> Since 2012</span>
                 </div>
@@ -310,7 +310,7 @@ export default function ContactPage() {
             ) : (
               <>
                 <div className="contact-form-header anim-fade-up" style={{ animationDelay: '0.05s' }}>
-                  <h1>Get Free 3D Design &amp; Site Visit</h1>
+                  <h2>Get Free 3D Design &amp; Site Visit</h2>
                   <p>Tell us your service and location — we respond within 24 hours.</p>
                 </div>
 

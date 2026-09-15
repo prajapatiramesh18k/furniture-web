@@ -81,8 +81,8 @@ export default function Footer() {
           gap: 0.7rem;
         }
         .ahf-social-btn {
-          width: 38px;
-          height: 38px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           display: inline-flex;
           align-items: center;

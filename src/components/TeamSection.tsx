@@ -108,7 +108,7 @@ export default function TeamSection({ standalone = false }: TeamSectionProps) {
 
   return (
     <section className="team" id="team">
-      <h1 className="heading">our <span>team</span></h1>
+      <h2 className="heading">our <span>team</span></h2>
       <div className="swiper team-slider">
         <div className="swiper-wrapper">
           {teamData.map((member) => (

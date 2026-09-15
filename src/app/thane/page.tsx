@@ -3,7 +3,9 @@ import NavbarWrapper from '@/components/NavbarWrapper';
 import Footer from '@/components/Footer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
+import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
+import { breadcrumbJsonLd, serviceJsonLd } from '@/lib/json-ld';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -37,9 +39,26 @@ const combos = [
 
 const areas = ['Thane West', 'Thane East', 'Mumbra', 'Diva', 'Kalwa', 'Shilphata'];
 
+export const revalidate = 86400;
+
 export default function ThanePage() {
   return (
     <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Thane', path: '/thane' },
+          ]),
+          serviceJsonLd({
+            name: 'Custom Furniture & Interiors in Thane',
+            description:
+              'Custom furniture, modular kitchens, wardrobes and home interiors in Thane.',
+            path: '/thane',
+            areaServed: ['Thane'],
+          }),
+        ]}
+      />
       <NavbarWrapper />
       <main className="city-hub">
         <section className="city-hero">
