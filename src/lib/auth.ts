@@ -7,6 +7,8 @@ export interface UserPayload {
   email: string;
   isAdmin?: boolean;
   role?: string;
+  tenantId?: string | null;
+  isSuperAdmin?: boolean;
 }
 
 export function verifyToken(token: string): UserPayload | null {

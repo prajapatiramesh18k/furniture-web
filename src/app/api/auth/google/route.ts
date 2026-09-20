@@ -41,19 +41,25 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Check if user exists
-    let user = await User.findOne({ email: payload.email.toLowerCase() });
-    
-    // If not, create them
+    // Check if user exists (scoped: prefer a user already in a tenant; else default tenant)
+    let user = await User.findOne({ email: payload.email.toLowerCase() }).sort({ createdAt: 1 });
+
+    // If not, create them under the default storefront tenant
     if (!user) {
-      const count = await User.countDocuments();
+      const Tenant = (await import('@/lib/models/Tenant')).default;
+      const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+      let defaultTenant = await Tenant.findOne({ slug: defaultSlug });
+      if (!defaultTenant) defaultTenant = await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 });
+      const tenantId = defaultTenant ? defaultTenant._id : null;
+      const count = tenantId ? await User.countDocuments({ tenantId }) : await User.countDocuments();
       const firstUser = count === 0;
       user = new User({
         name: payload.name || 'Google User',
         email: payload.email.toLowerCase(),
         googleId: payload.sub,
         isAdmin: firstUser,
-        role: firstUser ? 'admin' : 'customer',
+        role: firstUser ? 'owner' : 'customer',
+        tenantId,
       });
       await user.save();
     } else if (!user.googleId) {
@@ -62,8 +68,16 @@ export async function POST(request: NextRequest) {
       await user.save();
     }
 
+    const isSuperAdmin = user.isSuperAdmin === true || user.role === 'super_admin';
     const token = jwt.sign(
-      { userId: user._id, email: user.email, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'customer') },
+      {
+        userId: user._id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+        tenantId: user.tenantId ? String(user.tenantId) : null,
+        isSuperAdmin,
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -76,6 +90,8 @@ export async function POST(request: NextRequest) {
         email: user.email,
         isAdmin: user.isAdmin,
         role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+        tenantId: user.tenantId ? String(user.tenantId) : null,
+        isSuperAdmin,
       },
     });
 

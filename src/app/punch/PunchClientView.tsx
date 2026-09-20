@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import UIDropdown from '@/components/UIDropdown';
 import { matchNearestSite, MatchedSiteResult, SiteLocation } from '@/lib/geo-utils';
 
 function getOrCreateDeviceId(): string {
@@ -22,6 +23,27 @@ function getDeviceFriendlyName(): string {
   if (/windows/i.test(ua)) return 'Windows PC';
   if (/macintosh|mac os x/i.test(ua)) return 'Mac Computer';
   return 'Mobile Device';
+}
+
+/**
+ * Company scope for punch: read `?tenant=<slug>` from the page URL (the link
+ * the company shares with workers) and remember it on the phone, so every
+ * verify/punch request searches the worker's own company — never the
+ * default storefront tenant.
+ */
+function getPunchTenant(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const t = (params.get('tenant') || '').toLowerCase().trim();
+    if (t) {
+      localStorage.setItem('ahf_punch_tenant', t);
+      return t;
+    }
+    return localStorage.getItem('ahf_punch_tenant') || '';
+  } catch {
+    return '';
+  }
 }
 
 export default function PunchClientView() {
@@ -147,7 +169,9 @@ export default function PunchClientView() {
       const devId = getOrCreateDeviceId();
       const devName = getDeviceFriendlyName();
       const queryParam = identifierVal ? `identifier=${encodeURIComponent(identifierVal)}&` : '';
-      const res = await fetch(`/api/punch?${queryParam}deviceId=${encodeURIComponent(devId)}&deviceName=${encodeURIComponent(devName)}`);
+      const tenant = getPunchTenant();
+      const tenantParam = tenant ? `tenant=${encodeURIComponent(tenant)}&` : '';
+      const res = await fetch(`/api/punch?${queryParam}${tenantParam}deviceId=${encodeURIComponent(devId)}&deviceName=${encodeURIComponent(devName)}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -195,7 +219,7 @@ export default function PunchClientView() {
     e.preventDefault();
     const clean = empIdentifier.trim();
     if (!clean) {
-      showToast('Please enter your Employee ID (e.g. AHF-001)', 'error');
+      showToast('Please enter your Employee ID given by your company', 'error');
       return;
     }
     fetchPunchData(clean);
@@ -227,6 +251,7 @@ export default function PunchClientView() {
     try {
       const devId = getOrCreateDeviceId();
       const devName = getDeviceFriendlyName();
+      const punchTenant = getPunchTenant();
       const res = await fetch('/api/punch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,6 +263,7 @@ export default function PunchClientView() {
           longitude: coords.longitude,
           deviceId: devId,
           deviceName: devName,
+          ...(punchTenant ? { tenant: punchTenant } : {}),
         }),
       });
 
@@ -262,6 +288,7 @@ export default function PunchClientView() {
     try {
       const devId = getOrCreateDeviceId();
       const devName = getDeviceFriendlyName();
+      const punchTenant = getPunchTenant();
       const res = await fetch('/api/punch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -272,6 +299,7 @@ export default function PunchClientView() {
           longitude: coords?.longitude,
           deviceId: devId,
           deviceName: devName,
+          ...(punchTenant ? { tenant: punchTenant } : {}),
         }),
       });
 
@@ -440,7 +468,7 @@ export default function PunchClientView() {
               <input
                 type="text"
                 autoCapitalize="characters"
-                placeholder="e.g. AHF-001 or 001"
+                placeholder="e.g. company ID or 001"
                 value={empIdentifier}
                 onChange={(e) => {
                   setEmpIdentifier(e.target.value.toUpperCase());
@@ -459,7 +487,7 @@ export default function PunchClientView() {
               />
             </div>
             <div style={{ fontSize: '1.15rem', color: '#64748b', marginBottom: '1.5rem' }}>
-              Enter your Employee ID (e.g. <strong>AHF-001</strong>) or registered phone number.
+              Enter your Employee ID given by your company or registered phone number.
             </div>
 
             {deviceError && (
@@ -683,27 +711,17 @@ export default function PunchClientView() {
                   <label style={{ fontSize: '1.15rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
                     Confirm Job Site
                   </label>
-                  <select
+                  <UIDropdown
+                    label="Confirm job site"
                     value={selectedSiteId}
-                    onChange={(e) => setSelectedSiteId(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1rem',
-                      borderRadius: '8px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '1.3rem',
-                      fontWeight: 600,
-                      backgroundColor: '#ffffff',
-                      color: '#0f172a',
-                    }}
-                  >
-                    <option value="">-- Choose Job Site --</option>
-                    {activeSites.map(s => (
-                      <option key={s._id} value={s._id}>
-                        {s.name} ({s.address})
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="-- Choose Job Site --"
+                    style={{ width: '100%' }}
+                    options={[
+                      { value: '', label: '-- Choose Job Site --' },
+                      ...activeSites.map((s) => ({ value: String(s._id), label: `${s.name} (${s.address})` })),
+                    ]}
+                    onChange={setSelectedSiteId}
+                  />
                 </div>
 
                 <button

@@ -10,6 +10,8 @@ export interface SessionUser {
   email: string;
   role: string;
   permissions: string[];
+  tenantName?: string;
+  isSuperAdmin?: boolean;
 }
 
 export default function Header({
@@ -65,6 +67,9 @@ export default function Header({
       <div className="ahf-crumbs">
         <h1>{title}</h1>
         <Breadcrumbs trail={trail} />
+        {user.tenantName && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ahf-gold)', marginTop: 2 }}>{user.tenantName}</div>
+        )}
       </div>
 
       <div className="ahf-header-spacer" />

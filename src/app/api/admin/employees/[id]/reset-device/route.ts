@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Employee from '@/lib/models/Employee';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const { id } = await params;
     await dbConnect();
 
-    const employee = await Employee.findById(id);
+    const employee = await Employee.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }

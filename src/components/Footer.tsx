@@ -287,10 +287,10 @@ export default function Footer() {
               <span>{phone.display}</span>
             </a>
           ))}
-          <a href={`mailto:${contactInfo.email}`} className="ahf-contact-item">
-            <i className="fas fa-envelope"></i>
-            <span>{contactInfo.email}</span>
-          </a>
+<a href={`mailto:${contactInfo.email}`} className="ahf-contact-item">
+  <i className="fas fa-envelope"></i>
+  <span style={{ textTransform: 'lowercase' }}>{contactInfo.email}</span>
+</a>
           <a href={contactInfo.addressLink} target="_blank" rel="noopener noreferrer" className="ahf-contact-item">
             <i className="fas fa-map-marker-alt"></i>
             <span>{contactInfo.address}</span>

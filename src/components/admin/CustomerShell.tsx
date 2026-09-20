@@ -14,7 +14,7 @@ import Header, { type SessionUser } from '@/components/admin/Header';
 export default function CustomerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
+  const [authState, setAuthState] = useState<'ok' | 'denied'>('ok');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
 
@@ -47,17 +47,6 @@ export default function CustomerShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  if (authState === 'loading') {
-    return (
-      <div className="ahf-admin">
-        <div className="ahf-loading-wrap">
-          <div className="ahf-spinner" />
-          <p>Loading your account…</p>
-        </div>
-      </div>
-    );
-  }
 
   if (authState === 'denied' || !user) {
     return (

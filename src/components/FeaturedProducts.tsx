@@ -23,8 +23,9 @@ export default function FeaturedProducts() {
   }, []);
 
   const renderStars = (rating: number) => {
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
+    const safe = Number.isFinite(Number(rating)) ? Number(rating) : 0;
+    const full = Math.floor(safe);
+    const half = safe % 1 >= 0.5;
     return (
       <>
         {[...Array(full)].map((_, i) => (
@@ -76,8 +77,8 @@ export default function FeaturedProducts() {
                 <h3>{product.name}</h3>
               </Link>
               <div className="fp-rating">
-                {renderStars(Number(product.rating))}
-                <span className="fp-rating-text">({Number(product.rating).toFixed(1)})</span>
+                {renderStars(Number(product.rating ?? 0))}
+                <span className="fp-rating-text">({(Number.isFinite(Number(product.rating)) ? Number(product.rating) : 0).toFixed(1)})</span>
               </div>
               <div className="fp-price">
                 <span className="fp-current">Rs.{Number(product.price).toLocaleString()}</span>

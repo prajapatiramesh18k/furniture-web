@@ -1,265 +1,341 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import ConfirmationModal from '@/components/ConfirmationModal';
 
-type LineItem = { name: string; material: string; height: number; width: number; quantity: number; rate: number };
+import { useMemo, useState } from 'react';
+import DataTable from '@/components/admin/DataTable';
+import StatusBadge from '@/components/admin/StatusBadge';
+import UIDropdown from '@/components/UIDropdown';
+import DateRangePicker from '@/components/DateRangePicker';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
+import { AdminToast, AdminModal, AdminField, AdminModalFooter } from '@/components/admin/AdminUI';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import Link from 'next/link';
 
 type QuotationDoc = {
   _id: string;
-  customer: { name: string; phone: string; email: string; address: string; branch: string };
-  project: { type: string; quoteNo: string; date: string; validTill: string };
-  items: LineItem[];
-  totals: { subtotal: number; gst: number; total: number };
+  customer: { name: string; phone: string };
+  project: { quoteNo: string; type: string };
   createdAt: string;
+  status?: string;
 };
 
-export default function AdminQuotations() {
-  const router = useRouter();
-  const [quotations, setQuotations] = useState<QuotationDoc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [toast, setToast] = useState('');
-  const [pendingDelete, setPendingDelete] = useState<QuotationDoc | null>(null);
-  const [viewing, setViewing] = useState<QuotationDoc | null>(null);
-  const [deleting, setDeleting] = useState(false);
+type QuotationFull = {
+  _id: string;
+  customer?: { name?: string; phone?: string; email?: string; address?: string };
+  project?: { quoteNo?: string; type?: string; date?: string; validTill?: string };
+  items?: { name?: string; quantity?: number; rate?: number; unit?: string }[];
+  totals?: { subtotal?: number; gst?: number; total?: number; totalDiscount?: number };
+  status?: string;
+  rejectReason?: string;
+  decidedAt?: string | null;
+  decidedBy?: string;
+  terms?: string;
+  createdAt?: string;
+};
 
-  useEffect(() => {
-    document.title = 'Ananya Furniture | Quotation History';
-    
-    fetch('/api/quotations')
-      .then((res) => {
-        if (!res.ok) throw new Error('Unauthorized or failed to fetch');
-        return res.json();
-      })
-      .then((data) => {
-        if (data.success) {
-          setQuotations(data.quotations);
-        } else {
-          setError(data.error);
-        }
-      })
-      .catch((err) => {
-        setError(err.message);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+const inr = (n: number | undefined) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+export default function AdminQuotations() {
+  const { data, loading, refresh } = useAdminFetch<{ quotations: QuotationDoc[] }>('/api/quotations');
+  const [q, setQ] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [toast, setToast] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<QuotationFull | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [acting, setActing] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+
+  const quotations = useMemo(() => data?.quotations || [], [data]);
+
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return quotations.filter((x) => {
+      if (statusFilter !== 'all' && String(x.status || 'sent') !== statusFilter) return false;
+      if (!s) return true;
+      return `${x.project?.quoteNo || ''} ${x.customer?.name || ''}`.toLowerCase().includes(s);
+    });
+  }, [quotations, q, statusFilter]);
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(rows, 10, [q, statusFilter]);
+
+  const openDetail = async (x: QuotationDoc) => {
+    if (openId === x._id) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId(x._id);
+    setDetail(null);
+    setDetailError('');
+    setRejectOpen(false);
+    setReason('');
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/quotations?id=${x._id}`, { cache: 'no-store' });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Failed to load quotation');
+      setDetail(d.quotation as QuotationFull);
+    } catch (err) {
+      setDetailError(err instanceof Error ? err.message : 'Failed to load quotation');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const flash = (m: string) => {
     setToast(m);
-    setTimeout(() => setToast(''), 3000);
+    setTimeout(() => setToast(''), 2600);
   };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    setDeleting(true);
+  const transition = async (status: 'sent' | 'approved' | 'rejected', rejectReason?: string) => {
+    if (!detail) return;
+    if (status === 'rejected' && !String(rejectReason || '').trim()) {
+      alert('Please enter a reject reason');
+      return;
+    }
+    setActing(true);
     try {
-      const res = await fetch(`/api/quotations?id=${pendingDelete._id}`, { method: 'DELETE' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Failed to delete quotation');
-      setQuotations((list) => list.filter((q) => q._id !== pendingDelete._id));
-      flash(`Quotation ${pendingDelete.project.quoteNo} deleted.`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete quotation');
+      const res = await fetch('/api/quotations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: detail._id, status, ...(rejectReason ? { rejectReason } : {}) }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Update failed');
+      setDetail(d.quotation as QuotationFull);
+      setRejectOpen(false);
+      setReason('');
+      refresh();
+      flash(
+        status === 'approved'
+          ? `Approved — ${d.quotation?.project?.quoteNo || ''}${d.projectId ? ' · project created' : ''}`
+          : status === 'rejected'
+            ? `Rejected — ${d.quotation?.project?.quoteNo || ''}`
+            : `Moved to sent — ${d.quotation?.project?.quoteNo || ''}`,
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Update failed');
     } finally {
-      setDeleting(false);
-      setPendingDelete(null);
+      setActing(false);
     }
   };
-  if (loading) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px' }}></i> Loading Quotations...
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div style={{ padding: '40px', color: 'red', textAlign: 'center' }}>
-        <i className="fas fa-exclamation-circle"></i> {error}
-        <br />
-        <button onClick={() => router.push('/login')} style={{ marginTop: '20px', padding: '10px 20px' }}>
-          Login as Admin
-        </button>
-      </div>
-    );
-  }
+  const removeQuotation = async () => {
+    if (!detail) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/quotations?id=${detail._id}`, { method: 'DELETE' });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Delete failed');
+      setConfirmDelete(false);
+      setOpenId(null);
+      setDetail(null);
+      refresh();
+      flash('Quotation deleted');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-      {toast && (
-        <div className="admin-toast" style={{ position: 'fixed' }}>
-          <i className="fas fa-check-circle"></i> {toast}
-        </div>
-      )}
-      <h1 style={{ fontSize: '28px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <i className="fas fa-file-invoice-dollar"></i> Quotation History
-      </h1>
-      <p style={{ marginBottom: '30px', color: '#666' }}>
-        A complete history of all generated quotations across all branches.
-      </p>
-
-      {quotations.length === 0 ? (
-        <div style={{ padding: '40px', background: '#f9f9f9', textAlign: 'center', borderRadius: '8px' }}>
-          <i className="fas fa-folder-open" style={{ fontSize: '40px', color: '#ccc', marginBottom: '10px' }}></i>
-          <p>No quotations found yet.</p>
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderRadius: '8px' }}>
-            <thead>
-              <tr style={{ background: '#a27341', color: 'white', textAlign: 'left' }}>
-                <th style={{ padding: '15px' }}>Date</th>
-                <th style={{ padding: '15px' }}>Quote No</th>
-                <th style={{ padding: '15px' }}>Customer Name</th>
-                <th style={{ padding: '15px' }}>Phone</th>
-                <th style={{ padding: '15px' }}>Project Type</th>
-                <th style={{ padding: '15px' }}>Grand Total</th>
-                <th style={{ padding: '15px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotations.map((q) => (
-                <tr key={q._id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '15px' }}>{new Date(q.createdAt).toLocaleDateString()}</td>
-                  <td style={{ padding: '15px', fontWeight: 'bold' }}>{q.project.quoteNo}</td>
-                  <td style={{ padding: '15px' }}>{q.customer.name || 'N/A'}</td>
-                  <td style={{ padding: '15px' }}>
-                    {q.customer.phone ? (
-                      <a href={`tel:${q.customer.phone}`} style={{ color: '#a27341', textDecoration: 'none' }}>
-                        {q.customer.phone}
-                      </a>
-                    ) : 'N/A'}
-                  </td>
-                  <td style={{ padding: '15px' }}>{q.project.type || 'Custom'}</td>
-                  <td style={{ padding: '15px', fontWeight: 'bold' }}>
-                    ₹{q.totals.total.toLocaleString('en-IN')}
-                  </td>
-                  <td style={{ padding: '15px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        onClick={() => setViewing(q)}
-                        style={{ background: '#f5f5f5', border: '1px solid #ddd', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}
-                      >
-                        <i className="fas fa-eye"></i> View
-                      </button>
-                      <button
-                        onClick={() => setPendingDelete(q)}
-                        style={{ background: '#fdeaea', border: '1px solid #f3c1c1', color: '#b3273a', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        <i className="fas fa-trash"></i> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <ConfirmationModal
-        isOpen={!!pendingDelete}
-        message={pendingDelete ? `Delete quotation ${pendingDelete.project.quoteNo} for ${pendingDelete.customer.name || 'this customer'}? This cannot be undone.` : ''}
-        confirmText={deleting ? 'Deleting…' : 'Yes, Delete'}
-        confirmButtonVariant="danger"
-        onConfirm={confirmDelete}
-        onCancel={() => !deleting && setPendingDelete(null)}
-      />
-
-      {viewing && (
-        <div
-          onClick={() => setViewing(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(62,42,18,.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 16, width: 'min(620px, 100%)', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 30px 80px rgba(62,42,18,.35)' }}
-          >
-            <div style={{ background: 'linear-gradient(135deg,#a27341 0%,#8a5f32 100%)', color: '#fff', padding: '18px 22px', borderRadius: '16px 16px 0 0' }}>
-              <div style={{ fontSize: 12, opacity: 0.85 }}>QUOTATION</div>
-              <div style={{ fontSize: 20, fontWeight: 800 }}>{viewing.project.quoteNo}</div>
-              <div style={{ fontSize: 12.5, opacity: 0.9 }}>
-                {new Date(viewing.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                {viewing.project.validTill ? ` · Valid till ${viewing.project.validTill}` : ''}
-              </div>
-            </div>
-
-            <div style={{ padding: 22 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                <div style={{ background: '#faf7f1', border: '1px solid #e7dbc4', borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8a7a66', marginBottom: 4 }}>CUSTOMER</div>
-                  <div style={{ fontWeight: 700 }}>{viewing.customer.name || 'N/A'}</div>
-                  <div style={{ fontSize: 13 }}>{viewing.customer.phone || ''}</div>
-                  <div style={{ fontSize: 13, color: '#8a7a66' }}>{viewing.customer.email || ''}</div>
-                  <div style={{ fontSize: 13, color: '#8a7a66' }}>{viewing.customer.address || ''}</div>
-                </div>
-                <div style={{ background: '#faf7f1', border: '1px solid #e7dbc4', borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8a7a66', marginBottom: 4 }}>PROJECT</div>
-                  <div style={{ fontWeight: 700 }}>{viewing.project.type || 'Custom'}</div>
-                  <div style={{ fontSize: 13, color: '#8a7a66' }}>{viewing.customer.branch || ''}</div>
-                  <div style={{ fontSize: 13, marginTop: 6 }}>
-                    <span style={{ background: '#f1e4cb', color: '#7a5327', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 999 }}>
-                      {viewing.items.length} item{viewing.items.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ border: '1px solid #e7dbc4', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: '#faf5ec', textAlign: 'left' }}>
-                      <th style={{ padding: '10px 12px' }}>Item</th>
-                      <th style={{ padding: '10px 12px' }}>Material</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Qty</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewing.items.map((it, i) => (
-                      <tr key={i} style={{ borderTop: '1px solid #f0e7d4' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600 }}>{it.name}</td>
-                        <td style={{ padding: '10px 12px', color: '#8a7a66' }}>{it.material || '—'}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>{it.quantity}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>₹{Number(it.rate).toLocaleString('en-IN')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13.5, marginBottom: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8a7a66' }}>
-                  <span>Subtotal</span><span>₹{Number(viewing.totals.subtotal).toLocaleString('en-IN')}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8a7a66' }}>
-                  <span>GST</span><span>₹{Number(viewing.totals.gst).toLocaleString('en-IN')}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 16, borderTop: '1px solid #e7dbc4', paddingTop: 8 }}>
-                  <span>Grand Total</span><span>₹{Number(viewing.totals.total).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                <button
-                  onClick={() => { setPendingDelete(viewing); setViewing(null); }}
-                  style={{ background: '#fdeaea', border: '1px solid #f3c1c1', color: '#b3273a', padding: '9px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
-                >
-                  <i className="fas fa-trash"></i> Delete
-                </button>
-                <button
-                  onClick={() => setViewing(null)}
-                  style={{ background: 'linear-gradient(135deg,#a27341 0%,#8a5f32 100%)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+    <ModuleShell
+      title="Quotations"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <DateRangePicker fromDate={fromDate} toDate={toDate} onChange={(f, t) => { setFromDate(f); setToDate(t); }} />
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
           </div>
         </div>
       )}
-    </div>
+    >
+      <AdminToast message={toast} />
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-body">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <UIDropdown
+              label="Quotation status filter"
+              value={statusFilter}
+              options={[{ value: 'all', label: 'All Statuses' }, { value: 'sent', label: 'Sent' }, { value: 'draft', label: 'Draft' }, { value: 'approved', label: 'Approved' }, { value: 'rejected', label: 'Rejected' }]}
+              onChange={(v) => setStatusFilter(v as string)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="ahf-panel list-compact">
+        <div className="ahf-panel-head">
+          <div><h3>Saved quotations ({rows.length})</h3><p>Click a row to see all details</p></div>
+        </div>
+        <DataTable
+            columns={[
+              { key: 'date', header: 'Date', render: (q) => <span>{new Date(q.createdAt).toLocaleDateString('en-IN')}</span> },
+              { key: 'qno', header: 'Quote No', render: (q) => <strong>{q.project?.quoteNo}</strong> },
+              { key: 'cust', header: 'Customer', render: (q) => <span>{q.customer?.name || '—'}</span> },
+              { key: 'type', header: 'Project Type', render: (q) => <span>{q.project?.type || '—'}</span> },
+              { key: 's', header: 'Status', render: (q) => <StatusBadge status={q.status || 'sent'} /> },
+              {
+                key: 'a', header: 'Action', render: (q) => (
+                  <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={(e) => { e.stopPropagation(); openDetail(q); }}>
+                    <i className={`fas ${openId === q._id ? 'fa-chevron-up' : 'fa-eye'}`}></i> {openId === q._id ? 'Hide' : 'View'}
+                  </button>
+                ),
+              },
+            ]}
+            rows={paged}
+            emptyText="No quotations found."
+            onRowClick={openDetail}
+            loading={loading}
+          />
+        {!loading && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
+        )}
+      </div>
+
+      {openId && (
+        <AdminModal
+          eyebrow="QUOTATION"
+          title={detail?.project?.quoteNo || 'Loading…'}
+          subtitle={detail ? `${detail.customer?.name || ''}${detail.customer?.phone ? ` · ${detail.customer.phone}` : ''}` : undefined}
+          onClose={() => { setOpenId(null); setDetail(null); setDetailError(''); }}
+          busy={detailLoading}
+        >
+          {detailLoading ? (
+            <LoadingList rows={4} />
+          ) : detailError ? (
+            <p style={{ color: 'var(--ahf-danger)', fontSize: 13.5, fontWeight: 600 }}>{detailError}</p>
+          ) : detail ? (
+            <>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                <StatusBadge status={detail.status || 'sent'} />
+                <span style={{ fontSize: 12.5, color: '#8a7a66' }}>
+                  {detail.project?.type || '—'}
+                  {detail.project?.date ? ` · ${new Date(detail.project.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                  {detail.project?.validTill ? ` · valid till ${new Date(detail.project.validTill).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                </span>
+              </div>
+              {(detail.items || []).length > 0 && (
+                <div className="ahf-tablewrap" style={{ marginBottom: 16 }}>
+                  <table className="ahf-table">
+                    <thead>
+                      <tr><th>Item</th><th>Qty</th><th>Rate</th><th style={{ textAlign: 'right' }}>Amount</th></tr>
+                    </thead>
+                    <tbody>
+                      {(detail.items || []).map((it, i) => (
+                        <tr key={i}>
+                          <td><strong>{it.name || '—'}</strong>{it.unit ? <span style={{ color: '#8a7a66', fontSize: 12 }}> · {it.unit}</span> : null}</td>
+                          <td>{it.quantity ?? 1}</td>
+                          <td>{inr(Number(it.rate) || 0)}</td>
+                          <td style={{ textAlign: 'right' }}><span className="ahf-amt">{inr((Number(it.quantity) || 1) * (Number(it.rate) || 0))}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8a7a66' }}>Subtotal</span><strong>{inr(detail.totals?.subtotal)}</strong></div>
+                {(detail.totals?.totalDiscount || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8a7a66' }}>Discount</span><strong>− {inr(detail.totals?.totalDiscount)}</strong></div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8a7a66' }}>GST</span><strong>{inr(detail.totals?.gst)}</strong></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15 }}><span>Total</span><span className="ahf-amt">{inr(detail.totals?.total)}</span></div>
+              </div>
+              {detail.status === 'rejected' && detail.rejectReason && (
+                <p style={{ margin: '0 0 16px', fontSize: 13, background: '#fbe7e3', border: '1px solid #f0c4bc', borderRadius: 10, padding: '10px 12px' }}>
+                  <strong>Reject reason:</strong> {detail.rejectReason}
+                </p>
+              )}
+              {(() => {
+                const cur = String(detail.status || 'sent');
+                return (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                    {cur === 'draft' && (
+                      <button className="ahf-btn ahf-btn-primary ahf-btn-sm" disabled={acting} onClick={() => transition('sent')}>
+                        <i className="fas fa-paper-plane"></i> {acting ? 'Saving…' : 'Send'}
+                      </button>
+                    )}
+                    {cur === 'sent' && (
+                      <>
+                        <button className="ahf-btn ahf-btn-primary ahf-btn-sm" disabled={acting} onClick={() => transition('approved')}>
+                          <i className="fas fa-check"></i> {acting ? 'Saving…' : 'Approve'}
+                        </button>
+                        <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" disabled={acting} onClick={() => setRejectOpen((v) => !v)}>
+                          <i className="fas fa-xmark"></i> Reject
+                        </button>
+                      </>
+                    )}
+                    {(cur === 'approved' || cur === 'rejected') && (
+                      <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" disabled={acting} onClick={() => transition('sent')}>
+                        <i className="fas fa-rotate-left"></i> {acting ? 'Saving…' : 'Reopen to sent'}
+                      </button>
+                    )}
+                    <button
+                      className="ahf-btn ahf-btn-ghost ahf-btn-sm"
+                      disabled={acting || deleting}
+                      onClick={() => setConfirmDelete(true)}
+                      style={{ marginLeft: 'auto' }}
+                    >
+                      <i className="fas fa-trash"></i> Delete
+                    </button>
+                  </div>
+                );
+              })()}
+              {rejectOpen && String(detail.status || 'sent') === 'sent' && (
+                <AdminField label="Reject reason *" style={{ marginBottom: 16 }}>
+                  <textarea
+                    className="ahf-input"
+                    rows={2}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Why was this quotation rejected…"
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button className="ahf-btn ahf-btn-primary ahf-btn-sm" disabled={acting} onClick={() => transition('rejected', reason)}>
+                      <i className="fas fa-check"></i> {acting ? 'Saving…' : 'Confirm reject'}
+                    </button>
+                  </div>
+                </AdminField>
+              )}
+              <AdminModalFooter>
+                <Link href="/admin/quotations/new" className="ahf-btn ahf-btn-ghost" onClick={() => { setOpenId(null); }}>
+                  <i className="fas fa-plus"></i> New quotation
+                </Link>
+                <Link href={`/admin/quotations/new?edit=${detail._id}`} className="ahf-btn ahf-btn-ghost">
+                  <i className="fas fa-pen"></i> Edit in maker
+                </Link>
+                <Link href={`/admin/quotations/new?edit=${detail._id}`} className="ahf-btn ahf-btn-primary" title="Opens the quotation maker — use Download PDF there">
+                  <i className="fas fa-download"></i> Download PDF
+                </Link>
+              </AdminModalFooter>
+            </>
+          ) : null}
+        </AdminModal>
+      )}
+      <ConfirmationModal
+        isOpen={confirmDelete}
+        message="Delete this quotation? This cannot be undone."
+        confirmText={deleting ? 'Deleting…' : 'Yes, Delete'}
+        confirmButtonVariant="danger"
+        onConfirm={removeQuotation}
+        onCancel={() => !deleting && setConfirmDelete(false)}
+      />
+    </ModuleShell>
   );
 }

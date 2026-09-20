@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import { ModuleShell } from '@/components/admin/ModuleBits';
+import { AdminToast } from '@/components/admin/AdminUI';
 
 interface GalleryImage {
   _id: string;
@@ -138,96 +141,110 @@ export default function AdminGalleryCategoryPage() {
 
   if (!mounted) {
     return (
-      <div className="login-container">
-        <div className="login-box">
-          <h1><i className="fas fa-chair"></i> Ananya Admin</h1>
-          <p style={{ textAlign: 'center', color: '#666' }}>Loading...</p>
-        </div>
-      </div>
+      <ModuleShell title={`${categoryName} Gallery`} sub="Loading images…">
+        <LoadingList rows={4} />
+      </ModuleShell>
     );
   }
 
   if (!loggedIn) {
     return (
-      <div className="login-container">
-        <div className="login-box">
-          <h1><i className="fas fa-chair"></i> Ananya Admin</h1>
-          <p style={{ textAlign: 'center', color: '#666' }}>Please login first.</p>
-          <button className="btn" onClick={() => window.location.href = '/admin'}>Go to Admin</button>
+      <ModuleShell title={`${categoryName} Gallery`} sub="Restricted area">
+        <div className="ahf-panel">
+          <div className="ahf-panel-body" style={{ textAlign: 'center', padding: 40 }}>
+            <div className="ahf-denied-ic" style={{ marginBottom: 14 }}>
+              <i className="fas fa-lock"></i>
+            </div>
+            <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--ahf-serif)' }}>Please login first</h3>
+            <p style={{ color: 'var(--ahf-muted)', fontSize: 13.5, margin: '0 0 18px' }}>
+              You need an admin session to manage gallery images.
+            </p>
+            <button className="ahf-btn ahf-btn-primary" onClick={() => window.location.href = '/admin'}>Go to Admin</button>
+          </div>
         </div>
-      </div>
+      </ModuleShell>
     );
   }
 
   return (
-    <div className="admin-container">
-      {/* Toast Notification */}
-      {toast && (
-        <div className="admin-toast">
-          <i className="fas fa-check-circle"></i> {toast}
-        </div>
-      )}
-      <div className="admin-header">
-        <h1><i className="fas fa-images"></i> {categoryName} Gallery</h1>
-        <div className="header-actions">
-          <a href="/" className="btn-back"><i className="fas fa-arrow-left"></i> Back to Website</a>
-          <a href="/admin" className="btn-back" style={{ background: 'var(--primary-color)' }}><i className="fas fa-cog"></i> Admin Panel</a>
-        </div>
-      </div>
-
-      <div className="admin-content">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h2 style={{ fontSize: '2rem', color: 'var(--main-color)', margin: 0 }}>
-              {categoryName} ({images.length} images)
-            </h2>
-          </div>
-          <label className="upload-btn">
-            <i className="fas fa-upload"></i> {uploading ? 'Uploading...' : 'Upload Images'}
+    <ModuleShell
+      title={`${categoryName} Gallery`}
+      sub={`${images.length} image${images.length === 1 ? '' : 's'} in this category`}
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/admin/gallery" className="ahf-btn ahf-btn-ghost ahf-btn-sm">
+            <i className="fas fa-arrow-left"></i> Categories
+          </Link>
+          <label className="ahf-btn ahf-btn-primary ahf-btn-sm" style={{ cursor: uploading ? 'wait' : 'pointer', opacity: uploading ? 0.7 : 1 }}>
+            <i className="fas fa-upload"></i> {uploading ? 'Uploading…' : 'Upload'}
             <input
               type="file"
               multiple
               accept="image/*"
               onChange={handleFileChange}
               disabled={uploading}
-              style={{ display: 'none' }}
+              hidden
             />
           </label>
         </div>
+      )}
+    >
+      <AdminToast message={toast || ''} />
 
-        <div
-          className={`upload-dropzone ${dragOver ? 'drag-over' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-        >
-          <i className="fas fa-cloud-upload-alt" style={{ fontSize: '4rem', color: 'var(--primary-color)' }}></i>
-          <p style={{ fontSize: '1.6rem', color: 'var(--light-black)' }}>Drag & drop images here or click Upload above</p>
-        </div>
-
-        <div className="gallery-grid-admin">
-          {images.map(img => (
-            <div key={img._id} className="gallery-item-admin">
-              <img src={img.url} alt={img.category} />
-              <div className="gallery-item-overlay">
-                <button
-                  className="gallery-item-delete"
-                  onClick={() => deleteImage(img._id)}
-                  title="Delete"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {images.length === 0 && (
-          <div className="empty-msg">
-            <i className="fas fa-images" style={{ fontSize: '5rem', color: 'var(--primary-color)' }}></i>
-            <p>No images in this category yet. Upload some!</p>
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-body">
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            style={{
+              border: dragOver ? '1.5px dashed #a27341' : '1.5px dashed #e2d5bd',
+              background: dragOver ? '#faf3e3' : '#fffdf8',
+              borderRadius: 16,
+              padding: '28px 20px',
+              textAlign: 'center',
+              color: '#8a7a66',
+              fontSize: 13,
+            }}
+          >
+            <i className="fas fa-cloud-upload-alt" style={{ fontSize: 32, color: '#a27341', display: 'block', marginBottom: 8 }}></i>
+            Drag &amp; drop images here or click Upload above
           </div>
-        )}
+        </div>
+      </div>
+
+      <div className="ahf-panel">
+        <div className="ahf-panel-head">
+          <div>
+            <h3>{categoryName} ({images.length})</h3>
+            <p>Hover an image to delete it</p>
+          </div>
+        </div>
+        <div className="ahf-panel-body">
+          {images.length === 0 ? (
+            <p style={{ padding: 18, color: 'var(--ahf-muted)', fontSize: 13, textAlign: 'center' }}>
+              No images in this category yet. Upload some!
+            </p>
+          ) : (
+            <div className="ahf-pgrid">
+              {images.map((img) => (
+                <div key={img._id} className="ahf-pcard">
+                  <img src={img.url} alt={img.category} />
+                  <div className="ahf-pcard-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: 'var(--ahf-muted)' }}>{img.isUploaded ? 'Uploaded' : 'Linked'}</span>
+                    <button
+                      className="ahf-mini-btn danger"
+                      onClick={() => deleteImage(img._id)}
+                      title="Delete"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Confirmation Dialog */}
@@ -242,6 +259,6 @@ export default function AdminGalleryCategoryPage() {
         }}
         onCancel={() => setConfirmOpen(false)}
       />
-    </div>
+    </ModuleShell>
   );
 }

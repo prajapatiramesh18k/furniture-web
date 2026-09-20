@@ -8,6 +8,8 @@ import { filterNav, type NavEntry } from './AdminNav';
 interface Counts {
   pendingReviews?: number;
   pendingOrders?: number;
+  pendingQuotations?: number;
+  pendingLeads?: number;
   products?: number;
 }
 
@@ -20,6 +22,9 @@ export default function Sidebar({
   query,
   onQuery,
   onNavigate,
+  enabledModules,
+  tenantName,
+  tenantSlug,
 }: {
   userName: string;
   userEmail: string;
@@ -29,10 +34,13 @@ export default function Sidebar({
   query: string;
   onQuery: (q: string) => void;
   onNavigate?: () => void;
+  enabledModules?: string[];
+  tenantName?: string;
+  tenantSlug?: string | null;
 }) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const nav = filterNav(userRole, permissions);
+  const nav = filterNav(userRole, permissions, enabledModules, tenantSlug);
 
   const initials = (userName || 'A').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -46,18 +54,23 @@ export default function Sidebar({
       )
     : nav;
 
+  const roleNorm = String(userRole || '').trim().toLowerCase();
+  const childVisible = (c: { roles?: string[] }) =>
+    !c.roles || c.roles.includes(roleNorm) || c.roles.includes(userRole);
   const [, setTick] = useState(0);
-  // Full current location (path + query) so deep links like ?tab=payroll highlight correctly.
-  const currentLoc = typeof window === 'undefined' ? '' : window.location.pathname + window.location.search;
+  // Full current location (path + query + hash) so deep links like ?tab=payroll or #onboard highlight correctly.
+  const currentLoc = typeof window === 'undefined' ? '' : window.location.pathname + window.location.search + window.location.hash;
 
   let lastSection = '__none';
   const badgeFor = (entry: NavEntry): number | undefined => {
     if (entry.badgeKey === 'pendingReviews') return counts.pendingReviews || undefined;
     if (entry.badgeKey === 'pendingOrders') return counts.pendingOrders || undefined;
+    if (entry.badgeKey === 'pendingQuotations') return counts.pendingQuotations || undefined;
+    if (entry.badgeKey === 'pendingLeads') return counts.pendingLeads || undefined;
     if (entry.badgeKey === 'products') return counts.products || undefined;
     return undefined;
   };
-  const pathOf = (href: string) => href.split('?')[0];
+  const pathOf = (href: string) => href.split('?')[0].split('#')[0];
 
   return (
     <>
@@ -95,16 +108,17 @@ export default function Sidebar({
 
       <nav className="ahf-nav" aria-label="Admin navigation">
         {visible.map((entry) => {
+          const kids = (entry.children || []).filter(childVisible);
           const showSection = entry.section && entry.section !== lastSection;
           lastSection = entry.section || lastSection;
           const entryPath = pathOf(entry.href);
-          const childPaths = (entry.children || []).map((c) => pathOf(c.href));
+          const childPaths = kids.map((c) => pathOf(c.href));
           const active =
             pathname === entryPath ||
             pathname.startsWith(entryPath + '/') ||
             childPaths.includes(pathname);
           const badge = badgeFor(entry);
-          const hasKids = entry.children && entry.children.length > 0;
+          const hasKids = kids.length > 0;
           const open = openGroups[entry.label] ?? active;
           return (
             <div key={entry.label}>
@@ -118,11 +132,12 @@ export default function Sidebar({
                   >
                     <i className={`fas ${entry.icon}`}></i>
                     <span>{entry.label}</span>
+                    {typeof badge === 'number' && badge > 0 && <span className="ahf-count">{badge > 99 ? '99+' : badge}</span>}
                     <i className={`fas fa-chevron-down ahf-chev`} style={{ transform: open ? 'rotate(180deg)' : 'none' }}></i>
                   </button>
                   {open && (
                     <div className="ahf-nav-children">
-                      {entry.children!.map((c) => (
+                      {kids.map((c) => (
                         <Link
                           key={c.href}
                           href={c.href}
@@ -163,6 +178,9 @@ export default function Sidebar({
           <div style={{ minWidth: 0 }}>
             <div className="ahf-u-name">{userName}</div>
             <div className="ahf-u-email">{(userEmail || '').toLowerCase()}</div>
+            {tenantName && (
+              <div className="ahf-u-email" style={{ fontWeight: 700, color: 'var(--ahf-gold)' }}>{tenantName}</div>
+            )}
           </div>
         </div>
       </div>

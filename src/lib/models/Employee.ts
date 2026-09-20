@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
 const employeeSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   employeeId: {
     type: String,
-    unique: true,
     sparse: true,
     trim: true,
   },
@@ -66,6 +66,9 @@ const employeeSchema = new mongoose.Schema({
   },
 }, { timestamps: true, strict: false });
 
+employeeSchema.index({ tenantId: 1, employeeId: 1 }, { unique: true, sparse: true });
+employeeSchema.index({ tenantId: 1, status: 1 });
+employeeSchema.index({ tenantId: 1, createdAt: -1 });
 employeeSchema.index({ status: 1 });
 employeeSchema.index({ department: 1 });
 employeeSchema.index({ createdAt: -1 });

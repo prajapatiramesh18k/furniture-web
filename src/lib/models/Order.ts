@@ -18,6 +18,7 @@ export interface ICustomerInfo {
 }
 
 export interface IOrder extends Document {
+  tenantId?: mongoose.Types.ObjectId | string | null;
   customerInfo: ICustomerInfo;
   items: IOrderItem[];
   total: number;
@@ -28,6 +29,7 @@ export interface IOrder extends Document {
 }
 
 const OrderSchema = new Schema<IOrder>({
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   customerInfo: {
     name: { type: String, required: true },
     phone: { type: String, required: true },
@@ -49,5 +51,7 @@ const OrderSchema = new Schema<IOrder>({
   date: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
+
+OrderSchema.index({ tenantId: 1, createdAt: -1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const employeeSettlementSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   employeeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
@@ -64,6 +65,7 @@ const employeeSettlementSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Prevent multiple settlements for the same month/year per employee
+employeeSettlementSchema.index({ tenantId: 1, employeeId: 1, month: 1, year: 1 }, { unique: true });
 employeeSettlementSchema.index({ employeeId: 1, month: 1, year: 1 }, { unique: true });
 employeeSettlementSchema.index({ settlementDate: -1 });
 

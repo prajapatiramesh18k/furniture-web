@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReview extends Document {
+  tenantId?: mongoose.Types.ObjectId | string | null;
   name: string;
   location: string;
   rating: number;
@@ -15,6 +16,7 @@ export interface IReview extends Document {
 }
 
 const ReviewSchema = new Schema<IReview>({
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   name: { type: String, required: true },
   location: { type: String, required: true },
   rating: { type: Number, required: true },
@@ -28,6 +30,7 @@ const ReviewSchema = new Schema<IReview>({
   completedDate: { type: String },
 });
 
+ReviewSchema.index({ tenantId: 1, approved: 1, createdAt: -1 });
 ReviewSchema.index({ approved: 1, createdAt: -1 });
 
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

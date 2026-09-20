@@ -20,12 +20,30 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const candidates = await User.find({ email: email.toLowerCase() }).select(
+      '+password name email password isAdmin role permissions tenantId isSuperAdmin active',
+    );
+    const user = candidates.find((u) => u.active !== false) ?? candidates[0];
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
+    }
+    if (user.active === false) {
+      return NextResponse.json({ error: 'Account is disabled. Contact support.' }, { status: 403 });
+    }
+
+    // Tenant must be active (super admins bypass).
+    const isSuperAdmin = user.isSuperAdmin === true || user.role === 'super_admin';
+    let tenant: { id: string; name: string; slug: string } | null = null;
+    if (!isSuperAdmin && user.tenantId) {
+      const Tenant = (await import('@/lib/models/Tenant')).default;
+      const t = await Tenant.findById(user.tenantId).lean();
+      if (!t || t.status !== 'active') {
+        return NextResponse.json({ error: 'Company account is suspended. Contact support.' }, { status: 403 });
+      }
+      tenant = { id: String(t._id), name: t.name, slug: t.slug };
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -37,7 +55,14 @@ export async function POST(request: NextRequest) {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'customer') },
+      {
+        userId: user._id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+        tenantId: user.tenantId ? String(user.tenantId) : null,
+        isSuperAdmin,
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -51,6 +76,9 @@ export async function POST(request: NextRequest) {
         email: user.email,
         isAdmin: user.isAdmin,
         role,
+        tenantId: user.tenantId ? String(user.tenantId) : null,
+        isSuperAdmin,
+        tenant,
       },
     });
 

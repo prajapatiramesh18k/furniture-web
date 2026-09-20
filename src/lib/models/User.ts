@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
     lowercase: true,
     trim: true,
+    // NOTE: email is unique per tenant (compound index below), not globally,
+    // so the same address can exist in different companies.
   },
   password: {
     type: String,
@@ -28,7 +29,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'manager', 'staff', 'customer'],
+    enum: ['owner', 'admin', 'manager', 'staff', 'customer', 'super_admin'],
     default: 'customer',
   },
   permissions: {
@@ -47,6 +48,17 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    default: null,
+    index: true,
+  },
+  isSuperAdmin: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   resetToken: {
     type: String,
   },
@@ -58,6 +70,12 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Email is unique within a tenant, not globally (multi-tenancy).
+// Legacy single-tenant rows have tenantId set by the backfill migration.
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ tenantId: 1, createdAt: -1 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 

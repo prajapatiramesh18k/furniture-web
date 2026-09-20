@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
   if ('error' in gate) return gate.error;
   try {
     await dbConnect();
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
     return NextResponse.json({ orders });
   } catch (error) {
     // Return fallback data if DB is not connected
@@ -26,7 +27,12 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+    // Public checkout attaches to the default storefront tenant.
+    const Tenant = (await import('@/lib/models/Tenant')).default;
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+    const t = (await Tenant.findOne({ slug: defaultSlug }).lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).lean());
     const order = new Order({
+      tenantId: t ? t._id : null,
       customerInfo: body.customerInfo,
       items: body.items,
       total: body.total,
@@ -50,7 +56,8 @@ export async function PUT(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
     const { id, status } = body;
-    await Order.findByIdAndUpdate(id, { status });
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    await Order.findOneAndUpdate(filter, { status });
     return NextResponse.json({ message: 'Order updated' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });

@@ -1,5 +1,6 @@
 'use client';
 import CloseButton from '@/components/CloseButton';
+import UIDropdown from '@/components/UIDropdown';
 import { useState, useEffect, useRef } from 'react';
 import {
   handleTrackedPhoneClick,
@@ -401,62 +402,52 @@ export default function ContactPage() {
                   <div className="cpf-row">
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.43s' }}>
                       <div className={`floating-field ${isActive('location') ? 'active' : ''}`}>
-                        <select
-                          id="contact-location"
-                          className="cpf-input cpf-select"
+                        <UIDropdown
+                          label="Your Location"
+                          variant="cpf"
                           value={form.location}
-                          onChange={(e) => setForm({ ...form, location: e.target.value })}
+                          placeholder=""
+                          options={locations}
+                          onChange={(v) => setForm({ ...form, location: v })}
                           onFocus={() => setFocused('location')}
                           onBlur={() => setFocused(null)}
-                          required
-                        >
-                          <option value=""></option>
-                          {locations.map((loc) => (
-                            <option key={loc} value={loc}>{loc}</option>
-                          ))}
-                        </select>
-                        <label className="floating-label" htmlFor="contact-location">Your Location</label>
+                        />
+                        <label className="floating-label">Your Location</label>
                       </div>
                     </div>
 
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.46s' }}>
                       <div className={`floating-field ${isActive('branch') ? 'active' : ''}`}>
-                        <select
-                          id="contact-branch"
-                          className="cpf-input cpf-select"
+                        <UIDropdown
+                          label="Preferred Branch"
+                          variant="cpf"
                           value={form.branch}
-                          onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                          placeholder=""
+                          options={branches.map((b) => ({ value: b.id, label: b.name }))}
+                          onChange={(v) => setForm({ ...form, branch: v })}
                           onFocus={() => setFocused('branch')}
                           onBlur={() => setFocused(null)}
-                        >
-                          <option value=""></option>
-                          {branches.map((b) => (
-                            <option key={b.id} value={b.id}>{b.name}</option>
-                          ))}
-                        </select>
-                        <label className="floating-label" htmlFor="contact-branch">Preferred Branch</label>
+                        />
+                        <label className="floating-label">Preferred Branch</label>
                       </div>
                     </div>
                   </div>
 
                   <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.5s' }}>
-                    <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
-                      <select
-                        id="contact-service"
-                        className="cpf-input cpf-select"
-                        value={form.projectType}
-                        onChange={(e) => setForm({ ...form, projectType: e.target.value })}
-                        onFocus={() => setFocused('projectType')}
-                        onBlur={() => setFocused(null)}
-                        required
-                      >
-                        <option value=""></option>
-                        {projectTypes.map((type) => (
-                          <option key={type} value={type.toLowerCase().replace(/[\s/]+/g, '-')}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
+                      <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
+                        <UIDropdown
+                          label="Service Needed"
+                          variant="cpf"
+                          value={projectTypes.some((t) => t.toLowerCase().replace(/[\s/]+/g, '-') === form.projectType) ? form.projectType : ''}
+                          placeholder=""
+                          options={projectTypes.map((type) => ({
+                            value: type.toLowerCase().replace(/[\s/]+/g, '-'),
+                            label: type,
+                          }))}
+                          onChange={(v) => setForm({ ...form, projectType: v })}
+                          onFocus={() => setFocused('projectType')}
+                          onBlur={() => setFocused(null)}
+                        />
                       <label className="floating-label" htmlFor="contact-service">Service Needed</label>
                     </div>
                   </div>

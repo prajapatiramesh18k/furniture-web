@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Employee from '@/lib/models/Employee';
 import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
 import Site from '@/lib/models/Site';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 // Collapse concurrent 30s polls into one DB hit per 10s window.
 const liveCache = new Map<string, { data: unknown; expire: number }>();
@@ -10,10 +11,13 @@ const LIVE_TTL = 10_000;
 
 export async function GET(req: Request) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
+    const tenantId = gate.ctx.user.tenantId!;
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date');
     const siteId = searchParams.get('siteId');
-    const cacheKey = `live:${dateParam || 'today'}:${siteId || 'all'}`;
+    const cacheKey = `live:${tenantId}:${dateParam || 'today'}:${siteId || 'all'}`;
     const hit = liveCache.get(cacheKey);
     if (hit && hit.expire > Date.now()) {
       return NextResponse.json(hit.data, { headers: { 'Cache-Control': 'no-store' } });
@@ -29,7 +33,8 @@ export async function GET(req: Request) {
 
     // Fetch all active employees + today's attendance + sites in parallel.
     // No populate: siteName is stored on the record; sites list is fetched once.
-    const attendanceQuery: any = {
+    const attendanceQuery: Record<string, unknown> = {
+      ...tenantFilter(tenantId),
       date: { $gte: startOfDay, $lte: endOfDay },
     };
     if (siteId) {
@@ -37,7 +42,7 @@ export async function GET(req: Request) {
     }
 
     const [employees, attendanceRecords, sites] = await Promise.all([
-      Employee.find({ status: 'Active' })
+      Employee.find({ ...tenantFilter(tenantId), status: 'Active' })
         .select('employeeId name department role phone dailyRate standardHours deviceId deviceName')
         .sort({ name: 1 })
         .limit(1000)
@@ -46,7 +51,7 @@ export async function GET(req: Request) {
         .select('employeeId date siteId siteName status workHours earnedDays overtimeHours punchIn punchOut notes')
         .limit(2000)
         .lean(),
-      Site.find({ isActive: true }).select('name address').limit(500).lean(),
+      Site.find({ ...tenantFilter(tenantId), isActive: true }).select('name address').limit(500).lean(),
     ]);
 
     const attendanceMap = new Map();

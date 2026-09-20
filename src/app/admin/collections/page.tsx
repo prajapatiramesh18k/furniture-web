@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
 
 interface P { category: string; name: string; price: number; image: string }
 
@@ -25,7 +25,23 @@ export default function AdminCollections() {
     <ModuleShell title="Furniture Collections" sub="Room-wise curated collections from your live catalog">
       <div className="ahf-panel">
         <div className="ahf-panel-head"><div><h3>Collections</h3><p>Counts update automatically as you add products</p></div></div>
-        {loading ? <LoadingList rows={4} /> : (
+        {loading ? (
+          <div className="ahf-panel-body">
+            <div className="ahf-pgrid">
+              {ROOMS.map((r) => (
+                <div className="ahf-pcard" key={r.id}>
+                  <div className="ahf-panel-body" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <span className="ahf-stat-ic"><i className={`fas ${r.icon}`}></i></span>
+                    <div>
+                      <div className="ahf-skel" style={{ height: 16, width: 80, borderRadius: 4, marginBottom: 6 }} />
+                      <div className="ahf-skel" style={{ height: 12, width: 60, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
           <div className="ahf-panel-body">
             <div className="ahf-pgrid">
               {ROOMS.map((r) => (

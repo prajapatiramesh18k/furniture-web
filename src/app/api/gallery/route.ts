@@ -48,7 +48,15 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    let filter: Record<string, unknown> = {};
+    // Public gallery shows the default storefront tenant's images.
+    let storefrontTenantId: string | null = null;
+    try {
+      const Tenant = (await import('@/lib/models/Tenant')).default;
+      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
+      storefrontTenantId = dt ? String(dt._id) : null;
+    } catch {}
+    let filter: Record<string, unknown> = storefrontTenantId ? { tenantId: storefrontTenantId } : {};
     if (category !== 'all') {
       filter.category = category;
     } else if (room && room !== 'all') {
@@ -84,10 +92,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Previously public write — now requires login + collections permission; tenant-scoped.
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(request, 'collections');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const body = await request.json();
     const image = new GalleryImage({
+      tenantId: gate.user.tenantId,
       category: body.category,
       url: body.url,
       isUploaded: true,
@@ -104,12 +117,17 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(request, 'collections');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    await GalleryImage.findByIdAndDelete(id);
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const deleted = await GalleryImage.findOneAndDelete(filter);
+    if (!deleted) return NextResponse.json({ error: 'Image not found' }, { status: 404 });
 
     // Clear cache on delete
     cache.clear();

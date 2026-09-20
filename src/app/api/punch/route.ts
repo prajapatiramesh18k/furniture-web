@@ -15,10 +15,37 @@ function getDayBounds(date: Date = new Date()) {
   return { start, end };
 }
 
+/**
+ * Resolve the punch tenant from `?tenant=<slug>`, falling back to the default
+ * storefront tenant. Returns null when tenancy isn't set up yet (legacy mode).
+ * Punch is a public self-service endpoint (no login), so the tenant comes from
+ * the punch page URL — never trust employee/site IDs across tenants.
+ */
+async function resolvePunchTenantId(searchParams: URLSearchParams): Promise<string | null> {
+  try {
+    const Tenant = (await import('@/lib/models/Tenant')).default;
+    const slug = (searchParams.get('tenant') || '').toLowerCase().trim();
+    if (slug) {
+      const t = await Tenant.findOne({ slug, status: 'active' }).select('_id').lean();
+      if (t) return String(t._id);
+      return null;
+    }
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+    const t =
+      (await Tenant.findOne({ slug: defaultSlug }).select('_id').lean()) ||
+      (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
+    return t ? String(t._id) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(req.url);
+    const tenantId = await resolvePunchTenantId(searchParams);
+    const tenantScope = tenantId ? { tenantId } : {};
     const identifier = searchParams.get('identifier') || searchParams.get('employeeId') || searchParams.get('phone');
     const deviceId = searchParams.get('deviceId');
     const deviceName = searchParams.get('deviceName') || 'Mobile Phone';
@@ -29,6 +56,7 @@ export async function GET(req: Request) {
       if (deviceId) {
         // Auto-detect employee registered to this phone in the database!
         employee = await Employee.findOne({
+          ...tenantScope,
           deviceId,
           status: { $regex: /^active$/i },
         });
@@ -40,26 +68,30 @@ export async function GET(req: Request) {
       }
     } else {
       const cleanInput = identifier.trim();
+      const { getTenantEmployeePrefix, formatEmployeeId } = await import('@/lib/employee-id-utils');
+      const tenantPrefix = tenantId ? await getTenantEmployeePrefix(tenantId) : 'AHF';
 
+      // Escape regex specials in raw input for the direct match.
+      const escaped = cleanInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       // Build search conditions:
-      // 1. Direct match on employeeId (e.g. "AHF-001" or "ahf-001")
+      // 1. Direct match on employeeId (e.g. "PIS-001" or "AHF-001", any company prefix)
       const queryConditions: any[] = [
-        { employeeId: { $regex: new RegExp(`^${cleanInput}$`, 'i') } },
+        { employeeId: { $regex: new RegExp(`^${escaped}$`, 'i') } },
       ];
 
-      // 2. If user typed pure digits (e.g. "1" or "001" or "01")
+      // 2. If user typed pure digits (e.g. "1" or "001") -> expand with company prefix
+      //    plus legacy AHF fallback so old IDs keep working.
       if (/^\d{1,4}$/.test(cleanInput)) {
         const num = parseInt(cleanInput, 10);
-        const paddedId = `AHF-${String(num).padStart(3, '0')}`;
-        queryConditions.push({ employeeId: paddedId });
+        queryConditions.push({ employeeId: formatEmployeeId(num, tenantPrefix) });
+        if (tenantPrefix !== 'AHF') queryConditions.push({ employeeId: formatEmployeeId(num, 'AHF') });
       }
 
-      // 3. If user typed "AHF-1" or "ahf-1"
-      const ahfNumMatch = cleanInput.match(/^ahf[- ]?(\d+)$/i);
-      if (ahfNumMatch) {
-        const num = parseInt(ahfNumMatch[1], 10);
-        const paddedId = `AHF-${String(num).padStart(3, '0')}`;
-        queryConditions.push({ employeeId: paddedId });
+      // 3. If user typed "<prefix>-1" (any prefix, e.g. "PIS-1", "AHF-1", with space/dash)
+      const prefixNumMatch = cleanInput.match(/^([a-z0-9]{2,5})[- ]?(\d+)$/i);
+      if (prefixNumMatch) {
+        const num = parseInt(prefixNumMatch[2], 10);
+        queryConditions.push({ employeeId: formatEmployeeId(num, prefixNumMatch[1]) });
       }
 
       // 4. Fallback: match 10-digit mobile number
@@ -70,13 +102,26 @@ export async function GET(req: Request) {
 
       // Find active employee in database
       employee = await Employee.findOne({
+        ...tenantScope,
         $or: queryConditions,
         status: { $regex: /^active$/i },
       });
 
       if (!employee) {
+        // Distinguish "no such ID" from "ID exists but deactivated" so the
+        // worker gets an actionable message instead of a generic not-found.
+        try {
+          const inactiveMatch = await Employee.findOne({ ...tenantScope, $or: queryConditions })
+            .select('status')
+            .lean() as { status?: string } | null;
+          if (inactiveMatch) {
+            return NextResponse.json({
+              error: 'This Employee ID is deactivated. Please contact your supervisor to reactivate it.',
+            }, { status: 403 });
+          }
+        } catch {}
         return NextResponse.json({
-          error: 'No active employee found with this ID. Please enter your valid Employee ID (e.g. AHF-001) or contact your supervisor.',
+          error: `No active employee found with this ID. Please enter your valid Employee ID (e.g. ${formatEmployeeId(1, tenantPrefix)}) or contact your supervisor.`,
         }, { status: 404 });
       }
     }
@@ -85,6 +130,7 @@ export async function GET(req: Request) {
     if (deviceId) {
       // 1. Check if this physical phone is already linked to another active worker
       const otherEmp = await Employee.findOne({
+        ...tenantScope,
         deviceId,
         _id: { $ne: employee._id },
         status: { $regex: /^active$/i },
@@ -119,12 +165,13 @@ export async function GET(req: Request) {
     // Check today's attendance
     const { start, end } = getDayBounds();
     const todayAttendance = await EmployeeAttendance.findOne({
+      ...(tenantId ? { tenantId } : {}),
       employeeId: employee._id,
       date: { $gte: start, $lte: end },
     }).lean();
 
     // Fetch active sites
-    const activeSites = await Site.find({ isActive: true }).select('name clientName address location radiusMeters').lean();
+    const activeSites = await Site.find({ ...tenantScope, isActive: true }).select('name clientName address location radiusMeters').lean();
 
     // Fetch last 7 days history for employee
     const sevenDaysAgo = new Date();
@@ -132,6 +179,7 @@ export async function GET(req: Request) {
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
     const history = await EmployeeAttendance.find({
+      ...(tenantId ? { tenantId } : {}),
       employeeId: employee._id,
       date: { $gte: sevenDaysAgo },
     }).sort({ date: -1 }).lean();
@@ -170,12 +218,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
 
+    // Resolve punch tenant (body.tenant slug or default storefront tenant).
+    let punchTenantId: string | null = null;
+    try {
+      const Tenant = (await import('@/lib/models/Tenant')).default;
+      const slug = String(body.tenant || '').toLowerCase().trim();
+      const t = slug
+        ? await Tenant.findOne({ slug, status: 'active' }).select('_id').lean()
+        : (await Tenant.findOne({ slug: process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture' }).select('_id').lean()) ||
+          (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
+      punchTenantId = t ? String(t._id) : null;
+    } catch {}
+    const pScope = punchTenantId ? { tenantId: punchTenantId } : {};
+
     let employee = null;
     if (mongoose.Types.ObjectId.isValid(employeeId)) {
-      employee = await Employee.findById(employeeId);
+      employee = await Employee.findOne({ _id: employeeId, ...pScope });
     }
     if (!employee) {
-      employee = await Employee.findOne({ employeeId: { $regex: new RegExp(`^${employeeId}$`, 'i') } });
+      employee = await Employee.findOne({ employeeId: { $regex: new RegExp(`^${employeeId}$`, 'i') }, ...pScope });
     }
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
@@ -184,6 +245,7 @@ export async function POST(req: Request) {
     // DEVICE LOCK VALIDATION ON POST:
     if (deviceId) {
       const otherEmp = await Employee.findOne({
+        ...pScope,
         deviceId,
         _id: { $ne: employee._id },
         status: { $regex: /^active$/i },
@@ -210,6 +272,7 @@ export async function POST(req: Request) {
 
     const { start, end } = getDayBounds();
     const todayAttendance = await EmployeeAttendance.findOne({
+      ...(punchTenantId ? { tenantId: punchTenantId } : {}),
       employeeId,
       date: { $gte: start, $lte: end },
     });
@@ -222,9 +285,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'GPS location is required to punch in' }, { status: 400 });
       }
 
-      const site = await Site.findById(siteId);
+      const site = await Site.findOne({ _id: siteId, ...pScope });
       if (!site) {
         return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+      }
+      // Cross-tenant guard: site must belong to the employee's company.
+      if (employee.tenantId && site.tenantId && String(employee.tenantId) !== String(site.tenantId)) {
+        return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+      }
+      // Properties without GPS coordinates cannot enforce a geofence.
+      if (site.location?.latitude == null || site.location?.longitude == null) {
+        return NextResponse.json({ error: `"${site.name}" has no GPS coordinates set. Ask your admin to add the site location before punching in.` }, { status: 400 });
       }
 
       // Calculate distance between employee GPS and site coordinates
@@ -263,6 +334,7 @@ export async function POST(req: Request) {
 
       // Create new attendance record
       const punchRecord = await EmployeeAttendance.create({
+        tenantId: employee.tenantId || punchTenantId || null,
         employeeId,
         date: start,
         siteId: site._id,
@@ -300,8 +372,8 @@ export async function POST(req: Request) {
       // Calculate distance if site & coordinates available
       let distance = 0;
       if (todayAttendance.siteId && latitude !== undefined && longitude !== undefined) {
-        const site = await Site.findById(todayAttendance.siteId);
-        if (site) {
+        const site = await Site.findOne({ _id: todayAttendance.siteId, ...pScope });
+        if (site && site.location?.latitude != null && site.location?.longitude != null) {
           distance = calculateDistanceMeters(
             Number(latitude),
             Number(longitude),

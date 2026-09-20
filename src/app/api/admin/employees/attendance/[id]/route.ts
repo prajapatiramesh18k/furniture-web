@@ -3,14 +3,18 @@ import dbConnect from '@/lib/mongodb';
 import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
 import Employee from '@/lib/models/Employee';
 import { calculateEarnedDays } from '@/lib/payroll-service';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const { id } = await params;
     const data = await request.json();
+    delete data.tenantId;
     await dbConnect();
 
-    const attendance = await EmployeeAttendance.findById(id);
+    const attendance = await EmployeeAttendance.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!attendance) {
       return NextResponse.json({ error: 'Attendance not found' }, { status: 404 });
     }
@@ -33,13 +37,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         updateData.status = 'absent';
       }
 
-      const employee = await Employee.findById(attendance.employeeId);
+      const employee = await Employee.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: attendance.employeeId }));
       if (employee) {
         updateData.earnedDays = calculateEarnedDays(hours, employee.standardHours);
       }
     }
 
-    const updatedAttendance = await EmployeeAttendance.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+    const updatedAttendance = await EmployeeAttendance.findOneAndUpdate(tenantFilter(gate.ctx.user.tenantId!, { _id: id }), { $set: updateData }, { new: true });
     return NextResponse.json(updatedAttendance);
   } catch (error) {
     console.error('Error updating attendance:', error);
@@ -49,9 +53,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const { id } = await params;
     await dbConnect();
-    const deletedAttendance = await EmployeeAttendance.findByIdAndDelete(id);
+    const deletedAttendance = await EmployeeAttendance.findOneAndDelete(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!deletedAttendance) {
       return NextResponse.json({ error: 'Attendance not found' }, { status: 404 });
     }

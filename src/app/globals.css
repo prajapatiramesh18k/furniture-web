@@ -18825,3 +18825,378 @@ input[type="number"] {
 }
 
 
+
+/* ==========================================================================
+   Quotation Maker editor form — qm-* controls (editor only, print untouched)
+   Top-labeled inputs/selects with gold focus rings + custom dropdown chevrons.
+   ========================================================================== */
+.qm-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.qm-field { display: flex; flex-direction: column; gap: 0.32rem; min-width: 0; }
+.qm-field-full { grid-column: 1 / -1; }
+.qm-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a5f32;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.qm-label i { font-size: 0.7rem; color: #c49a52; }
+.qm-label .qm-req { color: #c0392b; }
+.qm-input,
+.qm-select,
+.qm-textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #e5d9c6;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: #1f1812;
+  background: #fffdf9;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.qm-input:hover,
+.qm-select:hover,
+.qm-textarea:hover { border-color: #c9b48f; background: #fff; }
+.qm-input:focus,
+.qm-select:focus,
+.qm-textarea:focus {
+  border-color: #a27341;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(162, 115, 65, 0.14);
+}
+.qm-input::placeholder,
+.qm-textarea::placeholder { color: #b6a48e; font-weight: 400; }
+.qm-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 2.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23a27341' d='M7 10L1.5 4.5h11z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+}
+.qm-textarea { resize: vertical; min-height: 130px; line-height: 1.6; }
+.qm-hint { font-size: 0.78rem; color: #9a8b7d; margin: -0.2rem 0 0.7rem; }
+.qm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a5f32;
+  background: #faf0dc;
+  border: 1px solid #ecd9ae;
+  border-radius: 999px;
+  padding: 0.12rem 0.6rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Item entry card */
+.qm-item-card {
+  border: 1.5px solid #eee2cc;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fbf7ef 100%);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.6rem;
+}
+.qm-item-grid { display: grid; gap: 0.6rem; align-items: end; }
+.qm-mini { display: flex; flex-direction: column; gap: 0.28rem; min-width: 0; }
+.qm-mini > span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #96703c;
+}
+.qm-mini .qm-input,
+.qm-mini .qm-select {
+  min-height: 40px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+.qm-mini .qm-select { padding-right: 2rem; }
+.qm-amount {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1f1812;
+  background: #f3e8d2;
+  border: 1px dashed #c9a45e;
+  border-radius: 8px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.7rem;
+  white-space: nowrap;
+}
+.qm-item-meta2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-top: 0.7rem;
+}
+.qm-item-meta2 .qm-mini { flex: 1 1 160px; }
+.qm-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #a27341, #8a5f32);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0.5rem 1.2rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(162, 115, 65, 0.28);
+  transition: transform 0.08s, box-shadow 0.18s, filter 0.18s;
+}
+.qm-submit:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 5px 16px rgba(162, 115, 65, 0.36); }
+.qm-submit:active:not(:disabled) { transform: translateY(1px); }
+.qm-submit:disabled { background: #d8cfc0; box-shadow: none; cursor: not-allowed; }
+.qm-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  color: #8a7d70;
+  border: 1.5px solid #e0d4c0;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qm-cancel:hover { background: #fbeae6; color: #b8584d; border-color: #e8c5be; }
+.qm-items-head {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: rgba(162, 115, 65, 0.1);
+  border: 1px solid #e8e0d2;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #8a5f32;
+}
+.qm-items-head span:last-child { text-align: right; }
+
+/* GST switch */
+.qm-gst {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  background: #fbf7ef;
+  border: 1px solid #eee2cc;
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5a4a3a;
+  user-select: none;
+}
+.qm-gst input { display: none; }
+.qm-switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: #d8cfc0;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.qm-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: left 0.2s;
+}
+.qm-gst input:checked + .qm-switch { background: linear-gradient(135deg, #a27341, #8a5f32); }
+.qm-gst input:checked + .qm-switch::after { left: 21px; }
+
+/* Department pills */
+.quotation-package-pill.is-active {
+  background: linear-gradient(135deg, #a27341, #8a5f32);
+  color: #fff;
+  border-color: #8a5f32;
+}
+.quotation-package-pill.is-active i { color: #ffe9bd; }
+
+/* Editor action bar */
+.qm-actions { display: flex; gap: 0.7rem; margin-top: 1rem; }
+.qm-actions .cpf-submit { flex: 1; }
+.qm-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #fff;
+  border: 1.5px solid #e0d4c0;
+  color: #8a7d70;
+  border-radius: 8px;
+  padding: 0 1.4rem;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qm-reset:hover { background: #fbeae6; color: #b8584d; border-color: #e8c5be; }
+
+@media (max-width: 640px) {
+  .qm-grid2 { grid-template-columns: 1fr; }
+  .qm-item-grid { grid-template-columns: 1fr 1fr !important; }
+  .qm-actions { flex-direction: column; }
+}
+
+/* QMSelect — custom dropdown (editor only) */
+.qm-dd { position: relative; min-width: 0; }
+.qm-dd-btn {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #e5d9c6;
+  border-radius: 10px;
+  background: #fffdf9;
+  font: inherit;
+  font-size: 1.08rem;
+  font-weight: 500;
+  color: #1f1812;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.qm-dd-btn:hover { border-color: #c9b48f; background: #fff; }
+.qm-dd-btn.is-open { border-color: #a27341; background: #fff; box-shadow: 0 0 0 3px rgba(162, 115, 65, 0.14); }
+.qm-dd-btn.is-empty .qm-dd-value { color: #b6a48e; font-weight: 400; }
+.qm-dd-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.qm-dd-chev { font-size: 0.75rem; color: #a27341; transition: transform 0.18s; flex-shrink: 0; }
+.qm-dd-chev.is-open { transform: rotate(180deg); }
+.qm-mini .qm-dd-btn { min-height: 40px; font-size: 0.9rem; border-radius: 8px; }
+.qm-dd-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1.5px solid #e5d9c6;
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(62, 42, 18, 0.22);
+  z-index: 60;
+  overflow: hidden;
+  animation: qmDdIn 0.14s ease-out;
+}
+@keyframes qmDdIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.qm-dd-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #f0e6d4;
+  background: #fbf7ef;
+}
+.qm-dd-search i { color: #a27341; font-size: 0.8rem; }
+.qm-dd-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  width: 100%;
+  color: #1f1812;
+}
+.qm-dd-list { max-height: 240px; overflow-y: auto; padding: 0.35rem; }
+.qm-dd-empty { padding: 0.7rem; font-size: 0.85rem; color: #9a8b7d; text-align: center; }
+.qm-dd-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 1.04rem;
+  font-weight: 500;
+  color: #3a2d20;
+  cursor: pointer;
+  text-align: left;
+}
+.qm-dd-item:hover, .qm-dd-item.is-highlight { background: #faf3e3; }
+.qm-dd-item.is-selected { background: linear-gradient(135deg, rgba(162,115,65,0.14), rgba(162,115,65,0.07)); font-weight: 700; color: #6e4c22; }
+.qm-dd-check { width: 1rem; flex-shrink: 0; color: #a27341; font-size: 0.8rem; }
+.qm-dd-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Shared dropdown, public-site floating-label variant (contact form).
+   Button matches .cpf-input; the popup menu keeps the gradient theme. */
+.qm-dd-btn.uidd-cpf {
+  min-height: 0;
+  width: 100%;
+  padding: 1.2rem 1.4rem;
+  padding-right: 3rem;
+  border: 1.5px solid #e0d6ca;
+  border-radius: 8px;
+  background: #faf8f5;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #2c2420;
+}
+.qm-dd-btn.uidd-cpf:hover { border-color: #c9b48f; background: #faf8f5; }
+.qm-dd-btn.uidd-cpf.is-open,
+.qm-dd-btn.uidd-cpf:focus-visible {
+  border-color: #a27341;
+  box-shadow: 0 0 0 3px rgba(162, 115, 65, 0.12);
+  background: #fff;
+  outline: none;
+}
+.qm-dd-btn.uidd-cpf.is-empty .qm-dd-value { color: #b0a090; }
+
+/* Global safety net: any native <option> left anywhere must never show
+   the browser blue — gradient + dark brown text instead. */
+select option:checked,
+select option:checked:focus,
+select option:active,
+select option:hover {
+  background-color: #a27341;
+  background-image: linear-gradient(135deg, #a27341 0%, #8a5f32 100%);
+  color: #ffffff;
+}

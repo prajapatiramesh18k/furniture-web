@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const siteSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   name: {
     type: String,
     required: [true, 'Site name is required'],
@@ -11,20 +12,22 @@ const siteSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  // Property links — a customer property becomes an execution site.
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', default: null },
+  quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
+  propertyType: { type: String, default: '', trim: true },
+  area: { type: String, default: '', trim: true },
+  rooms: { type: String, default: '', trim: true },
+  photos: { type: [String], default: [] },
   address: {
     type: String,
     required: [true, 'Site address is required'],
     trim: true,
   },
   location: {
-    latitude: {
-      type: Number,
-      required: [true, 'Latitude is required'],
-    },
-    longitude: {
-      type: Number,
-      required: [true, 'Longitude is required'],
-    },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
   },
   radiusMeters: {
     type: Number,
@@ -46,6 +49,8 @@ const siteSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+siteSchema.index({ tenantId: 1, isActive: 1 });
+siteSchema.index({ tenantId: 1, createdAt: -1 });
 siteSchema.index({ isActive: 1 });
 siteSchema.index({ createdAt: -1 });
 

@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import UIDropdown from '@/components/UIDropdown';
+import DataTable from '@/components/admin/DataTable';
+import StatusBadge from '@/components/admin/StatusBadge';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, LoadingList } from '@/components/admin/ModuleBits';
+import { AdminToast, AdminModal, AdminField, AdminModalFooter } from '@/components/admin/AdminUI';
 import { toTitleCase } from '@/lib/text';
 
 interface LiveRecord {
@@ -165,411 +171,188 @@ export default function LiveAttendanceTab() {
     (r.employee.role && r.employee.role.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const manualCount = useMemo(() => records.filter((r) => r.status === 'manual').length, [records]);
+  const absentCount = useMemo(() => records.filter((r) => r.status === 'absent').length, [records]);
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(filteredRecords, 10, [search, selectedSiteId, selectedDate]);
+
+  const statusLabel = (s: LiveRecord['status']) =>
+    s === 'punched_in' ? 'Working' : s === 'completed' ? 'Completed' : s === 'absent' ? 'Absent' : 'Manual';
+
   return (
-    <div>
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '20px',
-          zIndex: 99999,
-          padding: '15px 30px',
-          borderRadius: '8px',
-          color: '#ffffff',
-          backgroundColor: toast.type === 'success' ? '#25D366' : '#dc2626',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontSize: '16px',
-          fontWeight: 600,
-          animation: 'slideIn 0.3s ease-out',
-        }}>
-          {toast.message}
-        </div>
-      )}
-
-      {/* Summary KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '1.8rem' }}>
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.4rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '1.15rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Active Staff</div>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{summary.totalEmployees}</div>
-        </div>
-
-        <div style={{ backgroundColor: '#f0fdf4', borderRadius: '12px', padding: '1.4rem', border: '1.5px solid #86efac', boxShadow: '0 2px 8px rgba(34,197,94,0.1)' }}>
-          <div style={{ fontSize: '1.15rem', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#22c55e' }}></span>
-            Currently Working
-          </div>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#15803d', marginTop: '4px' }}>{summary.currentlyWorking}</div>
-        </div>
-
-        <div style={{ backgroundColor: '#f0f9ff', borderRadius: '12px', padding: '1.4rem', border: '1.5px solid #bae6fd', boxShadow: '0 2px 8px rgba(2,132,199,0.1)' }}>
-          <div style={{ fontSize: '1.15rem', color: '#0369a1', fontWeight: 700, textTransform: 'uppercase' }}>Shift Completed Today</div>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#0284c7', marginTop: '4px' }}>{summary.completedToday}</div>
-        </div>
-
-        <div style={{ backgroundColor: '#fafafa', borderRadius: '12px', padding: '1.4rem', border: '1px solid #e5e5e5' }}>
-          <div style={{ fontSize: '1.15rem', color: '#737373', fontWeight: 700, textTransform: 'uppercase' }}>Not Punched In</div>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#525252', marginTop: '4px' }}>{summary.absent}</div>
-        </div>
-      </div>
-
-      {/* Filter and Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.4rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: '1 1 500px' }}>
-          {/* Search */}
-          <div style={{ position: 'relative', minWidth: '220px' }}>
-            <i className="fas fa-search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
-            <input
-              type="text"
-              placeholder="Search by worker name, role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem 0.75rem 2.8rem',
-                borderRadius: '8px',
-                border: '1.5px solid #e2e8f0',
-                fontSize: '1.25rem',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {/* Date Picker */}
+    <ModuleShell
+      title="Live Attendance"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="date"
+            className="ahf-input"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              border: '1.5px solid #e2e8f0',
-              fontSize: '1.25rem',
-              outline: 'none',
-              backgroundColor: '#ffffff',
-            }}
+            aria-label="Attendance date"
           />
-
-          {/* Site Filter */}
-          <select
-            value={selectedSiteId}
-            onChange={(e) => setSelectedSiteId(e.target.value)}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              border: '1.5px solid #e2e8f0',
-              fontSize: '1.25rem',
-              outline: 'none',
-              backgroundColor: '#ffffff',
-            }}
-          >
-            <option value="">All Job Sites</option>
-            {sites.map(s => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search workers" />
+          </div>
         </div>
+      )}
+    >
+      <AdminToast message={toast?.message || ''} tone={toast?.type} />
 
-        <button
-          onClick={() => fetchLiveData()}
-          disabled={loading}
-          style={{
-            backgroundColor: '#f1f5f9',
-            border: '1px solid #cbd5e1',
-            borderRadius: '8px',
-            padding: '0.75rem 1.4rem',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            color: '#334155',
-          }}
-        >
-          <i className={loading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'}></i>
-          {loading ? 'Refreshing...' : 'Refresh Live Status'}
-        </button>
+      {/* Filter and Action Bar */}
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-body">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Site Filter */}
+            <UIDropdown
+              label="Filter by job site"
+              value={selectedSiteId}
+              placeholder="All Job Sites"
+              style={{ minWidth: 220 }}
+              options={[{ value: '', label: 'All Job Sites' }, ...sites.map((s) => ({ value: String(s._id), label: String(s.name) }))]}
+              onChange={setSelectedSiteId}
+            />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, background: '#fffdf8', border: '1px solid var(--ahf-line)', borderRadius: 999, padding: '6px 12px', whiteSpace: 'nowrap' }}>
+              <strong>{summary.totalEmployees}</strong> <span style={{ color: '#8a7a66' }}>Staff</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, background: '#fffdf8', border: '1px solid var(--ahf-line)', borderRadius: 999, padding: '6px 12px', whiteSpace: 'nowrap' }}>
+              <strong style={{ color: '#2e7d4f' }}>{summary.currentlyWorking}</strong> <span style={{ color: '#8a7a66' }}>Working</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, background: '#fffdf8', border: '1px solid var(--ahf-line)', borderRadius: 999, padding: '6px 12px', whiteSpace: 'nowrap' }}>
+              <strong>{summary.completedToday}</strong> <span style={{ color: '#8a7a66' }}>Done</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, background: '#fffdf8', border: '1px solid var(--ahf-line)', borderRadius: 999, padding: '6px 12px', whiteSpace: 'nowrap' }}>
+              <strong>{manualCount}</strong> <span style={{ color: '#8a7a66' }}>Manual</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, background: '#fffdf8', border: '1px solid var(--ahf-line)', borderRadius: 999, padding: '6px 12px', whiteSpace: 'nowrap' }}>
+              <strong style={{ color: '#b3273a' }}>{absentCount}</strong> <span style={{ color: '#8a7a66' }}>Absent</span>
+            </span>
+            <button
+              className="ahf-btn ahf-btn-ghost ahf-btn-sm"
+              onClick={() => fetchLiveData()}
+              disabled={loading}
+              style={{ marginLeft: 'auto' }}
+            >
+              <i className={loading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'}></i>
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Live Table */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Employee</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Status</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Current Job Site</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Punch In</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Punch Out</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Hours Worked</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700, textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Loading live attendance records...
-                  </td>
-                </tr>
-              ) : filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                    No employee records found.
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map((rec) => {
-                  const isWorking = rec.status === 'punched_in';
-                  const isDone = rec.status === 'completed';
-
-                  return (
-                    <tr
-                      key={rec.employee._id}
-                      onClick={() => handleOpenAdjust(rec)}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        backgroundColor: isWorking ? '#f0fdf455' : undefined,
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isWorking) e.currentTarget.style.backgroundColor = '#faf8f5';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isWorking) e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      <td style={{ padding: '1rem 1.2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{
-                            backgroundColor: '#f8fafc',
-                            border: '1.5px solid #e2e8f0',
-                            color: 'var(--primary-color)',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontWeight: 800,
-                            fontSize: '1.15rem',
-                            letterSpacing: '0.5px',
-                          }}>
-                            {rec.employee.employeeId || '—'}
-                          </span>
-                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{toTitleCase(rec.employee.name)}</span>
-                        </div>
-                        <div style={{ fontSize: '1.15rem', color: '#64748b', marginTop: '2px' }}>
-                          <span style={{ color: '#a27341', fontWeight: 600 }}>{rec.employee.department || 'N/A'}</span> • {rec.employee.role || 'Worker'}
-                        </div>
-                        <div style={{ fontSize: '1.05rem', marginTop: '3px' }}>
-                          {rec.employee.deviceId ? (
-                            <span style={{ color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }} title={`Phone Locked: ${rec.employee.deviceName || 'Device'}`}>
-                              <i className="fas fa-lock" style={{ fontSize: '0.95rem' }}></i> {rec.employee.deviceName || 'Phone Locked'}
-                            </span>
-                          ) : (
-                            <span style={{ color: '#94a3b8' }}>
-                              <i className="fas fa-mobile-alt" style={{ marginRight: '3px' }}></i> No device bound
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          fontSize: '1.15rem',
-                          fontWeight: 700,
-                          backgroundColor: isWorking ? '#dcfce7' : isDone ? '#e0f2fe' : '#f1f5f9',
-                          color: isWorking ? '#15803d' : isDone ? '#0369a1' : '#64748b',
-                        }}>
-                          {isWorking && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></span>}
-                          {isWorking ? 'Working On-Site' : isDone ? 'Shift Completed' : 'Not Punched In'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem', color: '#334155' }}>
-                        {rec.siteName}
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem', color: '#334155' }}>
-                        {rec.punchIn ? new Date(rec.punchIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem', color: '#334155' }}>
-                        {rec.punchOut ? new Date(rec.punchOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem' }}>
-                        {isWorking ? (
-                          <div style={{ fontWeight: 800, color: '#15803d', fontSize: '1.35rem' }}>
-                            {formatElapsed(rec.elapsedMinutes)} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#16a34a' }}>(Live)</span>
-                          </div>
-                        ) : isDone ? (
-                          <div>
-                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.35rem' }}>
-                              {rec.workHours} hrs
-                            </div>
-                            <div style={{ fontSize: '1.1rem', color: '#16a34a', fontWeight: 600 }}>
-                              {rec.earnedDays} days
-                            </div>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>0 hrs</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenAdjust(rec)}
-                          style={{
-                            backgroundColor: '#f1f5f9',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '1.15rem',
-                            fontWeight: 600,
-                            color: '#334155',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <i className="fas fa-pencil-alt" style={{ marginRight: '4px' }}></i> Adjust
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="ahf-panel list-compact">
+        {loading && records.length === 0 ? <LoadingList /> : (
+          <DataTable
+            columns={[
+              {
+                key: 'id', header: 'Emp ID', render: (rec) => (
+                  <strong style={{ fontSize: 12.5, whiteSpace: 'nowrap' }}>{rec.employee.employeeId || '—'}</strong>
+                ),
+              },
+              {
+                key: 'n', header: 'Name', render: (rec) => (
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{toTitleCase(rec.employee.name)}</div>
+                    <div style={{ fontSize: 11.5, color: rec.employee.deviceId ? '#2e7d4f' : '#8a7a66' }}>
+                      <i className={`fas ${rec.employee.deviceId ? 'fa-lock' : 'fa-mobile-alt'}`}></i>{' '}
+                      {rec.employee.deviceId ? (rec.employee.deviceName || 'Phone Locked') : 'No device'}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'd', header: 'Department', render: (rec) => (
+                  <span style={{ fontSize: 12.5 }}>{rec.employee.department || '—'}</span>
+                ),
+              },
+              {
+                key: 'r', header: 'Role', render: (rec) => (
+                  <span style={{ fontSize: 12.5 }}>{rec.employee.role || '—'}</span>
+                ),
+              },
+              { key: 'site', header: 'Site', render: (rec) => <span style={{ fontSize: 12.5 }}>{rec.siteName}</span> },
+              {
+                key: 'in', header: 'Punch In', render: (rec) => (
+                  <span style={{ fontSize: 12.5 }}>{rec.punchIn ? new Date(rec.punchIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                ),
+              },
+              {
+                key: 'out', header: 'Punch Out', render: (rec) => (
+                  <span style={{ fontSize: 12.5 }}>{rec.punchOut ? new Date(rec.punchOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                ),
+              },
+              {
+                key: 'h', header: 'Hours Worked', render: (rec) => (
+                  rec.status === 'punched_in'
+                    ? <span style={{ fontSize: 13, fontWeight: 800, color: '#2e7d4f' }}>{formatElapsed(rec.elapsedMinutes)} <span style={{ fontSize: 11, fontWeight: 600 }}>(Live)</span></span>
+                    : rec.status === 'completed'
+                      ? <span style={{ fontSize: 12.5 }}><strong>{rec.workHours} hrs</strong> <span style={{ color: '#2e7d4f' }}>{rec.earnedDays} days</span></span>
+                      : <span style={{ fontSize: 12.5, color: '#8a7a66' }}>0 hrs</span>
+                ),
+              },
+              { key: 's', header: 'Status', render: (rec) => <StatusBadge status={statusLabel(rec.status)} /> },
+              {
+                key: 'a', header: 'Action', render: (rec) => (
+                  <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={(e) => { e.stopPropagation(); handleOpenAdjust(rec); }}>
+                    <i className="fas fa-pencil-alt"></i> Adjust
+                  </button>
+                ),
+              },
+            ]}
+            rows={paged}
+            emptyText="No employee records found."
+            onRowClick={handleOpenAdjust}
+          />
+        )}
+        {!(loading && records.length === 0) && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filteredRecords.length} onPage={setPage} />
+        )}
       </div>
 
       {/* Manual Adjustment Modal */}
       {modalOpen && selectedRecord && (
-        <div
-          onClick={() => setModalOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            padding: '1rem',
-          }}
+        <AdminModal
+          eyebrow="ATTENDANCE"
+          title="Adjust Attendance"
+          subtitle={`${toTitleCase(selectedRecord.employee.name)} · ${selectedDate}`}
+          onClose={() => setModalOpen(false)}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '16px',
-              width: '100%',
-              maxWidth: '460px',
-              padding: '2rem',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-              <h2 style={{ fontSize: '1.7rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Adjust Attendance
-              </h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: '#64748b' }}
-              >
-                &times;
+          <form onSubmit={handleSaveAdjustment}>
+            <AdminField label="Total Work Hours *">
+              <input
+                type="number"
+                step="0.25"
+                min="0"
+                max="24"
+                className="ahf-input"
+                value={adjustForm.workHours}
+                onChange={(e) => setAdjustForm({ ...adjustForm, workHours: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Notes / Reason for Adjustment" style={{ marginBottom: 16 }}>
+              <textarea
+                className="ahf-input"
+                value={adjustForm.notes}
+                onChange={(e) => setAdjustForm({ ...adjustForm, notes: e.target.value })}
+                placeholder="e.g. Employee phone battery died, verified on site"
+                rows={3}
+              />
+            </AdminField>
+            <AdminModalFooter>
+              <button type="button" className="ahf-btn ahf-btn-ghost" onClick={() => setModalOpen(false)}>
+                Cancel
               </button>
-            </div>
-
-            <p style={{ fontSize: '1.25rem', color: '#64748b', marginBottom: '1.4rem' }}>
-              Employee: <strong style={{ color: '#0f172a' }}>{toTitleCase(selectedRecord.employee.name)}</strong> on <strong>{selectedDate}</strong>
-            </p>
-
-            <form onSubmit={handleSaveAdjustment} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
-                  Total Work Hours *
-                </label>
-                <input
-                  type="number"
-                  step="0.25"
-                  min="0"
-                  max="24"
-                  value={adjustForm.workHours}
-                  onChange={(e) => setAdjustForm({ ...adjustForm, workHours: e.target.value })}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem',
-                    borderRadius: '8px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '1.35rem',
-                    fontWeight: 600,
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
-                  Notes / Reason for Adjustment
-                </label>
-                <textarea
-                  value={adjustForm.notes}
-                  onChange={(e) => setAdjustForm({ ...adjustForm, notes: e.target.value })}
-                  placeholder="e.g. Employee phone battery died, verified on site"
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem',
-                    borderRadius: '8px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '1.25rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.8rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  style={{
-                    padding: '0.8rem 1.4rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontSize: '1.3rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    color: '#475569',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '0.8rem 1.8rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#a27341',
-                    fontSize: '1.3rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    color: '#ffffff',
-                    boxShadow: '0 2px 6px rgba(162, 115, 65, 0.3)',
-                  }}
-                >
-                  Save Adjustment
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              <button type="submit" className="ahf-btn ahf-btn-primary">
+                <i className="fas fa-check"></i> Save Adjustment
+              </button>
+            </AdminModalFooter>
+          </form>
+        </AdminModal>
       )}
-    </div>
+    </ModuleShell>
   );
 }

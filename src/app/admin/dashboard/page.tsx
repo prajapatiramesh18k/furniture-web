@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardCard from '@/components/admin/DashboardCard';
 import StatusBadge from '@/components/admin/StatusBadge';
 import DataTable from '@/components/admin/DataTable';
+import { ModuleShell, LoadingList } from '@/components/admin/ModuleBits';
 
 interface Stats {
   totals: { products: number; orders: number; pendingOrders: number; customers: number; revenue: number; reviews: number };
@@ -85,14 +86,7 @@ export default function AdminDashboard() {
       { icon: 'fa-users', label: 'Customers', href: '/admin/customers' },
     ];
     return (
-      <div>
-        <div className="ahf-pagehead">
-          <div>
-            <p>{today}</p>
-            <h2>Welcome back, {userName} 👋</h2>
-            <p>Jump anywhere, or load the full analytics dashboard below.</p>
-          </div>
-        </div>
+      <ModuleShell title={`Welcome back, ${userName}`} sub={today}>
         <div className="ahf-panel" style={{ marginBottom: 16 }}>
           <div className="ahf-panel-body" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <span className="ahf-stat-ic" style={{ width: 52, height: 52, fontSize: 20 }}>
@@ -109,36 +103,28 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-        <div className="ahf-grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', display: 'grid' }}>
+        <div className="ahf-grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', display: 'grid', marginBottom: 0 }}>
           {shortcuts.map((s) => (
             <Link key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
               <DashboardCard icon={s.icon} value={s.label} label="Open module" accent="#a27341" accentSoft="rgba(162,115,65,.14)" />
             </Link>
           ))}
         </div>
-      </div>
+      </ModuleShell>
     );
   }
 
   if (loading) {
     return (
-      <div>
-        <div className="ahf-skel" style={{ height: 64, marginBottom: 16 }} />
-        <div className="ahf-grid-stats">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="ahf-skel" style={{ height: 130 }} />
-          ))}
-        </div>
-        <div className="ahf-grid-2">
-          <div className="ahf-skel" style={{ height: 280 }} />
-          <div className="ahf-skel" style={{ height: 280 }} />
-        </div>
-      </div>
+      <ModuleShell title={`Welcome back, ${userName}`} sub={today}>
+        <LoadingList rows={6} />
+      </ModuleShell>
     );
   }
 
   if (error || !stats) {
     return (
+      <ModuleShell title={`Welcome back, ${userName}`} sub={today}>
       <div className="ahf-panel">
         <div className="ahf-panel-body" style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ color: 'var(--ahf-muted)' }}>{error || 'No data available.'}</p>
@@ -147,6 +133,7 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+      </ModuleShell>
     );
   }
 
@@ -160,26 +147,23 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div>
-      <div className="ahf-pagehead">
-        <div>
-          <p>{today}</p>
-          <h2>Welcome back, {userName} 👋</h2>
-          <p>Here&apos;s what&apos;s happening across your furniture business today.</p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Link href="/admin/products" className="ahf-btn ahf-btn-gold">
-            <i className="fas fa-plus"></i> Add Product
+    <ModuleShell
+      title={`Welcome back, ${userName}`}
+      sub="Here's what's happening across your furniture business today."
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/admin/products" className="ahf-btn ahf-btn-primary ahf-btn-sm">
+            <i className="fas fa-plus"></i> Create
           </Link>
-          <Link href="/admin/orders" className="ahf-btn ahf-btn-primary">
+          <Link href="/admin/orders" className="ahf-btn ahf-btn-ghost ahf-btn-sm">
             <i className="fas fa-cart-shopping"></i> View Orders
           </Link>
-          <Link href="/admin/quotations/new" className="ahf-btn ahf-btn-ghost">
+          <Link href="/admin/quotations/new" className="ahf-btn ahf-btn-ghost ahf-btn-sm">
             <i className="fas fa-file-invoice"></i> New Quotation
           </Link>
         </div>
-      </div>
-
+      )}
+    >
       <div className="ahf-grid-stats">
         {cards.map((c) => (
           <DashboardCard key={c.label} icon={c.icon} value={c.value} label={c.label} sub={c.sub} delta={c.delta} deltaTone={c.tone} accent={c.accent} accentSoft={c.soft} />
@@ -244,7 +228,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="ahf-panel" style={{ marginBottom: 20 }}>
+      <div className="ahf-panel list-compact" style={{ marginBottom: 20 }}>
         <div className="ahf-panel-head">
           <div>
             <h3>Recent Orders</h3>
@@ -326,6 +310,6 @@ export default function AdminDashboard() {
             </div>
           </div>
       </div>
-    </div>
+    </ModuleShell>
   );
 }

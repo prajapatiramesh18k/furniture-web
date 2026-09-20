@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { LoadingList } from '@/components/admin/ModuleBits';
 
 export default function CustomerSettingsPage() {
   const router = useRouter();
@@ -49,11 +50,7 @@ export default function CustomerSettingsPage() {
       </div>
 
       {loading ? (
-        <div className="ahf-panel">
-          <div className="ahf-panel-body">
-            <div className="ahf-skel" style={{ height: 120 }} />
-          </div>
-        </div>
+        <LoadingList rows={2} />
       ) : (
         <div className="ahf-grid-2eq">
           <div className="ahf-panel">

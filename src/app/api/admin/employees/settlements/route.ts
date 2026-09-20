@@ -4,23 +4,27 @@ import EmployeeSettlement from '@/lib/models/EmployeeSettlement';
 import Employee from '@/lib/models/Employee';
 import { calculateMonthlyPayroll } from '@/lib/payroll-service';
 import EmployeePayment from '@/lib/models/EmployeePayment';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    const tenantId = gate.ctx.user.tenantId!;
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const employeeId = searchParams.get('employeeId');
 
     await dbConnect();
-    
+
     // If we request for a specific employee, generate the current preview
     if (employeeId && month && year) {
-      const employee = await Employee.findById(employeeId).select('dailyRate standardHours').lean() as { dailyRate: number; standardHours?: number } | null;
+      const employee = await Employee.findOne(tenantFilter(tenantId, { _id: employeeId })).select('dailyRate standardHours').lean() as { dailyRate: number; standardHours?: number } | null;
       if (!employee) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
       // Check if already settled
-      const existingSettlement = await EmployeeSettlement.findOne({ employeeId, month: Number(month), year: Number(year) }).lean();
+      const existingSettlement = await EmployeeSettlement.findOne({ tenantId, employeeId, month: Number(month), year: Number(year) }).lean();
       if (existingSettlement) {
         return NextResponse.json({ ...existingSettlement, isPreview: false });
       }
@@ -31,8 +35,12 @@ export async function GET(request: Request) {
     }
 
     // Otherwise return history of settlements
-    let query: any = {};
-    if (employeeId) query.employeeId = employeeId;
+    let query: Record<string, unknown> = tenantFilter(tenantId);
+    if (employeeId) {
+      const emp = await Employee.findOne(tenantFilter(tenantId, { _id: employeeId })).select('_id').lean();
+      if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+      query.employeeId = employeeId;
+    }
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
@@ -49,22 +57,32 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    // Settlements are owner/admin-only (manager never sees the Payroll tab).
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage settlements.' }, { status: 403 });
+    }
+    const tenantId = gate.ctx.user.tenantId!;
     const data = await request.json();
+    delete data.tenantId;
     await dbConnect();
 
-    const employee = await Employee.findById(data.employeeId);
+    const employee = await Employee.findOne(tenantFilter(tenantId, { _id: data.employeeId }));
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Verify it's not already settled
-    const existingSettlement = await EmployeeSettlement.findOne({ employeeId: data.employeeId, month: data.month, year: data.year });
+    const existingSettlement = await EmployeeSettlement.findOne({ tenantId, employeeId: data.employeeId, month: data.month, year: data.year });
     if (existingSettlement) {
       return NextResponse.json({ error: 'Account already settled for this month' }, { status: 400 });
     }
 
     const newSettlement = await EmployeeSettlement.create({
       ...data,
+      tenantId,
       status: 'Settled',
       settlementDate: new Date()
     });
@@ -72,6 +90,7 @@ export async function POST(request: Request) {
     // Optionally create a payment record for the settlement amount if > 0
     if (data.settlementAmount > 0) {
        await EmployeePayment.create({
+         tenantId,
          employeeId: data.employeeId,
          date: new Date(),
          amount: data.settlementAmount,
@@ -93,7 +112,15 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage settlements.' }, { status: 403 });
+    }
+    const tenantId = gate.ctx.user.tenantId!;
     const data = await request.json();
+    delete data.tenantId;
     const { employeeId, month, year, dailyRate: customRate } = data;
 
     if (!employeeId || !month || !year) {
@@ -101,7 +128,7 @@ export async function PUT(request: Request) {
     }
 
     await dbConnect();
-    const employee = await Employee.findById(employeeId);
+    const employee = await Employee.findOne(tenantFilter(tenantId, { _id: employeeId }));
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
@@ -110,7 +137,7 @@ export async function PUT(request: Request) {
     const calc = await calculateMonthlyPayroll(employeeId, effectiveRate, Number(month), Number(year));
 
     const updatedSettlement = await EmployeeSettlement.findOneAndUpdate(
-      { employeeId, month: Number(month), year: Number(year) },
+      { tenantId, employeeId, month: Number(month), year: Number(year) },
       {
         $set: {
           totalWorkHours: calc.totalWorkHours,
@@ -130,6 +157,7 @@ export async function PUT(request: Request) {
     // Synchronize the associated settlement payment record
     const settlementNotes = `Settlement for ${month}/${year}`;
     const existingPayment = await EmployeePayment.findOne({
+      tenantId,
       employeeId,
       paymentType: 'Settlement',
       notes: settlementNotes,
@@ -140,6 +168,7 @@ export async function PUT(request: Request) {
       await existingPayment.save();
     } else if (calc.balanceAmount > 0) {
       await EmployeePayment.create({
+        tenantId,
         employeeId,
         date: new Date(),
         amount: calc.balanceAmount,
@@ -158,6 +187,13 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage settlements.' }, { status: 403 });
+    }
+    const tenantId = gate.ctx.user.tenantId!;
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get('employeeId');
     const month = searchParams.get('month');
@@ -169,6 +205,7 @@ export async function DELETE(request: Request) {
 
     await dbConnect();
     await EmployeeSettlement.findOneAndDelete({
+      tenantId,
       employeeId,
       month: Number(month),
       year: Number(year),
@@ -176,6 +213,7 @@ export async function DELETE(request: Request) {
 
     // Remove the associated settlement payment record so advances/payments revert to clean state
     await EmployeePayment.findOneAndDelete({
+      tenantId,
       employeeId,
       paymentType: 'Settlement',
       notes: `Settlement for ${month}/${year}`,

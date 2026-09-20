@@ -2,90 +2,90 @@
 
 import { useMemo, useState } from 'react';
 import StatusBadge from '@/components/admin/StatusBadge';
-import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
-import ConfirmationModal from '@/components/ConfirmationModal';
+import DataTable from '@/components/admin/DataTable';
+import UIDropdown from '@/components/UIDropdown';
+import DateRangePicker from '@/components/DateRangePicker';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
 
 interface R { _id: string; name: string; location: string; rating: number; text: string; date: string; approved: boolean }
 
 export default function AdminReviews() {
-  const { data, loading, refresh } = useAdminFetch<{ reviews: R[] } | R[]>('/api/admin/reviews');
-  const [filter, setFilter] = useState('pending');
-  const [confirm, setConfirm] = useState<{ msg: string; action: () => void } | null>(null);
-  const [toast, setToast] = useState('');
+  const { data, loading } = useAdminFetch<{ reviews: R[] }>('/api/admin/reviews');
+  const [q, setQ] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
 
   const reviews: R[] = useMemo(() => {
     const list = Array.isArray(data) ? data : data?.reviews || [];
-    if (filter === 'pending') return list.filter((r) => !r.approved);
-    if (filter === 'approved') return list.filter((r) => r.approved);
+    if (statusFilter === 'pending') return list.filter((r) => !r.approved);
+    if (statusFilter === 'approved') return list.filter((r) => r.approved);
     return list;
-  }, [data, filter]);
+  }, [data, statusFilter]);
 
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
-
-  const approve = async (id: string) => {
-    await fetch('/api/admin/reviews', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, approved: true }) });
-    refresh(); flash('Review approved!');
-  };
-
-  const remove = (id: string) => {
-    setConfirm({
-      msg: 'Delete this review permanently?',
-      action: async () => {
-        await fetch(`/api/admin/reviews?id=${id}`, { method: 'DELETE' });
-        refresh(); flash('Review deleted.');
-      },
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return reviews.filter((r) => {
+      if (!s) return true;
+      return `${r.name} ${r.location} ${r.text}`.toLowerCase().includes(s);
     });
-  };
+  }, [reviews, q]);
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(rows, 10, [q, statusFilter]);
 
   return (
-    <ModuleShell title="Reviews" sub="Moderate customer feedback from your website">
-      {toast && <div className="admin-toast" style={{ position: 'fixed' }}><i className="fas fa-check-circle"></i> {toast}</div>}
+    <ModuleShell
+      title="Reviews"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <DateRangePicker fromDate={fromDate} toDate={toDate} onChange={(f, t) => { setFromDate(f); setToDate(t); }} />
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+          </div>
+        </div>
+      )}
+    >
       <div className="ahf-panel" style={{ marginBottom: 16 }}>
         <div className="ahf-panel-body">
-          <div className="ahf-toolbar" style={{ marginBottom: 0 }}>
-            {(['pending', 'approved', 'all'] as const).map((f) => (
-              <button key={f} className={`ahf-btn ${filter === f ? 'ahf-btn-primary' : 'ahf-btn-ghost'} ahf-btn-sm`} onClick={() => setFilter(f)}>
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <UIDropdown
+              label="Status filter"
+              value={statusFilter}
+              options={[{ value: 'all', label: 'All Reviews' }, { value: 'pending', label: 'Pending' }, { value: 'approved', label: 'Approved' }]}
+              onChange={(v) => setStatusFilter(v as string)}
+            />
           </div>
         </div>
       </div>
-      <div className="ahf-panel">
-        <div className="ahf-panel-head"><div><h3>{filter.charAt(0).toUpperCase() + filter.slice(1)} Reviews ({reviews.length})</h3></div></div>
-        {loading ? <LoadingList /> : reviews.length === 0 ? (
-          <p style={{ padding: 20, color: 'var(--ahf-muted)' }}>Nothing here — all caught up!</p>
-        ) : (
-          <div className="ahf-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {reviews.map((r) => (
-              <div key={r._id} className="ahf-panel" style={{ boxShadow: 'none' }}>
-                <div className="ahf-panel-body">
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span className="ahf-avatar">{(r.name || '?')[0].toUpperCase()}</span>
-                    <strong>{r.name}</strong>
-                    <span style={{ color: 'var(--ahf-muted)', fontSize: 12 }}>{r.location} · {r.date}</span>
-                    <span style={{ color: '#d9930d' }}>{'★'.repeat(Math.round(r.rating || 0))}</span>
-                    <span style={{ marginLeft: 'auto' }}><StatusBadge status={r.approved ? 'Approved' : 'Pending'} /></span>
-                  </div>
-                  <p style={{ fontSize: 13.5, margin: '0 0 12px' }}>“{r.text}”</p>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {!r.approved && <button className="ahf-btn ahf-btn-primary ahf-btn-sm" onClick={() => approve(r._id)}><i className="fas fa-check"></i> Approve</button>}
-                    <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={() => remove(r._id)}><i className="fas fa-trash"></i> Delete</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+
+      <div className="ahf-panel list-compact">
+        <DataTable
+            columns={[
+              { key: 'n', header: 'Reviewer', render: (r) => (
+                <div className="ahf-cust"><span className="ahf-avatar">{(r.name || '?')[0].toUpperCase()}</span>
+                <div><strong>{r.name}</strong><span>{r.location}</span></div></div>) },
+              { key: 'r', header: 'Rating', render: (r) => <span style={{ color: '#d9930d' }}>{'★'.repeat(Math.round(r.rating || 0))}</span> },
+              { key: 't', header: 'Text', render: (r) => <p style={{ fontSize: 13, margin: 0 }}>“{r.text}”</p> },
+              { key: 'd', header: 'Date', render: (r) => <span>{r.date}</span> },
+              { key: 's', header: 'Status', render: (r) => <StatusBadge status={r.approved ? 'Approved' : 'Pending'} /> },
+            ]}
+            rows={paged}
+            emptyText="No reviews."
+            loading={loading}
+          />
+        {!loading && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}
       </div>
-      <ConfirmationModal
-        isOpen={!!confirm}
-        message={confirm?.msg || ''}
-        confirmText="Yes, Delete"
-        confirmButtonVariant="danger"
-        onConfirm={() => { confirm?.action(); setConfirm(null); }}
-        onCancel={() => setConfirm(null)}
-      />
     </ModuleShell>
   );
 }

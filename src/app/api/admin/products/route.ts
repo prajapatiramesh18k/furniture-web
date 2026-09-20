@@ -18,10 +18,13 @@ const fallbackProducts = [
   { _id: '12', name: 'Dressing', price: 15999, originalPrice: 21999, rating: 4.4, category: 'bedroom', description: 'Sturdy almirah with locker compartment.', image: '/images/dressing.jpeg' },
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const gate = await requireAdmin(request, 'products');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
-    const products = await Product.find().sort({ createdAt: -1 });
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
+    const products = await Product.find(filter).sort({ createdAt: -1 });
     return NextResponse.json({ products });
   } catch (error) {
     // Return fallback data if DB is not connected
@@ -43,7 +46,9 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+    delete body.tenantId;
     const product = new Product({
+      tenantId: gate.user.tenantId,
       name: body.name,
       slug: generateSlug(body.name || 'product'),
       price: body.price,
@@ -70,8 +75,10 @@ export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-    const { id, ...updates } = body;
-    const product = await Product.findByIdAndUpdate(id, updates, { new: true });
+    const { id, tenantId: _drop, ...updates } = body;
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const product = await Product.findOneAndUpdate(filter, updates, { new: true });
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     return NextResponse.json(product);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
@@ -86,7 +93,9 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    await Product.findByIdAndDelete(id);
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const deleted = await Product.findOneAndDelete(filter);
+    if (!deleted) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     return NextResponse.json({ message: 'Product deleted' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });

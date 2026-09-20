@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:tenancy": "node scripts/migrate-multitenancy.mjs",
+    "migrate:tenancy:apply": "node scripts/migrate-multitenancy.mjs --apply",
+    "superadmin:create": "node scripts/create-super-admin.mjs",
+    "test:tenancy": "node scripts/test-tenant-isolation.mjs"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.35",

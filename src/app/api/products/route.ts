@@ -48,16 +48,27 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
+    // Public storefront serves the default tenant's catalog.
+    let storefrontTenantId: string | null = null;
+    try {
+      const Tenant = (await import('@/lib/models/Tenant')).default;
+      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
+      storefrontTenantId = dt ? String(dt._id) : null;
+    } catch {}
+
     // Push search down to Mongo with indexed prefix-friendly regex instead of
     // fetching the whole collection and filtering in Node.
+    const baseFilter: Record<string, unknown> = storefrontTenantId ? { tenantId: storefrontTenantId } : {};
     const filter = q
       ? {
+          ...baseFilter,
           $or: [
             { name: { $regex: escapeRegex(q), $options: 'i' } },
             { category: { $regex: escapeRegex(q), $options: 'i' } },
           ],
         }
-      : {};
+      : baseFilter;
 
     let query = Product.find(filter)
       .select('name slug image images price originalPrice rating category description')

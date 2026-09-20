@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import StatusBadge from '@/components/admin/StatusBadge';
 import DataTable from '@/components/admin/DataTable';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell } from '@/components/admin/ModuleBits';
+import { AdminToast, AdminModal, AdminField, AdminFormGrid, AdminModalFooter } from '@/components/admin/AdminUI';
+import UIDropdown from '@/components/UIDropdown';
+import { SuggestInput } from '@/components/quotation/DynamicItemForm';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 interface Product {
@@ -75,6 +80,8 @@ export default function AdminProducts() {
     });
   }, [products, search, catFilter, stockFilter, priceFilter]);
 
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(filtered, 10, [search, catFilter, stockFilter, priceFilter]);
+
   const openAdd = () => {
     setEditing(null);
     setForm({ ...EMPTY_FORM, category: categories[0] || 'pooja-units' });
@@ -105,6 +112,7 @@ export default function AdminProducts() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!image) { alert('Please select a product image'); return; }
+    if (!form.category.trim()) { alert('Please enter a category'); return; }
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
@@ -144,111 +152,153 @@ export default function AdminProducts() {
   const stockLabel = (s: number) => (s <= 0 ? 'Out of Stock' : s <= 5 ? 'Low Stock' : 'In Stock');
 
   return (
-    <div>
-      {toast && <div className="admin-toast" style={{ position: 'fixed' }}><i className="fas fa-check-circle"></i> {toast}</div>}
-
-      <div className="ahf-pagehead">
-        <div>
-          <p>{products.length} products in catalog</p>
-          <h2>Product Management</h2>
+    <ModuleShell
+      title="Product Management"
+      sub={`${products.length} products in catalog`}
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" />
+          </div>
         </div>
-        <button className="ahf-btn ahf-btn-gold" onClick={openAdd}>
-          <i className="fas fa-plus"></i> Add Product
-        </button>
-      </div>
+      )}
+    >
+      <AdminToast message={toast} />
 
       <div className="ahf-panel" style={{ marginBottom: 16 }}>
         <div className="ahf-panel-body">
-          <div className="ahf-toolbar" style={{ marginBottom: 0 }}>
-            <div className="ahf-search-inline">
-              <i className="fas fa-search"></i>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, SKU, category…" />
-            </div>
-            <select className="ahf-select" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
-              <option value="all">All Categories</option>
-              {categories.map((c) => <option key={c} value={c}>{c.replace(/-/g, ' ')}</option>)}
-            </select>
-            <select className="ahf-select" value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
-              <option value="all">All Stock</option>
-              <option value="in">In Stock</option>
-              <option value="low">Low Stock (≤ 5)</option>
-              <option value="out">Out of Stock</option>
-            </select>
-            <select className="ahf-select" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
-              <option value="all">All Prices</option>
-              <option value="u10k">Under ₹10,000</option>
-              <option value="10to25">₹10k – ₹25k</option>
-              <option value="ab25k">Above ₹25,000</option>
-            </select>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <UIDropdown
+              label="Category filter"
+              value={catFilter}
+              options={[{ value: 'all', label: 'All Categories' }, ...categories.map((c) => ({ value: c, label: c.replace(/-/g, ' ') }))]}
+              onChange={setCatFilter}
+            />
+            <UIDropdown
+              label="Stock filter"
+              value={stockFilter}
+              options={[
+                { value: 'all', label: 'All Stock' },
+                { value: 'in', label: 'In Stock' },
+                { value: 'low', label: 'Low Stock (≤ 5)' },
+                { value: 'out', label: 'Out of Stock' },
+              ]}
+              onChange={setStockFilter}
+            />
+            <UIDropdown
+              label="Price filter"
+              value={priceFilter}
+              options={[
+                { value: 'all', label: 'All Prices' },
+                { value: 'u10k', label: 'Under ₹10,000' },
+                { value: '10to25', label: '₹10k – ₹25k' },
+                { value: 'ab25k', label: 'Above ₹25,000' },
+              ]}
+              onChange={setPriceFilter}
+            />
+            <button
+              className="ahf-btn ahf-btn-primary ahf-btn-sm"
+              onClick={openAdd}
+              style={{ marginLeft: 'auto' }}
+            >
+              <i className="fas fa-plus"></i> Create
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="ahf-panel">
+      <div className="ahf-panel list-compact">
         <div className="ahf-panel-head">
           <div><h3>Products ({filtered.length})</h3></div>
         </div>
-        {loading ? (
-          <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[1, 2, 3, 4].map((i) => <div key={i} className="ahf-skel" style={{ height: 56 }} />)}
-          </div>
-        ) : (
-          <DataTable
-            columns={[
-              {
-                key: 'prod', header: 'Product',
-                render: (p) => (
-                  <div className="ahf-prod-cell">
-                    <img src={p.image} alt={p.name} />
-                    <div><strong>{p.name}</strong><div style={{ fontSize: 12, color: 'var(--ahf-muted)' }}>SKU: {p.sku || '—'}</div></div>
-                  </div>
-                ),
-              },
-              { key: 'cat', header: 'Category', render: (p) => <span style={{ textTransform: 'capitalize' }}>{p.category.replace(/-/g, ' ')}</span> },
-              { key: 'price', header: 'Price', render: (p) => <span className="ahf-amt">₹{Number(p.price).toLocaleString('en-IN')}</span> },
-              { key: 'stock', header: 'Stock', render: (p) => <StatusBadge status={stockLabel(p.stock ?? 10)} /> },
-              { key: 'status', header: 'Status', render: (p) => <StatusBadge status={(p.status || 'active') === 'active' ? 'Active' : p.status!} /> },
-              {
-                key: 'actions', header: 'Actions',
-                render: (p) => (
-                  <div className="ahf-row-actions">
-                    <button className="ahf-mini-btn" title="View" onClick={() => setViewing(p)}><i className="fas fa-eye"></i></button>
-                    <button className="ahf-mini-btn" title="Edit" onClick={() => openEdit(p)}><i className="fas fa-pen"></i></button>
-                    <button className="ahf-mini-btn danger" title="Delete" onClick={() => remove(p._id)}><i className="fas fa-trash"></i></button>
-                  </div>
-                ),
-              },
-            ]}
-            rows={filtered}
-            emptyText="No products match your filters."
-            minWidth={820}
-          />
+        <DataTable
+          columns={[
+            {
+              key: 'prod', header: 'Product',
+              render: (p) => (
+                <div className="ahf-prod-cell">
+                  <img src={p.image} alt={p.name} />
+                  <div><strong>{p.name}</strong><div style={{ fontSize: 12, color: 'var(--ahf-muted)' }}>SKU: {p.sku || '—'}</div></div>
+                </div>
+              ),
+            },
+            { key: 'cat', header: 'Category', render: (p) => <span style={{ textTransform: 'capitalize' }}>{p.category.replace(/-/g, ' ')}</span> },
+            { key: 'price', header: 'Price', render: (p) => <span className="ahf-amt">₹{Number(p.price).toLocaleString('en-IN')}</span> },
+            { key: 'stock', header: 'Stock', render: (p) => <StatusBadge status={stockLabel(p.stock ?? 10)} /> },
+            { key: 'status', header: 'Status', render: (p) => <StatusBadge status={(p.status || 'active') === 'active' ? 'Active' : p.status!} /> },
+            {
+              key: 'actions', header: 'Actions',
+              render: (p) => (
+                <div className="ahf-row-actions">
+                  <button className="ahf-mini-btn" title="View" onClick={() => setViewing(p)}><i className="fas fa-eye"></i></button>
+                  <button className="ahf-mini-btn" title="Edit" onClick={() => openEdit(p)}><i className="fas fa-pen"></i></button>
+                  <button className="ahf-mini-btn danger" title="Delete" onClick={() => remove(p._id)}><i className="fas fa-trash"></i></button>
+                </div>
+              ),
+            },
+          ]}
+          rows={loading ? [] : paged}
+          emptyText="No products match your filters."
+          minWidth={820}
+          loading={loading}
+        />
+        {!loading && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filtered.length} onPage={setPage} />
         )}
       </div>
 
       {showForm && (
-        <div style={modalWrap} onClick={() => setShowForm(false)}>
-          <form onSubmit={save} onClick={(e) => e.stopPropagation()} style={modalCard}>
-            <h3 style={{ margin: '0 0 14px' }}>{editing ? 'Edit Product' : 'Add New Product'}</h3>
-            <div className="ahf-toolbar">
-              <input className="ahf-input" style={{ flex: 2, minWidth: 200 }} placeholder="Product name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              <input className="ahf-input" style={{ flex: 1, minWidth: 120 }} placeholder="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-            </div>
-            <div className="ahf-toolbar">
-              <input className="ahf-input" type="number" min={0} placeholder="Price (₹) *" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-              <input className="ahf-input" type="number" min={0} placeholder="Original price (₹)" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} />
-              <input className="ahf-input" type="number" min={0} placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
-            </div>
-            <div className="ahf-toolbar">
-              <input className="ahf-input" placeholder="Category *" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required list="ahf-cats" />
-              <datalist id="ahf-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
-              <select className="ahf-select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-              </select>
-              <input className="ahf-input" type="number" min={0} max={5} step={0.1} placeholder="Rating" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
-            </div>
-            <textarea className="ahf-input" style={{ width: '100%', marginBottom: 12 }} rows={3} placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <AdminModal
+          eyebrow={editing ? 'EDIT PRODUCT' : 'NEW PRODUCT'}
+          title={editing ? 'Edit Product' : 'Add New Product'}
+          subtitle={editing ? 'Update details — changes go live on save' : 'Appears in the catalog on save'}
+          onClose={() => !saving && setShowForm(false)}
+          busy={saving}
+          width={720}
+        >
+          <form onSubmit={save}>
+            <AdminFormGrid>
+              <AdminField label="Product name *">
+                <input className="ahf-input" placeholder="Product name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              </AdminField>
+              <AdminField label="SKU">
+                <input className="ahf-input" placeholder="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+              </AdminField>
+              <AdminField label="Price (₹) *">
+                <input className="ahf-input" type="number" min={0} placeholder="Price (₹) *" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+              </AdminField>
+              <AdminField label="Original price (₹)">
+                <input className="ahf-input" type="number" min={0} placeholder="Original price (₹)" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} />
+              </AdminField>
+              <AdminField label="Stock">
+                <input className="ahf-input" type="number" min={0} placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+              </AdminField>
+              <AdminField label="Category *">
+                <SuggestInput
+                  label="Category"
+                  value={form.category}
+                  suggestions={categories}
+                  placeholder="Category *"
+                  inputClassName="ahf-input"
+                  onChange={(v) => setForm({ ...form, category: v })}
+                />
+              </AdminField>
+              <AdminField label="Status">
+                <UIDropdown
+                  label="Product status"
+                  value={form.status}
+                  options={[{ value: 'active', label: 'Active' }, { value: 'draft', label: 'Draft' }]}
+                  onChange={(v) => setForm({ ...form, status: v })}
+                />
+              </AdminField>
+              <AdminField label="Rating">
+                <input className="ahf-input" type="number" min={0} max={5} step={0.1} placeholder="Rating" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+              </AdminField>
+            </AdminFormGrid>
+            <AdminField label="Description" style={{ marginBottom: 16 }}>
+              <textarea className="ahf-input" rows={3} placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </AdminField>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
               <label className="ahf-btn ahf-btn-ghost ahf-btn-sm" style={{ cursor: 'pointer' }}>
                 <i className="fas fa-image"></i> {image ? 'Change Image' : 'Select Image'}
@@ -256,33 +306,36 @@ export default function AdminProducts() {
               </label>
               {image && <img src={image} alt="preview" style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover' }} />}
             </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button type="button" className="ahf-btn ahf-btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+            <AdminModalFooter>
+              <button type="button" className="ahf-btn ahf-btn-ghost" disabled={saving} onClick={() => setShowForm(false)}>Cancel</button>
               <button type="submit" className="ahf-btn ahf-btn-primary" disabled={saving}>
-                {saving ? 'Saving…' : editing ? 'Update Product' : 'Add Product'}
+                <i className="fas fa-check"></i> {saving ? 'Saving…' : editing ? 'Update Product' : 'Add Product'}
               </button>
-            </div>
+            </AdminModalFooter>
           </form>
-        </div>
+        </AdminModal>
       )}
 
       {viewing && (
-        <div style={modalWrap} onClick={() => setViewing(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={modalCard}>
-            <img src={viewing.image} alt={viewing.name} style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 12, marginBottom: 14 }} />
-            <h3 style={{ margin: '0 0 4px' }}>{viewing.name}</h3>
-            <p style={{ color: 'var(--ahf-muted)', fontSize: 13, margin: '0 0 12px' }}>{viewing.description || 'No description.'}</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-              <StatusBadge status={viewing.category} />
-              <StatusBadge status={stockLabel(viewing.stock ?? 10)} />
-              <span className="ahf-amt">₹{Number(viewing.price).toLocaleString('en-IN')}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button className="ahf-btn ahf-btn-ghost" onClick={() => setViewing(null)}>Close</button>
-              <button className="ahf-btn ahf-btn-primary" onClick={() => { openEdit(viewing); setViewing(null); }}>Edit</button>
-            </div>
+        <AdminModal
+          eyebrow="PRODUCT"
+          title={viewing.name}
+          subtitle={viewing.sku ? `SKU: ${viewing.sku}` : undefined}
+          onClose={() => setViewing(null)}
+          width={640}
+        >
+          <img src={viewing.image} alt={viewing.name} style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 12, marginBottom: 14 }} />
+          <p style={{ color: 'var(--ahf-muted)', fontSize: 13, margin: '0 0 12px' }}>{viewing.description || 'No description.'}</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+            <StatusBadge status={viewing.category} />
+            <StatusBadge status={stockLabel(viewing.stock ?? 10)} />
+            <span className="ahf-amt">₹{Number(viewing.price).toLocaleString('en-IN')}</span>
           </div>
-        </div>
+          <AdminModalFooter>
+            <button className="ahf-btn ahf-btn-ghost" onClick={() => setViewing(null)}>Close</button>
+            <button className="ahf-btn ahf-btn-primary" onClick={() => { openEdit(viewing); setViewing(null); }}>Edit</button>
+          </AdminModalFooter>
+        </AdminModal>
       )}
 
       <ConfirmationModal
@@ -293,16 +346,6 @@ export default function AdminProducts() {
         onConfirm={() => { confirm?.action(); setConfirm(null); }}
         onCancel={() => setConfirm(null)}
       />
-    </div>
+    </ModuleShell>
   );
 }
-
-const modalWrap: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(10,18,36,.55)', zIndex: 100,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-};
-
-const modalCard: React.CSSProperties = {
-  background: '#fff', borderRadius: 16, padding: 22, width: 'min(640px, 100%)',
-  maxHeight: '90vh', overflowY: 'auto',
-};
