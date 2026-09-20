@@ -6,7 +6,7 @@ import StatusBadge from '@/components/admin/StatusBadge';
 import UIDropdown from '@/components/UIDropdown';
 import DateRangePicker from '@/components/DateRangePicker';
 import { ListPagination, usePagination } from '@/components/admin/ListPagination';
-import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
+import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
 import { AdminToast, AdminModal, AdminField, AdminModalFooter } from '@/components/admin/AdminUI';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import Link from 'next/link';
@@ -45,10 +45,10 @@ export default function AdminQuotations() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [acting, setActing] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmReject, setConfirmReject] = useState(false);
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -79,7 +79,6 @@ export default function AdminQuotations() {
     setOpenId(x._id);
     setDetail(null);
     setDetailError('');
-    setRejectOpen(false);
     setReason('');
     setDetailLoading(true);
     try {
@@ -102,7 +101,7 @@ export default function AdminQuotations() {
   const transition = async (status: 'sent' | 'approved' | 'rejected', rejectReason?: string) => {
     if (!detail) return;
     if (status === 'rejected' && !String(rejectReason || '').trim()) {
-      alert('Please enter a reject reason');
+      flash('Please enter a reject reason');
       return;
     }
     setActing(true);
@@ -126,7 +125,7 @@ export default function AdminQuotations() {
             : `Moved to sent — ${d.quotation?.project?.quoteNo || ''}`,
       );
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Update failed');
+      flash(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setActing(false);
     }
@@ -145,7 +144,7 @@ export default function AdminQuotations() {
       refresh();
       flash('Quotation deleted');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Delete failed');
+      flash(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setDeleting(false);
     }
@@ -234,17 +233,28 @@ export default function AdminQuotations() {
                 <div className="ahf-tablewrap" style={{ marginBottom: 16 }}>
                   <table className="ahf-table">
                     <thead>
-                      <tr><th>Item</th><th>Qty</th><th>Rate</th><th style={{ textAlign: 'right' }}>Amount</th></tr>
+                      <tr><th>Item</th><th>Qty</th><th>H (ft)</th><th>W (ft)</th><th>Area (sq ft)</th><th>Rate/sq ft</th><th style={{ textAlign: 'right' }}>Amount</th></tr>
                     </thead>
                     <tbody>
-                      {(detail.items || []).map((it, i) => (
-                        <tr key={i}>
-                          <td><strong>{it.name || '—'}</strong>{it.unit ? <span style={{ color: '#8a7a66', fontSize: 12 }}> · {it.unit}</span> : null}</td>
-                          <td>{it.quantity ?? 1}</td>
-                          <td>{inr(Number(it.rate) || 0)}</td>
-                          <td style={{ textAlign: 'right' }}><span className="ahf-amt">{inr((Number(it.quantity) || 1) * (Number(it.rate) || 0))}</span></td>
-                        </tr>
-                      ))}
+                      {(detail.items || []).map((it, i) => {
+                        const qty = Number(it.quantity) || 1;
+                        const height = Number(it.height) || 0;
+                        const width = Number(it.width) || 0;
+                        const rate = Number(it.rate) || 0;
+                        const area = height > 0 && width > 0 ? height * width : 0;
+                        const amount = area > 0 ? qty * area * rate : qty * rate;
+                        return (
+                          <tr key={i}>
+                            <td><strong>{it.name || '—'}</strong>{it.unit ? <span style={{ color: '#8a7a66', fontSize: 12 }}> · {it.unit}</span> : null}</td>
+                            <td>{qty}</td>
+                            <td>{height > 0 ? height : '—'}</td>
+                            <td>{width > 0 ? width : '—'}</td>
+                            <td>{area > 0 ? area.toFixed(2) : '—'}</td>
+                            <td>{inr(rate)}</td>
+                            <td style={{ textAlign: 'right' }}><span className="ahf-amt">{inr(amount)}</span></td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -276,7 +286,7 @@ export default function AdminQuotations() {
                         <button className="ahf-btn ahf-btn-primary ahf-btn-sm" disabled={acting} onClick={() => transition('approved')}>
                           <i className="fas fa-check"></i> {acting ? 'Saving…' : 'Approve'}
                         </button>
-                        <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" disabled={acting} onClick={() => setRejectOpen((v) => !v)}>
+                        <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" disabled={acting} onClick={() => setConfirmReject(true)}>
                           <i className="fas fa-xmark"></i> Reject
                         </button>
                       </>
@@ -297,22 +307,6 @@ export default function AdminQuotations() {
                   </div>
                 );
               })()}
-              {rejectOpen && String(detail.status || 'sent') === 'sent' && (
-                <AdminField label="Reject reason *" style={{ marginBottom: 16 }}>
-                  <textarea
-                    className="ahf-input"
-                    rows={2}
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Why was this quotation rejected…"
-                  />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <button className="ahf-btn ahf-btn-primary ahf-btn-sm" disabled={acting} onClick={() => transition('rejected', reason)}>
-                      <i className="fas fa-check"></i> {acting ? 'Saving…' : 'Confirm reject'}
-                    </button>
-                  </div>
-                </AdminField>
-              )}
               <AdminModalFooter>
                 <Link href="/admin/quotations/new" className="ahf-btn ahf-btn-ghost" onClick={() => { setOpenId(null); }}>
                   <i className="fas fa-plus"></i> New quotation
@@ -335,6 +329,19 @@ export default function AdminQuotations() {
         confirmButtonVariant="danger"
         onConfirm={removeQuotation}
         onCancel={() => !deleting && setConfirmDelete(false)}
+      />
+      <ConfirmationModal
+        isOpen={confirmReject}
+        message="Reject this quotation? This will notify the customer."
+        confirmText={acting ? 'Rejecting…' : 'Yes, Reject'}
+        confirmButtonVariant="danger"
+        reasonInput
+        reasonValue={reason}
+        onReasonChange={setReason}
+        reasonPlaceholder="Why was this quotation rejected…"
+        reasonRequired
+        onConfirm={() => transition('rejected', reason)}
+        onCancel={() => { setConfirmReject(false); setReason(''); }}
       />
     </ModuleShell>
   );

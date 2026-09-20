@@ -14,6 +14,12 @@ interface ConfirmationModalProps {
   confirmButtonVariant?: 'danger' | 'primary';
   onConfirm: () => void;
   onCancel: () => void;
+  // Optional reason input for reject confirmation
+  reasonInput?: boolean;
+  reasonValue?: string;
+  onReasonChange?: (value: string) => void;
+  reasonPlaceholder?: string;
+  reasonRequired?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -27,6 +33,11 @@ export default function ConfirmationModal({
   confirmButtonVariant = 'danger',
   onConfirm,
   onCancel,
+  reasonInput = false,
+  reasonValue = '',
+  onReasonChange,
+  reasonPlaceholder = 'Enter reason...',
+  reasonRequired = false,
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
@@ -110,6 +121,32 @@ export default function ConfirmationModal({
           >
             {subtext}
           </p>
+        )}
+
+        {reasonInput && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <textarea
+              value={reasonValue}
+              onChange={(e) => onReasonChange?.(e.target.value)}
+              placeholder={reasonPlaceholder}
+              required={reasonRequired}
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                padding: '1rem',
+                border: '1.8px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '1.35rem',
+                fontFamily: 'inherit',
+                color: '#0f172a',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+                outline: 'none',
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--primary-color)'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+            />
+          </div>
         )}
 
         <div
