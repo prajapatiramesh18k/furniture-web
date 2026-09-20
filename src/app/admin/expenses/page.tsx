@@ -87,8 +87,9 @@ export default function AdminExpensesHub() {
             ]}
             rows={paged}
             emptyText="No expenses recorded yet."
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

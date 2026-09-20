@@ -100,8 +100,9 @@ export default function AdminProjects() {
             rows={paged}
             emptyText="No projects yet."
             onRowClick={openProject}
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

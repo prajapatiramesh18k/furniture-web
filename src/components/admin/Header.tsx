@@ -22,7 +22,7 @@ export default function Header({
   notifCount,
   notifications,
 }: {
-  user: SessionUser | null | undefined;
+  user: SessionUser;
   title: string;
   trail: { label: string; href?: string }[];
   onToggleSidebar: () => void;
@@ -53,9 +53,9 @@ export default function Header({
     router.replace('/');
   };
 
-  const initials = String(user?.name || 'A').split(' ').filter(Boolean).map((w) => w[0] as string).join('').slice(0, 2).toUpperCase() || 'A';
+  const initials = (user.name || 'A').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   // Customers get their own versions of these pages (no admin role/access).
-  const isCustomer = String(user?.role || '').toLowerCase() === 'customer';
+  const isCustomer = String(user.role || '').toLowerCase() === 'customer';
   const profileHref = isCustomer ? '/customer/settings' : '/admin/settings';
   const notifHref = isCustomer ? '/account' : '/admin/notifications';
 
@@ -67,7 +67,7 @@ export default function Header({
       <div className="ahf-crumbs">
         <h1>{title}</h1>
         <Breadcrumbs trail={trail} />
-        {user?.tenantName && (
+        {user.tenantName && (
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ahf-gold)', marginTop: 2 }}>{user.tenantName}</div>
         )}
       </div>
@@ -114,15 +114,15 @@ export default function Header({
         <button className="ahf-userchip" onClick={() => { setUserOpen((o) => !o); setNotifOpen(false); }} aria-label="User menu">
           <span className="ahf-avatar">{initials}</span>
           <span className="ahf-meta">
-            <strong>{user?.name || 'Account'}</strong>
+            <strong>{user.name}</strong>
           </span>
           <i className="fas fa-chevron-down" style={{ fontSize: 11, color: 'var(--ahf-muted)' }}></i>
         </button>
         {userOpen && (
           <div className="ahf-pop">
             <div className="ahf-pop-head">
-              <strong>{user?.name || 'Account'}</strong>
-              <span>{(user?.email || '').toLowerCase()}</span>
+              <strong>{user.name}</strong>
+              <span>{(user.email || '').toLowerCase()}</span>
             </div>
             <Link href={profileHref} className="ahf-pop-item" onClick={() => setUserOpen(false)}>
               <i className="fas fa-user"></i> Profile

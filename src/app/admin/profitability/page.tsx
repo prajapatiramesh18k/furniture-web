@@ -77,8 +77,9 @@ export default function AdminProfitability() {
             ]}
             rows={paged}
             emptyText="No projects yet."
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

@@ -88,8 +88,9 @@ export default function AdminProgressHub() {
             ]}
             rows={paged}
             emptyText="No progress updates yet."
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

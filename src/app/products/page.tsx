@@ -33,11 +33,7 @@ async function getProductsForPage() {
       const { default: dbConnect } = await import('@/lib/mongodb');
       const { default: Product } = await import('@/lib/models/Product');
       await dbConnect();
-      // Select only the fields the grid renders — smaller/faster query, same items
-      const dbProducts = await Product.find()
-        .select('name slug image images price originalPrice rating category description')
-        .sort({ createdAt: -1 })
-        .lean();
+      const dbProducts = await Product.find().lean();
       return dbProducts.map((p) => {
         const doc = p as {
           _id: { toString(): string };

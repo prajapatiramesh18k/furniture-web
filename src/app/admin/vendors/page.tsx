@@ -179,8 +179,9 @@ export default function AdminVendors() {
             rows={paged}
             emptyText="No vendors yet."
             onRowClick={startEdit}
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

@@ -117,8 +117,8 @@ export default function AdminSettings() {
     return (
       <ModuleShell title="Settings" sub="Account and business preferences">
         <div className="ahf-grid-2eq">
-          <div className="ahf-panel"><div className="ahf-panel-body"><div className="ahf-skel" style={{ height: 20 }} /><div className="ahf-skel" style={{ height: 18, marginTop: 8 }} /><div className="ahf-skel" style={{ height: 18, marginTop: 8 }} /></div></div>
-          <div className="ahf-panel"><div className="ahf-panel-body"><div className="ahf-skel" style={{ height: 100 }} /></div></div>
+          <div className="ahf-panel"><div className="ahf-panel-body"><div className="ahf-skel" style={{ height: 20 }} /><div className="ahf-skel" style={{ height: 18, marginTop: 8 }} /><div className="ahf-skel" style={{ height: 18, marginTop: 8 }} /></div></div></div>
+          <div className="ahf-panel"><div className="ahf-panel-body"><div className="ahf-skel" style={{ height: 100 }} /></div></div></div>
         </div>
       </ModuleShell>
     );

@@ -75,8 +75,9 @@ export default function AdminCustomers() {
             ]}
             rows={paged}
             emptyText="No customers found."
-            loading={loading}
           />
+          loading={loading}
+        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={users.length} onPage={setPage} />
         )}
