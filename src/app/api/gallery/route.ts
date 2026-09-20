@@ -18,16 +18,41 @@ const roomSubMap: Record<string, string[]> = {
   'decor': ['mirrors','wall-shelves','home-decor','plant-stands','ceiling','door'],
 };
 
-// In-memory cache with TTL
+// In-memory cache with TTL + simple bound so it can't grow without limit
 interface CacheEntry {
   data: unknown;
   expire: number;
 }
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 300_000; // 5 minutes
+const MAX_CACHE_ENTRIES = 100;
 
-function getCacheKey(page: number, category: string) {
-  return `${page}:${category}`;
+function cacheSet(key: string, data: unknown) {
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next();
+    if (!oldest.done) cache.delete(oldest.value);
+  }
+  cache.set(key, { data, expire: Date.now() + CACHE_TTL });
+}
+
+function getCacheKey(page: number, category: string, limit: number) {
+  return `${page}:${category}:${limit}`;
+}
+
+// Tenant lookup cached separately — avoids an extra DB round-trip on every cache miss
+let tenantCache: { id: string | null; expire: number } | null = null;
+async function getStorefrontTenantId(): Promise<string | null> {
+  if (tenantCache && tenantCache.expire > Date.now()) return tenantCache.id;
+  try {
+    const Tenant = (await import('@/lib/models/Tenant')).default;
+    const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+    const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
+    const id = dt ? String(dt._id) : null;
+    tenantCache = { id, expire: Date.now() + CACHE_TTL };
+    return id;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -36,10 +61,12 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const category = searchParams.get('category') || 'all';
     const room = searchParams.get('room') || '';
-    const limit = parseInt(searchParams.get('limit') || String(IMAGES_PER_PAGE));
+    // Clamp limit so a crafted query can't force a huge payload/slow scan
+    const rawLimit = parseInt(searchParams.get('limit') || String(IMAGES_PER_PAGE));
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 24) : IMAGES_PER_PAGE;
 
-    // Check cache
-    const cacheKey = getCacheKey(page, `${category}:${room}`);
+    // Check cache (key includes limit so custom limits never collide)
+    const cacheKey = getCacheKey(page, `${category}:${room}`, limit);
     const cached = cache.get(cacheKey);
     if (cached && cached.expire > Date.now()) {
       return NextResponse.json(cached.data, {
@@ -49,13 +76,7 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
     // Public gallery shows the default storefront tenant's images.
-    let storefrontTenantId: string | null = null;
-    try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      storefrontTenantId = dt ? String(dt._id) : null;
-    } catch {}
+    const storefrontTenantId = await getStorefrontTenantId();
     let filter: Record<string, unknown> = storefrontTenantId ? { tenantId: storefrontTenantId } : {};
     if (category !== 'all') {
       filter.category = category;
@@ -65,6 +86,7 @@ export async function GET(request: NextRequest) {
 
     const [images, total] = await Promise.all([
       GalleryImage.find(filter)
+        .select('_id category url isUploaded uploadedAt')
         .sort({ uploadedAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -72,15 +94,21 @@ export async function GET(request: NextRequest) {
       GalleryImage.countDocuments(filter),
     ]);
 
+    // Minimal payload — only the fields the gallery grid renders
     const result = {
-      images,
+      images: images.map((img) => ({
+        _id: String(img._id),
+        category: img.category,
+        url: img.url,
+        isUploaded: img.isUploaded ?? true,
+      })),
       total,
       page,
       totalPages: Math.ceil(total / limit),
     };
 
     // Cache the result
-    cache.set(cacheKey, { data: result, expire: Date.now() + CACHE_TTL });
+    cacheSet(cacheKey, result);
 
     return NextResponse.json(result, {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },

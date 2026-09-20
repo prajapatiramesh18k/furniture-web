@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useTransition, useEffect, memo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 import { useWishlist } from '@/context/WishlistContext';
@@ -49,6 +49,69 @@ const filterCategories = [
 
 const PRODUCTS_PER_PAGE = 12;
 
+const ProductCard = memo(function ProductCard({
+  product,
+  isWished,
+  onToggleWishlist,
+}: {
+  product: ProductListItem;
+  isWished: boolean;
+  onToggleWishlist: (p: ProductListItem) => void;
+}) {
+  const discount =
+    Number(product.originalPrice) > Number(product.price)
+      ? Math.round(
+          ((Number(product.originalPrice) - Number(product.price)) / Number(product.originalPrice)) * 100
+        )
+      : null;
+
+  const handleWishlistClick = useCallback(() => {
+    onToggleWishlist(product);
+  }, [onToggleWishlist, product]);
+
+  return (
+    <div className="products-page-card">
+      <div className="products-page-card-img">
+        {discount && <span className="product-discount-badge">-{discount}% OFF</span>}
+        <button
+          type="button"
+          className={`product-wishlist-btn ${isWished ? 'active' : ''}`}
+          aria-label={isWished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          onClick={handleWishlistClick}
+        >
+          <i className={`${isWished ? 'fas' : 'far'} fa-heart`} />
+        </button>
+        <Link href={`/products/${product.slug || product.id}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={product.image}
+            alt={`${product.name} — custom furniture by Ananya House of Furniture`}
+            loading="lazy"
+            decoding="async"
+            width={600}
+            height={400}
+          />
+          <div className="products-page-card-overlay">
+            <span>View Details</span>
+          </div>
+        </Link>
+      </div>
+      <div className="products-page-card-body">
+        <Link href={`/products/${product.slug || product.id}`}>
+          <p className="products-page-card-category">{categoryLabels[product.category] || product.category}</p>
+          <h2>{product.name}</h2>
+        </Link>
+        <div className="products-page-card-price">
+          <span className="pp-price-current">Rs.{Number(product.price).toLocaleString()}</span>
+          {Number(product.originalPrice) > Number(product.price) && (
+            <span className="pp-price-original">Rs.{Number(product.originalPrice).toLocaleString()}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function ProductsPageClient({
   initialProducts,
 }: {
@@ -60,11 +123,45 @@ export default function ProductsPageClient({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [isPending, startTransition] = useTransition();
 
-  const handleFilterChange = (filterId: string) => {
-    setActiveFilter(filterId);
-    setCurrentPage(1);
-  };
+  const handleFilterChange = useCallback((filterId: string) => {
+    startTransition(() => {
+      setActiveFilter(filterId);
+      setCurrentPage(1);
+    });
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    startTransition(() => {
+      setCurrentPage(page);
+    });
+  }, []);
+
+  const handlePrev = useCallback(() => {
+    startTransition(() => {
+      setCurrentPage((p) => Math.max(1, p - 1));
+    });
+  }, []);
+
+  const handleNext = useCallback((totalPages: number) => {
+    startTransition(() => {
+      setCurrentPage((p) => Math.min(totalPages, p + 1));
+    });
+  }, []);
+
+  const onToggleWishlist = useCallback(
+    (p: ProductListItem) => {
+      toggleWishlist({
+        id: p.id,
+        name: p.name,
+        image: p.image,
+        price: p.price,
+        slug: p.slug,
+      });
+    },
+    [toggleWishlist]
+  );
 
   const filteredAll = useMemo(() => {
     let list = initialProducts;
@@ -83,9 +180,46 @@ export default function ProductsPageClient({
     return list;
   }, [initialProducts, activeFilter, searchQuery]);
 
-  const filteredTotalPages = Math.max(1, Math.ceil(filteredAll.length / PRODUCTS_PER_PAGE));
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const filteredProducts = filteredAll.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  const filteredTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredAll.length / PRODUCTS_PER_PAGE)),
+    [filteredAll.length]
+  );
+
+  // Clamp currentPage if filter/search shrinks the result set — prevents empty page
+  useEffect(() => {
+    if (currentPage > filteredTotalPages) {
+      setCurrentPage(filteredTotalPages);
+    }
+  }, [filteredTotalPages, currentPage]);
+
+  const filteredProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredAll.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  }, [filteredAll, currentPage]);
+
+  // Prefetch next page images so forward pagination renders instantly (no UI change)
+  useEffect(() => {
+    if (currentPage >= filteredTotalPages) return;
+    const startIndex = currentPage * PRODUCTS_PER_PAGE;
+    const next = filteredAll.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+    let cancelled = false;
+    const idle = (cb: () => void) =>
+      typeof window !== 'undefined' && 'requestIdleCallback' in window
+        ? (window as unknown as { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(cb)
+        : window.setTimeout(cb, 0);
+    idle(() => {
+      if (cancelled) return;
+      for (const p of next.slice(0, 6)) {
+        if (p?.image) {
+          const pre = new Image();
+          pre.src = p.image;
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredAll, currentPage, filteredTotalPages]);
 
   return (
     <div className="products-page">
@@ -133,98 +267,70 @@ export default function ProductsPageClient({
                 type="button"
                 className={`products-filter-btn ${activeFilter === cat.id ? 'active' : ''}`}
                 onClick={() => handleFilterChange(cat.id)}
+                aria-selected={activeFilter === cat.id}
               >
                 {cat.name}
               </button>
             ))}
           </div>
 
-          <div className="products-page-grid">
-            {filteredProducts.length === 0 ? (
-              <p
+          <div style={{ position: 'relative' }}>
+            {isPending && (
+              <div
+                aria-hidden="true"
                 style={{
-                  textAlign: 'center',
-                  color: '#999',
-                  fontSize: '1.4rem',
-                  gridColumn: '1/-1',
-                  padding: '4rem',
+                  position: 'absolute',
+                  top: 6,
+                  right: 6,
+                  zIndex: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'rgba(255,255,255,0.92)',
+                  border: '1px solid #f0e7d4',
+                  borderRadius: 999,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: '#6e4c22',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  pointerEvents: 'none',
                 }}
               >
-                No products in this category.
-              </p>
-            ) : (
-              filteredProducts.map((product) => {
-                const discount =
-                  Number(product.originalPrice) > Number(product.price)
-                    ? Math.round(
-                        ((Number(product.originalPrice) - Number(product.price)) /
-                          Number(product.originalPrice)) *
-                          100
-                      )
-                    : null;
-                return (
-                <div key={product.id} className="products-page-card">
-                  <div className="products-page-card-img">
-                    {discount && (
-                      <span className="product-discount-badge">-{discount}% OFF</span>
-                    )}
-                    <button
-                      type="button"
-                      className={`product-wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
-                      aria-label={
-                        isInWishlist(product.id)
-                          ? `Remove ${product.name} from wishlist`
-                          : `Add ${product.name} to wishlist`
-                      }
-                      onClick={() =>
-                        toggleWishlist({
-                          id: product.id,
-                          name: product.name,
-                          image: product.image,
-                          price: product.price,
-                          slug: product.slug,
-                        })
-                      }
-                    >
-                      <i className={`${isInWishlist(product.id) ? 'fas' : 'far'} fa-heart`} />
-                    </button>
-                    <Link href={`/products/${product.slug || product.id}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={product.image}
-                        alt={`${product.name} — custom furniture by Ananya House of Furniture`}
-                        loading="lazy"
-                        decoding="async"
-                        width={600}
-                        height={400}
-                      />
-                      <div className="products-page-card-overlay">
-                        <span>View Details</span>
-                      </div>
-                    </Link>
-                  </div>
-                  <div className="products-page-card-body">
-                    <Link href={`/products/${product.slug || product.id}`}>
-                      <p className="products-page-card-category">
-                        {categoryLabels[product.category] || product.category}
-                      </p>
-                      <h2>{product.name}</h2>
-                    </Link>
-                    <div className="products-page-card-price">
-                      <span className="pp-price-current">
-                        Rs.{Number(product.price).toLocaleString()}
-                      </span>
-                      {Number(product.originalPrice) > Number(product.price) && (
-                        <span className="pp-price-original">
-                          Rs.{Number(product.originalPrice).toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                );
-              })
+                <i className="fas fa-spinner fa-spin" aria-hidden="true" />
+                Loading…
+              </div>
             )}
+            <div
+              className="products-page-grid"
+              style={
+                isPending
+                  ? { opacity: 0.6, transition: 'opacity 0.2s ease' }
+                  : { transition: 'opacity 0.2s ease' }
+              }
+            >
+              {filteredProducts.length === 0 ? (
+                <p
+                  style={{
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '1.4rem',
+                    gridColumn: '1/-1',
+                    padding: '4rem',
+                  }}
+                >
+                  No products in this category.
+                </p>
+              ) : (
+                filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isWished={isInWishlist(product.id)}
+                    onToggleWishlist={onToggleWishlist}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
           {filteredTotalPages > 1 && (
@@ -232,8 +338,9 @@ export default function ProductsPageClient({
               <button
                 type="button"
                 className="pagination-btn"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={handlePrev}
+                disabled={currentPage === 1 || isPending}
+                aria-busy={isPending}
               >
                 <i className="fas fa-chevron-left" /> Previous
               </button>
@@ -243,7 +350,8 @@ export default function ProductsPageClient({
                     key={page}
                     type="button"
                     className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => handlePageChange(page)}
+                    aria-current={currentPage === page ? 'page' : undefined}
                   >
                     {page}
                   </button>
@@ -252,8 +360,9 @@ export default function ProductsPageClient({
               <button
                 type="button"
                 className="pagination-btn"
-                onClick={() => setCurrentPage((p) => Math.min(filteredTotalPages, p + 1))}
-                disabled={currentPage === filteredTotalPages}
+                onClick={() => handleNext(filteredTotalPages)}
+                disabled={currentPage === filteredTotalPages || isPending}
+                aria-busy={isPending}
               >
                 Next <i className="fas fa-chevron-right" />
               </button>

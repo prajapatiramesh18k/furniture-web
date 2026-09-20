@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useTransition, memo } from 'react';
 import CloseButton from '@/components/CloseButton';
 import { openWhatsAppChat } from '@/lib/quote-whatsapp';
 
@@ -98,6 +98,62 @@ const subCategories: Record<string, { id: string; name: string; icon: string }[]
   ],
 };
 
+type CacheValue = { images: GalleryImage[]; totalPages: number };
+
+const GalleryItem = memo(function GalleryItem({
+  img,
+  index,
+  onOpen,
+  onDownload,
+  onEnquire,
+}: {
+  img: GalleryImage;
+  index: number;
+  onOpen: (index: number) => void;
+  onDownload: (url: string) => void;
+  onEnquire: (url: string) => void;
+}) {
+  return (
+    <div
+      className="gallery-page-item"
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(index)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(index);
+        }
+      }}
+      aria-label={`Open ${img.category} design ${index + 1}`}
+    >
+      <img src={img.url} alt={`${img.category} design ${index + 1} by Ananya House of Furniture`} loading="lazy" decoding="async" width={600} height={450} />
+      <div className="gallery-page-item-overlay">
+        <div className="gpo-actions">
+          <button
+            type="button"
+            className="gpo-btn"
+            onClick={(e) => { e.stopPropagation(); onDownload(img.url); }}
+            title="Download"
+            aria-label={`Download ${img.category} design ${index + 1}`}
+          >
+            <i aria-hidden="true" className="fas fa-expand"></i>
+          </button>
+          <button
+            type="button"
+            className="gpo-btn gpo-wa"
+            onClick={(e) => { e.stopPropagation(); onEnquire(img.url); }}
+            title="Enquire on WhatsApp"
+            aria-label={`Enquire about ${img.category} design ${index + 1} on WhatsApp`}
+          >
+            <i aria-hidden="true" className="fab fa-whatsapp"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function GalleryPage() {
   useEffect(() => {
     document.title = 'Ananya House of Furniture | Design Gallery';
@@ -111,7 +167,41 @@ export default function GalleryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const cacheRef = useRef<Map<string, CacheValue>>(new Map());
+  const prefetchRef = useRef<Set<string>>(new Set());
+  const abortRef = useRef<AbortController | null>(null);
+  const reqIdRef = useRef(0);
+
+  const prefetchPage = useCallback((page: number, category: string, room: string, totalPages: number) => {
+    const nextPage = page + 1;
+    if (nextPage > totalPages) return;
+    const nextKey = `${nextPage}:${category}:${room}`;
+    // Skip if already cached or already being prefetched — avoids duplicate requests
+    if (cacheRef.current.has(nextKey) || prefetchRef.current.has(nextKey)) return;
+    prefetchRef.current.add(nextKey);
+    fetch(`/api/gallery?page=${nextPage}&category=${encodeURIComponent(category)}&room=${encodeURIComponent(room)}`, { cache: 'force-cache' as RequestCache })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.images)) {
+          cacheRef.current.set(nextKey, { images: d.images, totalPages: d.totalPages || 0 });
+          // Warm the browser image cache so the next page renders instantly
+          for (const img of d.images.slice(0, 4)) {
+            if (img?.url) {
+              const pre = new Image();
+              pre.src = img.url;
+            }
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        prefetchRef.current.delete(nextKey);
+      });
+  }, []);
 
   // Read category from URL on mount
   useEffect(() => {
@@ -121,59 +211,121 @@ export default function GalleryPage() {
     setMounted(true);
   }, []);
 
+  const fetchGallery = useCallback(async (page: number, category: string, room: string) => {
+    const cacheKey = `${page}:${category}:${room}`;
+
+    // Serve from client cache instantly — no network call
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      setImages(cached.images);
+      setTotalPages(cached.totalPages);
+      setInitialLoading(false);
+      setIsFetching(false);
+      prefetchPage(page, category, room, cached.totalPages);
+      return;
+    }
+
+    // Cancel any in-flight request to prevent race / duplicate rendering
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const reqId = ++reqIdRef.current;
+
+    // Lightweight fetching state — keeps existing grid visible
+    setIsFetching(true);
+
+    try {
+      const res = await fetch(
+        `/api/gallery?page=${page}&category=${encodeURIComponent(category)}&room=${encodeURIComponent(room)}`,
+        { signal: controller.signal, cache: 'force-cache' as RequestCache }
+      );
+      const data = await res.json();
+      // Ignore stale responses
+      if (controller.signal.aborted || reqId !== reqIdRef.current) return;
+      if (Array.isArray(data.images)) {
+        setImages(data.images);
+        setTotalPages(data.totalPages || 0);
+        cacheRef.current.set(cacheKey, { images: data.images, totalPages: data.totalPages || 0 });
+
+        // Prefetch next page silently for instant pagination
+        prefetchPage(page, category, room, data.totalPages || 0);
+      }
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      console.error('Failed to fetch gallery:', error);
+    } finally {
+      if (reqId === reqIdRef.current) {
+        setIsFetching(false);
+        setInitialLoading(false);
+      }
+    }
+  }, [prefetchPage]);
+
   useEffect(() => {
     if (!mounted) return;
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/gallery?page=${currentPage}&category=${activeCategory}&room=${activeRoom}&_=${Date.now()}`);
-        const data = await res.json();
-        if (Array.isArray(data.images)) {
-          setImages(data.images);
-          setTotalPages(data.totalPages || 0);
-        }
-      } catch (error) {
-        console.error('Failed to fetch gallery:', error);
-      } finally {
-        setLoading(false);
-      }
+    fetchGallery(currentPage, activeCategory, activeRoom);
+    return () => {
+      // cleanup abort on unmount / deps change is handled inside fetchGallery via abortRef
     };
-    fetchData();
-  }, [currentPage, activeCategory, activeRoom, mounted]);
+  }, [currentPage, activeCategory, activeRoom, mounted, fetchGallery]);
 
-  const openLightbox = (index: number) => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  const openLightbox = useCallback((index: number) => {
     setCurrentIndex(index);
     setLightboxOpen(true);
-  };
+  }, []);
 
-  const handleCategoryChange = (catId: string) => {
-    setActiveCategory(catId);
-    setCurrentPage(1);
-  };
+  const handleCategoryChange = useCallback((catId: string) => {
+    startTransition(() => {
+      setActiveCategory(catId);
+      setCurrentPage(1);
+    });
+  }, []);
 
+  const handleRoomChange = useCallback((roomId: string) => {
+    startTransition(() => {
+      setActiveRoom(roomId);
+      setActiveCategory('all');
+      setCurrentPage(1);
+    });
+  }, []);
 
-  const prevImage = () => {
+  const handlePageChange = useCallback((page: number) => {
+    startTransition(() => {
+      setCurrentPage(page);
+    });
+  }, []);
+
+  const prevImage = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  }, [images.length]);
 
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
+  }, [images.length]);
 
-  const sendWhatsApp = (url: string) => {
+  const sendWhatsApp = useCallback((url: string) => {
     openWhatsAppChat(`I'm interested in this design: ${url}`, {
       branch: 'mumbai',
       cta: 'gallery_enquire',
       source: 'gallery_page',
     });
-  };
+  }, []);
 
-  const downloadImage = (url: string) => {
+  const downloadImage = useCallback((url: string) => {
     const link = document.createElement('a');
     link.href = url;
     link.download = url.split('/').pop() || 'design';
     link.click();
-  };
+  }, []);
+
+  const showSkeleton = initialLoading && images.length === 0;
+  const showEmpty = !showSkeleton && !isFetching && images.length === 0 && mounted;
+  const isBusy = isFetching || isPending;
 
   return (
     <div className="gallery-page" suppressHydrationWarning>
@@ -188,7 +340,7 @@ export default function GalleryPage() {
         <div className="gallery-pill-row">
           <button
             className={`gallery-pill-btn ${activeRoom === 'all' ? 'active' : ''}`}
-            onClick={() => { setActiveRoom('all'); handleCategoryChange('all'); }}
+            onClick={() => handleRoomChange('all')}
           >
             <i className="fas fa-th-large"></i>
             <span>All</span>
@@ -197,7 +349,7 @@ export default function GalleryPage() {
             <button
               key={room.id}
               className={`gallery-pill-btn ${activeRoom === room.id ? 'active' : ''}`}
-              onClick={() => { setActiveRoom(room.id); handleCategoryChange('all'); }}
+              onClick={() => handleRoomChange(room.id)}
             >
               <i className={`fas ${room.icon}`}></i>
               <span>{room.name}</span>
@@ -226,8 +378,8 @@ export default function GalleryPage() {
           </div>
         )}
 
-        {/* Images Grid */}
-        {loading ? (
+        {/* Images Grid — lightweight non-blocking loading: keep grid visible, dim while fetching */}
+        {showSkeleton ? (
           <div className="gallery-page-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="gallery-skeleton">
@@ -241,62 +393,61 @@ export default function GalleryPage() {
               </div>
             ))}
           </div>
-        ) : !mounted || images.length === 0 ? (
+        ) : showEmpty ? (
           <div className="gallery-page-empty">
             <i className="fas fa-images"></i>
             <p>No designs in this category yet.</p>
           </div>
         ) : (
-          <div className="gallery-page-grid">
-            {images.map((img, index) => (
+          <div style={{ position: 'relative' }}>
+            {isBusy && (
               <div
-                key={img._id}
-                className="gallery-page-item"
-                role="button"
-                tabIndex={0}
-                onClick={() => openLightbox(index)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openLightbox(index);
-                  }
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  zIndex: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'rgba(255,255,255,0.92)',
+                  border: '1px solid #f0e7d4',
+                  borderRadius: 999,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: '#6e4c22',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  pointerEvents: 'none',
                 }}
-                aria-label={`Open ${img.category} design ${index + 1}`}
               >
-                <img src={img.url} alt={`${img.category} design ${index + 1} by Ananya House of Furniture`} loading="lazy" decoding="async" width={600} height={450} />
-                <div className="gallery-page-item-overlay">
-                  <div className="gpo-actions">
-                    <button
-                      type="button"
-                      className="gpo-btn"
-                      onClick={(e) => { e.stopPropagation(); downloadImage(img.url); }}
-                      title="Download"
-                      aria-label={`Download ${img.category} design ${index + 1}`}
-                    >
-                      <i aria-hidden="true" className="fas fa-expand"></i>
-                    </button>
-                    <button
-                      type="button"
-                      className="gpo-btn gpo-wa"
-                      onClick={(e) => { e.stopPropagation(); sendWhatsApp(img.url); }}
-                      title="Enquire on WhatsApp"
-                      aria-label={`Enquire about ${img.category} design ${index + 1} on WhatsApp`}
-                    >
-                      <i aria-hidden="true" className="fab fa-whatsapp"></i>
-                    </button>
-                  </div>
-                </div>
+                <i className="fas fa-spinner fa-spin" aria-hidden="true" />
+                Loading…
               </div>
-            ))}
+            )}
+            <div className="gallery-page-grid" style={isBusy ? { opacity: 0.6, pointerEvents: 'none', transition: 'opacity 0.2s ease' } : { transition: 'opacity 0.2s ease' }}>
+              {images.map((img, index) => (
+                <GalleryItem
+                  key={img._id}
+                  img={img}
+                  index={index}
+                  onOpen={openLightbox}
+                  onDownload={downloadImage}
+                  onEnquire={sendWhatsApp}
+                />
+              ))}
+            </div>
           </div>
         )}
 
         {totalPages > 1 && (
           <div className="pagination">
             <button
+              type="button"
               className="pagination-btn"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
+              aria-busy={isBusy}
             >
               <i className="fas fa-chevron-left"></i> Previous
             </button>
@@ -304,17 +455,22 @@ export default function GalleryPage() {
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
+                  type="button"
                   className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => setCurrentPage(page)}
+                  onClick={() => handlePageChange(page)}
+                  disabled={currentPage === page}
+                  aria-current={currentPage === page ? 'page' : undefined}
                 >
                   {page}
                 </button>
               ))}
             </div>
             <button
+              type="button"
               className="pagination-btn"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
+              aria-busy={isBusy}
             >
               Next <i className="fas fa-chevron-right"></i>
             </button>

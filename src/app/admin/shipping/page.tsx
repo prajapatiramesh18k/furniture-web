@@ -73,9 +73,8 @@ export default function AdminShipping() {
             ]}
             rows={paged}
             emptyText="No deliveries queued."
+            loading={loading}
           />
-          loading={loading}
-        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

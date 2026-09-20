@@ -219,6 +219,18 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="ahf-admin">
+        <div className="ahf-denied">
+          <div className="ahf-denied-card">
+            <p style={{ color: 'var(--ahf-muted)', fontSize: 13.5, margin: 0 }}>Loading…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="ahf-admin">
       <div className={`ahf-shell ${collapsed ? 'ahf-collapsed' : ''} ${mobileOpen ? 'ahf-open' : ''}`}>
@@ -240,7 +252,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <div className="ahf-scrim" onClick={() => setMobileOpen(false)} />
         <div className="ahf-main">
           <Header
-            user={user!}
+            user={user}
             title={meta.title}
             trail={meta.trail}
             onToggleSidebar={() => {
