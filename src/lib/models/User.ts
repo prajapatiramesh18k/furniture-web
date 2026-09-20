@@ -54,6 +54,11 @@ const userSchema = new mongoose.Schema({
     default: null,
     index: true,
   },
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    default: null,
+  },
   isSuperAdmin: {
     type: Boolean,
     default: false,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import '@/lib/models';
 
 const QUOTE_NOTIFY_EMAIL =
   process.env.QUOTE_NOTIFY_EMAIL || 'ananyahouseoffurniture@gmail.com';
