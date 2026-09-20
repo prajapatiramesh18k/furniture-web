@@ -104,9 +104,8 @@ export default function AdminProjectPaymentsHub() {
             ]}
             rows={paged}
             emptyText="No project payments recorded yet."
+            loading={loading}
           />
-          loading={loading}
-        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}

@@ -239,35 +239,39 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         </aside>
         <div className="ahf-scrim" onClick={() => setMobileOpen(false)} />
         <div className="ahf-main">
-          <Header
-            user={user!}
-            title={meta.title}
-            trail={meta.trail}
-            onToggleSidebar={() => {
-              if (window.innerWidth <= 1024) setMobileOpen((o) => !o);
-              else setCollapsed((c) => !c);
-            }}
-            notifCount={notifCount}
-            notifications={notifications}
-          />
-          <main className="ahf-content">
-            {pageAllowed ? (
-              children
-            ) : (
-              <div className="ahf-panel">
-                <div className="ahf-panel-body" style={{ textAlign: 'center', padding: 40 }}>
-                  <div className="ahf-denied-ic" style={{ marginBottom: 14 }}>
-                    <i className="fas fa-lock"></i>
+          {user && (
+            <>
+              <Header
+                user={user}
+                title={meta.title}
+                trail={meta.trail}
+                onToggleSidebar={() => {
+                  if (window.innerWidth <= 1024) setMobileOpen((o) => !o);
+                  else setCollapsed((c) => !c);
+                }}
+                notifCount={notifCount}
+                notifications={notifications}
+              />
+              <main className="ahf-content">
+                {pageAllowed ? (
+                  children
+                ) : (
+                  <div className="ahf-panel">
+                    <div className="ahf-panel-body" style={{ textAlign: 'center', padding: 40 }}>
+                      <div className="ahf-denied-ic" style={{ marginBottom: 14 }}>
+                        <i className="fas fa-lock"></i>
+                      </div>
+                      <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--ahf-serif)' }}>Not Permitted</h3>
+                      <p style={{ color: 'var(--ahf-muted)', fontSize: 13.5, margin: '0 0 18px' }}>
+                        Your account doesn&apos;t have access to this section.
+                      </p>
+                      <a href="/admin/dashboard" className="ahf-btn ahf-btn-primary">Back to Dashboard</a>
+                    </div>
                   </div>
-                  <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--ahf-serif)' }}>Not Permitted</h3>
-                  <p style={{ color: 'var(--ahf-muted)', fontSize: 13.5, margin: '0 0 18px' }}>
-                    Your account doesn&apos;t have access to this section.
-                  </p>
-                  <a href="/admin/dashboard" className="ahf-btn ahf-btn-primary">Back to Dashboard</a>
-                </div>
-              </div>
-            )}
-          </main>
+                )}
+              </main>
+            </>
+          )}
         </div>
       </div>
     </div>

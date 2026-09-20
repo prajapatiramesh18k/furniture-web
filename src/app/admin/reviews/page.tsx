@@ -80,9 +80,8 @@ export default function AdminReviews() {
             ]}
             rows={paged}
             emptyText="No reviews."
+            loading={loading}
           />
-          loading={loading}
-        />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
         )}
