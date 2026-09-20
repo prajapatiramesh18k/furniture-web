@@ -19,15 +19,18 @@ const fallbackGalleryImages = [
 ];
 
 export async function GET(request: NextRequest) {
+  const gate = await requireAdmin(request, 'collections');
+  if ('error' in gate) return gate.error;
   try {
     await dbConnect();
     const category = request.nextUrl.searchParams.get('category');
+    const scope = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
 
     let images;
     if (category) {
-      images = await GalleryImage.find({ category }).sort({ uploadedAt: -1 });
+      images = await GalleryImage.find({ ...scope, category }).sort({ uploadedAt: -1 });
     } else {
-      images = await GalleryImage.find().sort({ uploadedAt: -1 });
+      images = await GalleryImage.find(scope).sort({ uploadedAt: -1 });
     }
     return NextResponse.json(images);
   } catch (error) {
@@ -46,7 +49,9 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+    delete body.tenantId;
     const image = new GalleryImage({
+      tenantId: gate.user.tenantId,
       category: body.category,
       url: body.url,
       isUploaded: true,
@@ -65,7 +70,9 @@ export async function DELETE(request: NextRequest) {
     await dbConnect();
     const id = request.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    await GalleryImage.findByIdAndDelete(id);
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const deleted = await GalleryImage.findOneAndDelete(filter);
+    if (!deleted) return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     return NextResponse.json({ message: 'Image deleted' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });

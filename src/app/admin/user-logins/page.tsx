@@ -1,0 +1,334 @@
+'use client';
+
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import UIDropdown from '@/components/UIDropdown';
+import { ModuleShell } from '@/components/admin/ModuleBits';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { AdminToast } from '@/components/admin/AdminUI';
+import StatusBadge from '@/components/admin/StatusBadge';
+import ConfirmationModal from '@/components/ConfirmationModal';
+
+interface LoginRow {
+  _id: string; name: string; email: string; role: string;
+  active: boolean; createdAt?: string; tenantName?: string;
+}
+
+const ROLES = ['manager', 'staff'] as const;
+
+/** Turn a plain username into a login email inside this company. */
+function emailFor(username: string, slug: string): string {
+  const raw = String(username || '').trim();
+  if (raw.includes('@')) return raw.toLowerCase();
+  const u = raw.toLowerCase().replace(/[^a-z0-9._-]+/g, '').slice(0, 60) || 'user';
+  return `${u}@${slug}.login`;
+}
+
+export default function AdminUserLoginsPage() {
+  const [logins, setLogins] = useState<LoginRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
+  const [toast, setToast] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companySlug, setCompanySlug] = useState('');
+
+  // Create form — company is fixed (your own), so only username + password.
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<string>('staff');
+  const [creating, setCreating] = useState(false);
+  const [cMsg, setCMsg] = useState('');
+
+  const [pendingToggle, setPendingToggle] = useState<LoginRow | null>(null);
+  const [toggling, setToggling] = useState(false);
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [resetPw, setResetPw] = useState('');
+  const [resetting, setResetting] = useState(false);
+
+  const flash = useCallback((m: string) => {
+    setToast(m);
+    window.setTimeout(() => setToast(''), 3500);
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [meRes, uRes] = await Promise.all([
+        fetch('/api/auth/me', { cache: 'no-store' }),
+        fetch('/api/admin/users', { cache: 'no-store' }),
+      ]);
+      const me = await meRes.json().catch(() => ({}));
+      const uData = await uRes.json().catch(() => ({}));
+      if (me?.user?.tenant) {
+        setCompanyName(me.user.tenant.name || '');
+        setCompanySlug(me.user.tenant.slug || '');
+      }
+      if (uRes.ok) setLogins(uData.users || []);
+    } catch {
+      flash('Failed to load logins.');
+    } finally {
+      setLoading(false);
+    }
+  }, [flash]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return logins;
+    return logins.filter((u) => `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(s));
+  }, [logins, q]);
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(filtered, 10, [q]);
+
+  const createLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      setCMsg('Username and password are required.');
+      return;
+    }
+    if (password.length < 6) {
+      setCMsg('Password must be at least 6 characters.');
+      return;
+    }
+    setCreating(true);
+    setCMsg('');
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: username.trim(),
+          email: emailFor(username.trim(), companySlug || 'company'),
+          password,
+          role,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Failed to create login');
+      setCMsg(`Created "${d.user.email}" — they can log in now.`);
+      flash('User login created.');
+      setUsername('');
+      setPassword('');
+      await load();
+    } catch (err) {
+      setCMsg(err instanceof Error ? err.message : 'Failed to create login');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const confirmToggle = async () => {
+    if (!pendingToggle) return;
+    setToggling(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pendingToggle._id, active: !pendingToggle.active }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Update failed');
+      flash(pendingToggle.active ? 'Login deactivated.' : 'Login activated.');
+      await load();
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Update failed');
+    } finally {
+      setToggling(false);
+      setPendingToggle(null);
+    }
+  };
+
+  const resetPassword = async (id: string) => {
+    if (!resetPw || resetPw.length < 6) {
+      flash('New password must be at least 6 characters.');
+      return;
+    }
+    setResetting(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, password: resetPw }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Reset failed');
+      flash('Password updated.');
+      setResetId(null);
+      setResetPw('');
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Reset failed');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  return (
+    <ModuleShell
+      title="User Logins"
+      sub={`Create logins for ${companyName || 'your company'} with just a username and password`}
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+          </div>
+        </div>
+      )}
+    >
+      <AdminToast message={toast} />
+
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-head">
+          <div>
+            <h3>Create user login</h3>
+            <p>
+              Company: <strong>{companyName || '—'}</strong> (fixed).
+              Set a username + password — that&apos;s it.
+            </p>
+          </div>
+        </div>
+        <div className="ahf-panel-body">
+          <form onSubmit={createLogin}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 10 }}>
+              <input className="ahf-input" value={companyName} disabled placeholder="Company name" title="Your company (fixed)" />
+              <input
+                className="ahf-input" required value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="User name — e.g. ramesh" autoComplete="off"
+              />
+              <input
+                className="ahf-input" required type="password" minLength={6} value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password (min 6 chars)" autoComplete="new-password"
+              />
+              <UIDropdown
+                label="Login role"
+                value={role}
+                options={ROLES.map((r) => ({ value: r, label: r }))}
+                onChange={setRole}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="ahf-btn ahf-btn-primary" disabled={creating}>
+                <i className="fas fa-user-plus"></i> {creating ? 'Creating…' : 'Create login'}
+              </button>
+              {cMsg && <span style={{ fontSize: 13, fontWeight: 600 }}>{cMsg}</span>}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-body">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12.5, color: '#8a7a66' }}>
+              {filtered.length} login{filtered.length === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="ahf-panel list-compact">
+        <div className="ahf-panel-head">
+          <div><h3>User Logins ({filtered.length})</h3><p>Username, login email, role and status</p></div>
+        </div>
+        {loading ? (
+          <div className="ahf-tablewrap">
+            <table className="ahf-table">
+              <thead>
+                <tr><th>User Name</th><th>Login Email</th><th>Role</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td><div className="ahf-skel" style={{ height: 18, borderRadius: 4 }} /></td>
+                    <td><div className="ahf-skel" style={{ height: 18, borderRadius: 4 }} /></td>
+                    <td><div className="ahf-skel" style={{ height: 18, borderRadius: 4 }} /></td>
+                    <td><div className="ahf-skel" style={{ height: 18, borderRadius: 4 }} /></td>
+                    <td><div className="ahf-skel" style={{ height: 18, borderRadius: 4 }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : filtered.length === 0 ? (
+          <p style={{ padding: 18, color: 'var(--ahf-muted)', fontSize: 13 }}>No logins found.</p>
+        ) : (
+          <>
+          <div className="ahf-tablewrap">
+            <table className="ahf-table">
+              <thead>
+                <tr>
+                  <th>User Name</th>
+                  <th>Login Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((u) => (
+                  <Fragment key={u._id}>
+                    <tr>
+                      <td>
+                        <div className="ahf-cust">
+                          <span className="ahf-avatar">{(u.name || '?')[0].toUpperCase()}</span>
+                          <div><strong>{u.name}</strong></div>
+                        </div>
+                      </td>
+                      <td><span style={{ fontSize: 12.5 }}>{u.email}</span></td>
+                      <td><StatusBadge status={u.role} /></td>
+                      <td><StatusBadge status={u.active ? 'Active' : 'Cancelled'} /></td>
+                      <td>
+                        <div className="ahf-row-actions" style={{ justifyContent: 'flex-end' }}>
+                          <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={() => { setResetId(resetId === u._id ? null : u._id); setResetPw(''); }}>
+                            <i className="fas fa-key"></i> Reset PW
+                          </button>
+                          <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={() => setPendingToggle(u)}>
+                            <i className={`fas ${u.active ? 'fa-ban' : 'fa-check'}`}></i> {u.active ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {resetId === u._id && (
+                      <tr>
+                        <td colSpan={5} style={{ background: 'var(--ahf-cream)' }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: 13 }}>New password for {u.name}</strong>
+                            <input
+                              className="ahf-input" type="password" minLength={6} value={resetPw}
+                              onChange={(e) => setResetPw(e.target.value)}
+                              placeholder="Min 6 chars" style={{ maxWidth: 220 }} autoComplete="new-password"
+                            />
+                            <button className="ahf-btn ahf-btn-primary ahf-btn-sm" onClick={() => resetPassword(u._id)} disabled={resetting}>
+                              <i className="fas fa-check"></i> {resetting ? 'Saving…' : 'Save'}
+                            </button>
+                            <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={() => { setResetId(null); setResetPw(''); }}>
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filtered.length} onPage={setPage} />
+          </>
+        )}
+      </div>
+
+      <ConfirmationModal
+        isOpen={!!pendingToggle}
+        message={pendingToggle ? `${pendingToggle.active ? 'Deactivate' : 'Activate'} ${pendingToggle.name}?` : ''}
+        subtext={pendingToggle?.active ? 'They will not be able to log in.' : 'They will be able to log in again.'}
+        confirmText={toggling ? 'Working…' : pendingToggle?.active ? 'Yes, Deactivate' : 'Yes, Activate'}
+        confirmButtonVariant={pendingToggle?.active ? 'danger' : 'primary'}
+        onConfirm={confirmToggle}
+        onCancel={() => !toggling && setPendingToggle(null)}
+      />
+    </ModuleShell>
+  );
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
 
 interface P { category: string; name: string; price: number; image: string }
 
@@ -28,7 +28,23 @@ export default function AdminCategories() {
     >
       <div className="ahf-panel">
         <div className="ahf-panel-head"><div><h3>All Categories</h3><p>Derived from real product data — no manual sync needed</p></div></div>
-        {loading ? <LoadingList rows={6} /> : (
+        {loading ? (
+          <div className="ahf-panel-body">
+            <div className="ahf-pgrid">
+              {Object.entries({}).map(([cat]) => (
+                <div className="ahf-pcard" key={cat}>
+                  <div className="ahf-panel-body" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <span className="ahf-stat-ic"><i className="fas fa-tag"></i></span>
+                    <div>
+                      <div className="ahf-skel" style={{ height: 16, width: 80, borderRadius: 4, marginBottom: 6 }} />
+                      <div className="ahf-skel" style={{ height: 12, width: 60, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
           <div className="ahf-panel-body">
             <div className="ahf-pgrid">
               {entries.map(([cat, items]) => (

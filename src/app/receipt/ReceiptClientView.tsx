@@ -270,6 +270,7 @@ function ReceiptDocumentContent({
       {/* Footer */}
       <div style={{ textAlign: 'center', padding: isPdf ? '0.8rem 2.2rem 1.2rem' : '0.75rem 1.4rem 1.1rem', borderTop: '2px solid #a27341', marginTop: '0.6rem' }}>
         <p style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0.3rem 0' }}>Ananya House of Furniture</p>
+        <p style={{ fontSize: '1rem', color: '#a27341', margin: 0, fontWeight: 600 }}>Designed by Ananya House of Furniture</p>
         <p style={{ fontSize: '1.1rem', color: '#64748b', margin: 0, fontStyle: 'italic' }}>Thank you for your work with us.</p>
       </div>
     </>
@@ -291,7 +292,8 @@ export default function ReceiptClientView({
 
   const generateReceiptNumber = () => {
     const pad = (n: number) => n.toString().padStart(2, '0');
-    return `AHF-${year}-${pad(month)}-${employee?.name?.substring(0, 3).toUpperCase() || '000'}`;
+    const coPrefix = String((employee as { employeeId?: string })?.employeeId || '').match(/^([A-Z0-9]{2,5})-\d+$/i)?.[1]?.toUpperCase() || 'AHF';
+    return `${coPrefix}-${year}-${pad(month)}-${employee?.name?.substring(0, 3).toUpperCase() || '000'}`;
   };
 
   const handleZoomIn = () => {

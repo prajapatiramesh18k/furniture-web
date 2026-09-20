@@ -1,6 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import UIDropdown from '@/components/UIDropdown';
 import ConfirmationModal from './ConfirmationModal';
+import DataTable from '@/components/admin/DataTable';
+import StatusBadge from '@/components/admin/StatusBadge';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, LoadingList } from '@/components/admin/ModuleBits';
+import { AdminToast } from '@/components/admin/AdminUI';
 import { toTitleCase } from '@/lib/text';
 
 export default function PayrollTab() {
@@ -105,6 +111,8 @@ export default function PayrollTab() {
       (emp.role && emp.role.toLowerCase().includes(q))
     );
   });
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(filteredEmployees, 10, [search, month, year]);
 
   const handleSelectEmployee = async (emp: any) => {
     setSelectedEmployee(emp);
@@ -252,17 +260,24 @@ export default function PayrollTab() {
   const generateReceiptNumber = () => {
     const padMonth = month.toString().padStart(2, '0');
     let empCode = '0001';
+    let coPrefix = 'AHF';
     if (selectedEmployee?.employeeId) {
-      const numMatch = selectedEmployee.employeeId.match(/\d+/);
-      if (numMatch) {
-        empCode = numMatch[0].padStart(4, '0');
+      const parts = String(selectedEmployee.employeeId).match(/^([A-Z0-9]{2,5})-(\d+)$/i);
+      if (parts) {
+        coPrefix = parts[1].toUpperCase();
+        empCode = parts[2].padStart(4, '0');
       } else {
-        empCode = selectedEmployee.employeeId.slice(-4).padStart(4, '0');
+        const numMatch = String(selectedEmployee.employeeId).match(/\d+/);
+        if (numMatch) {
+          empCode = numMatch[0].padStart(4, '0');
+        } else {
+          empCode = String(selectedEmployee.employeeId).slice(-4).padStart(4, '0');
+        }
       }
     } else if (selectedEmployee?._id) {
       empCode = selectedEmployee._id.toString().slice(-4);
     }
-    return `AHF-PAY-${year}-${padMonth}-${empCode}`;
+    return `${coPrefix}-PAY-${year}-${padMonth}-${empCode}`;
   };
 
   const generateReceiptPdf = async () => {
@@ -430,275 +445,81 @@ export default function PayrollTab() {
   const rcptTdBoldRight: React.CSSProperties = { ...rcptTdRight, fontWeight: 700, color: 'var(--main-color)', fontSize: '1.35rem' };
 
   return (
-    <div className="products-section">
-      {toast && (
-        <div style={{
-          position: 'fixed', top: '80px', right: '20px',
-          background: toast.type === 'success' ? '#25D366' : '#dc3545',
-          color: '#fff', padding: '15px 30px', borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999,
-          fontWeight: 600, fontSize: '16px',
-          animation: 'slideIn 0.3s ease-out'
-        }}>
-          {toast.message}
+    <ModuleShell
+      title="Payroll & Settlement"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <UIDropdown
+            label="Payroll month"
+            value={String(month)}
+            options={Array.from({ length: 12 }, (_, i) => ({
+              value: String(i + 1),
+              label: new Date(0, i).toLocaleString('default', { month: 'long' }),
+            }))}
+            onChange={(v) => { setMonth(Number(v)); setSelectedEmployee(null); setCardOpen(false); }}
+          />
+          <UIDropdown
+            label="Payroll year"
+            value={String(year)}
+            options={Array.from({ length: 10 }, (_, i) => {
+              const y = new Date().getFullYear() - 3 + i;
+              return { value: String(y), label: String(y) };
+            })}
+            onChange={(v) => { setYear(Number(v)); setSelectedEmployee(null); setCardOpen(false); }}
+          />
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search employees" />
+          </div>
         </div>
       )}
-
-      {/* Header Toolbar: Title on left, Month/Year dropdown + Search keyword on right inline */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <i className="fas fa-file-invoice-dollar" style={{ color: 'var(--primary-color)' }}></i> Monthly Settlement
-          <span style={{ fontSize: '1.25rem', color: '#64748b', fontWeight: 600, background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
-            {filteredEmployees.length}
-          </span>
-        </h2>
-
-        {/* Inline Controls: Month Dropdown, Year Input, and Search Keyword */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {/* Month Dropdown */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <select
-              value={String(month)}
-              onChange={(e) => { setMonth(Number(e.target.value)); setSelectedEmployee(null); setCardOpen(false); }}
-              style={{
-                height: '38px',
-                padding: '0 2.4rem 0 1rem',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '1.35rem',
-                fontWeight: 600,
-                color: '#0f172a',
-                background: '#ffffff',
-                outline: 'none',
-                cursor: 'pointer',
-                appearance: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              {Array.from({ length: 12 }, (_, i) => {
-                const name = new Date(0, i).toLocaleString('default', { month: 'long' });
-                return <option key={i + 1} value={String(i + 1)}>{name}</option>;
-              })}
-            </select>
-            <i className="fas fa-chevron-down" style={{ position: 'absolute', right: '10px', fontSize: '1.1rem', color: '#64748b', pointerEvents: 'none' }}></i>
-          </div>
-
-          {/* Year Dropdown */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <select
-              value={year}
-              onChange={(e) => { setYear(Number(e.target.value)); setSelectedEmployee(null); setCardOpen(false); }}
-              style={{
-                height: '38px',
-                padding: '0 2.4rem 0 1rem',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '1.35rem',
-                fontWeight: 600,
-                color: '#0f172a',
-                background: '#ffffff',
-                outline: 'none',
-                cursor: 'pointer',
-                appearance: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              {Array.from({ length: 10 }, (_, i) => {
-                const y = new Date().getFullYear() - 3 + i;
-                return <option key={y} value={y}>{y}</option>;
-              })}
-            </select>
-            <i className="fas fa-chevron-down" style={{ position: 'absolute', right: '10px', fontSize: '1.1rem', color: '#64748b', pointerEvents: 'none' }}></i>
-          </div>
-
-          {/* Search keyword input matching Job Sites and Employees list */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <i
-              className="fas fa-search"
-              style={{
-                position: 'absolute',
-                left: '11px',
-                color: '#94a3b8',
-                fontSize: '1.25rem',
-                pointerEvents: 'none',
-              }}
-            ></i>
-            <input
-              type="text"
-              placeholder="Search keyword"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                padding: '0.65rem 2.2rem 0.65rem 2.8rem',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '1.35rem',
-                color: '#0f172a',
-                outline: 'none',
-                background: '#ffffff',
-                minWidth: '220px',
-                height: '38px',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                title="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '1.4rem',
-                  lineHeight: 1,
-                  padding: 0,
-                }}
-              >
-                &times;
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+    >
+      <AdminToast message={toast?.message || ''} tone={toast?.type} />
 
       {/* Employee List */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem', minWidth: '700px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700, minWidth: '95px' }}>Emp ID</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Employee</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Daily Rate</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Status</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b' }}>
-                    <i className="fas fa-search" style={{ fontSize: '2.4rem', marginBottom: '1rem', display: 'block', color: '#cbd5e1' }}></i>
-                    <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e293b' }}>
-                      No employees found matching {search ? `"${search}"` : 'records'}
-                    </div>
-                    {search && (
-                      <button
-                        type="button"
-                        onClick={() => setSearch('')}
-                        style={{
-                          marginTop: '1.2rem',
-                          padding: '6px 16px',
-                          border: '1.5px solid #cbd5e1',
-                          borderRadius: '6px',
-                          background: '#fff',
-                          color: 'var(--primary-color, #ce962e)',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          fontSize: '1.25rem',
-                        }}
-                      >
-                        Clear Search
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredEmployees.map(emp => (
-                  <tr
-                    key={emp._id}
-                    onClick={() => handleSelectEmployee(emp)}
-                    style={{
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#faf8f5';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    <td style={{ padding: '1rem 1.2rem', whiteSpace: 'nowrap' }}>
-                      <span style={{
-                        backgroundColor: '#f8fafc',
-                        border: '1.5px solid #e2e8f0',
-                        color: 'var(--primary-color)',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontWeight: 800,
-                        fontSize: '1.25rem',
-                        letterSpacing: '0.5px',
-                      }}>
-                        {emp.employeeId || '—'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{toTitleCase(emp.name)}</div>
-                      {(emp.department || emp.role) && (
-                        <div style={{ fontSize: '1.2rem', color: '#64748b', marginTop: '2px' }}>
-                          {emp.department}{emp.department && emp.role ? ' • ' : ''}{emp.role}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem', color: '#334155', fontWeight: 600 }}>₹{emp.dailyRate}</td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '4px 10px', borderRadius: '20px', fontSize: '1.15rem', fontWeight: 700,
-                        background: emp.status === 'Active' ? '#dcfce7' : '#fce8e6',
-                        color: emp.status === 'Active' ? '#137333' : '#c5221f'
-                      }}>
-                        {emp.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="btn-edit"
-                        style={{ margin: 0, padding: '0.4rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                        onClick={() => handleSelectEmployee(emp)}
-                      >
-                        <i className="fas fa-eye"></i> View Payroll
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="ahf-panel list-compact">
+        <div className="ahf-panel-head">
+          <div><h3>Monthly Settlement</h3></div>
         </div>
+        {loading && employees.length === 0 ? <LoadingList /> : (
+          <DataTable
+            columns={[
+              {
+                key: 'id', header: 'Emp ID', render: (emp) => (
+                  <strong style={{ fontSize: 12.5 }}>{emp.employeeId || '—'}</strong>
+                ),
+              },
+              {
+                key: 'e', header: 'Employee', render: (emp) => (
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{toTitleCase(emp.name)}</div>
+                    {(emp.department || emp.role) && (
+                      <div style={{ fontSize: 11.5, color: '#8a7a66' }}>
+                        {emp.department}{emp.department && emp.role ? ' • ' : ''}{emp.role}
+                      </div>
+                    )}
+                  </div>
+                ),
+              },
+              { key: 'r', header: 'Daily Rate', render: (emp) => <span className="ahf-amt">₹{emp.dailyRate}</span> },
+              { key: 's', header: 'Status', render: (emp) => <StatusBadge status={emp.status === 'Active' ? 'Active' : 'Inactive'} /> },
+              {
+                key: 'a', header: 'Action', render: (emp) => (
+                  <button className="ahf-btn ahf-btn-ghost ahf-btn-sm" onClick={(e) => { e.stopPropagation(); handleSelectEmployee(emp); }}>
+                    <i className="fas fa-eye"></i> View Payroll
+                  </button>
+                ),
+              },
+            ]}
+            rows={paged}
+            emptyText={search ? `No employees found matching "${search}"` : 'No employees yet.'}
+            onRowClick={handleSelectEmployee}
+          />
+        )}
+        {!(loading && employees.length === 0) && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filteredEmployees.length} onPage={setPage} />
+        )}
       </div>
 
       {/* Payroll Card Modal */}
@@ -1161,6 +982,6 @@ export default function PayrollTab() {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
-    </div>
+    </ModuleShell>
   );
 }

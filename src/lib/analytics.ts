@@ -2,6 +2,7 @@ export type MarketingBranch = 'mumbai' | 'navi_mumbai' | 'thane' | 'ahmedabad' |
 
 export type AnalyticsEventParams = {
   branch?: MarketingBranch | string;
+  department?: string;
   page?: string;
   cta?: string;
   cta_position?: string;

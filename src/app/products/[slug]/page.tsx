@@ -121,8 +121,10 @@ export default function ProductDetailPage() {
     );
   }
 
-  const fullStars = Math.floor(product.rating);
-  const hasHalf = product.rating % 1 >= 0.5;
+  const safeRating = Number(product.rating ?? 0);
+  const displayRating = Number.isFinite(safeRating) ? safeRating : 0;
+  const fullStars = Math.floor(displayRating);
+  const hasHalf = displayRating % 1 >= 0.5;
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
@@ -191,14 +193,14 @@ export default function ProductDetailPage() {
               />
             ))}
             <span style={{ marginLeft: '0.5rem', color: '#666', fontSize: '1.2rem' }}>
-              {product.rating.toFixed(1)}
+              {displayRating.toFixed(1)}
             </span>
           </div>
 
           <div className="product-detail-price">
-            <span className="pd-price-current">Rs.{product.price.toLocaleString()}</span>
-            {product.originalPrice > product.price && (
-              <span className="pd-price-original">Rs.{product.originalPrice.toLocaleString()}</span>
+            <span className="pd-price-current">Rs.{Number(product.price || 0).toLocaleString()}</span>
+            {Number(product.originalPrice) > Number(product.price) && (
+              <span className="pd-price-original">Rs.{Number(product.originalPrice || 0).toLocaleString()}</span>
             )}
             {discount && (
               <span className="pd-price-save">Save {discount}%</span>
@@ -275,7 +277,7 @@ export default function ProductDetailPage() {
               <Link key={p.id} href={`/products/${p.slug}`} className="pd-related-card">
                 <img src={p.image} alt={p.name} />
                 <h4>{p.name}</h4>
-                <span>Rs.{p.price.toLocaleString()}</span>
+                <span>Rs.{Number(p.price || 0).toLocaleString()}</span>
               </Link>
             ))}
           </div>

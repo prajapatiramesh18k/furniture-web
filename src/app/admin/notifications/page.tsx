@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
 
 interface Stats {
   totals: { pendingOrders: number };
@@ -29,7 +29,13 @@ export default function AdminNotifications() {
     <ModuleShell title="Notifications" sub="Operational alerts from your live store data">
       <div className="ahf-panel">
         <div className="ahf-panel-head"><div><h3>All Notifications</h3></div></div>
-        {loading ? <LoadingList rows={3} /> : items.length === 0 ? (
+        {loading ? (
+          <div className="ahf-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="ahf-skel" style={{ height: 48 }} />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
           <p style={{ padding: 20, color: 'var(--ahf-muted)' }}>You&apos;re all caught up. New orders and reviews will notify you here.</p>
         ) : (
           <div className="ahf-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

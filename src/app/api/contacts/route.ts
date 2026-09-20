@@ -156,6 +156,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Contact numbers are fixed 10-digit Indian mobiles (accepts +91 / 0 prefix).
+    const digits = String(phone).replace(/\D/g, '');
+    const cleanPhone = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits.length === 11 && digits.startsWith('0') ? digits.slice(1) : digits;
+    if (cleanPhone.length !== 10) {
+      return NextResponse.json({ error: 'Phone must be exactly 10 digits' }, { status: 400 });
+    }
+
     const Contact = (await import('@/models/Contact')).default;
 
     const messageWithBranch =
@@ -163,9 +170,31 @@ export async function POST(req: NextRequest) {
         ? `${message}\n\n[Preferred branch: ${branch}]`
         : message;
 
+    // Prefer the logged-in user's tenant (admin manually creating a lead);
+    // fall back to the default storefront tenant for the public website form.
+    let tenantId: unknown = null;
+    try {
+      const { requireTenant } = await import('@/lib/tenant');
+      const gate = await requireTenant(req, 'customers');
+      if (!('error' in gate) && !gate.ctx.user.isSuperAdmin) {
+        tenantId = gate.ctx.user.tenantId;
+      }
+    } catch {}
+    if (!tenantId) {
+      tenantId = await (async () => {
+        try {
+          const Tenant = (await import('@/lib/models/Tenant')).default;
+          const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+          const dt = (await Tenant.findOne({ slug }).lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).lean());
+          return dt ? dt._id : null;
+        } catch { return null; }
+      })();
+    }
+
     const contact = await Contact.create({
+      tenantId,
       name,
-      phone,
+      phone: cleanPhone,
       email,
       address: address || '',
       projectType: projectType || 'not specified',
@@ -180,7 +209,7 @@ export async function POST(req: NextRequest) {
     try {
       emailResult = await sendQuoteEmail({
         name,
-        phone,
+        phone: cleanPhone,
         email,
         address: address || '',
         branch: branch || '',
@@ -205,17 +234,122 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { requireAdmin } = await import('@/lib/admin-auth');
-  const gate = await requireAdmin(req, 'dashboard');
+  const gate = await requireAdmin(req, 'customers');
   if ('error' in gate) return gate.error;
   try {
     await dbConnect();
 
     const Contact = (await import('@/models/Contact')).default;
-    const contacts = await Contact.find().sort({ createdAt: -1 });
+    const url = new URL(req.url);
+    const singleId = url.searchParams.get('id');
+
+    // Single customer 360° view — bind anywhere you need all customer details:
+    // GET /api/contacts?id=<leadId> → { lead, visits, quotations }
+    if (singleId) {
+      const scope =
+        gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: singleId } : { _id: singleId, tenantId: gate.user.tenantId };
+      const lead = await Contact.findOne(scope).populate('assignedTo', 'name').lean();
+      if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+
+      const tenantId = (lead as { tenantId?: unknown }).tenantId ?? gate.user.tenantId;
+      const phone = String((lead as { phone?: unknown }).phone || '').replace(/\D/g, '').slice(-10);
+
+      const { default: SiteVisit } = await import('@/lib/models/SiteVisit');
+      const { default: Quotation } = await import('@/lib/models/Quotation');
+      const tFilter = (extra: Record<string, unknown>) =>
+        tenantId ? { tenantId, ...extra } : extra;
+
+      const visits = await SiteVisit.find(
+        tFilter({ $or: [{ leadId: (lead as { _id?: unknown })._id }, ...(phone ? [{ phone }] : [])] }),
+      )
+        .sort({ visitDate: -1 })
+        .lean();
+
+      const quotations = phone
+        ? await Quotation.find(tFilter({ 'customer.phone': phone }))
+            .select('_id project customer totals status createdAt')
+            .sort({ createdAt: -1 })
+            .lean()
+        : [];
+
+      return NextResponse.json({ success: true, lead, visits, quotations });
+    }
+
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
+    const contacts = await Contact.find(filter)
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(contacts);
   } catch (err) {
     console.error('Contact API error:', err);
     return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
+  }
+}
+
+const LEAD_STATUSES = ['new', 'contacted', 'site_visit', 'proposal', 'quotation', 'won', 'lost', 'converted'];
+
+/** Update a lead — status, assignee, follow-up, notes. Tenant-scoped. */
+export async function PUT(req: NextRequest) {
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(req, 'customers');
+  if ('error' in gate) return gate.error;
+  try {
+    await dbConnect();
+    const body = await req.json();
+    const { id, status, source, budget, followUpAt, notes, assignedTo } = body;
+    if (!id) return NextResponse.json({ error: 'Lead id is required' }, { status: 400 });
+
+    const Contact = (await import('@/models/Contact')).default;
+    const scope =
+      gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const existing = await Contact.findOne(scope);
+    if (!existing) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+
+    const before = String(existing.status || 'new');
+    if (status !== undefined) {
+      if (!LEAD_STATUSES.includes(String(status))) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+      }
+      existing.status = status;
+    }
+    if (source !== undefined) existing.source = String(source).slice(0, 120);
+    if (budget !== undefined) existing.budget = String(budget).slice(0, 120);
+    if (notes !== undefined) existing.notes = String(notes).slice(0, 2000);
+    if (followUpAt !== undefined) {
+      const d = followUpAt ? new Date(followUpAt) : null;
+      if (d && Number.isNaN(d.getTime())) {
+        return NextResponse.json({ error: 'Invalid follow-up date' }, { status: 400 });
+      }
+      existing.followUpAt = d;
+    }
+    if (assignedTo !== undefined) {
+      if (!assignedTo) {
+        existing.assignedTo = null;
+      } else {
+        // Assignee must belong to the same company — never trust the client id blindly.
+        const Employee = (await import('@/lib/models/Employee')).default;
+        const emp = await Employee.findOne({ _id: assignedTo, tenantId: existing.tenantId }).select('_id');
+        if (!emp) return NextResponse.json({ error: 'Invalid assignee' }, { status: 400 });
+        existing.assignedTo = emp._id;
+      }
+    }
+    await existing.save();
+
+    try {
+      if (existing.tenantId) {
+        const { writeAudit } = await import('@/lib/tenant');
+        await writeAudit(String(existing.tenantId), gate.user.id, gate.user.email, 'lead.update', 'Contact', String(existing._id), {
+          from: before,
+          to: String(existing.status || ''),
+        });
+      }
+    } catch {}
+
+    const lead = await Contact.findById(existing._id).populate('assignedTo', 'name');
+    return NextResponse.json({ success: true, lead });
+  } catch (err) {
+    console.error('Contact API error:', err);
+    return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
   }
 }

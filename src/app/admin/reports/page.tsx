@@ -22,7 +22,12 @@ export default function AdminReports() {
       action={<Link href="/admin/dashboard" className="ahf-btn ahf-btn-ghost"><i className="fas fa-gauge-high"></i> Dashboard</Link>}
     >
       {loading || !data ? (
-        <div style={{ display: 'flex', gap: 12 }}>{[1, 2, 3, 4].map((i) => <div key={i} className="ahf-skel" style={{ height: 120, flex: 1 }} />)}</div>
+        <div className="ahf-grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', display: 'grid' }}>
+          {[1,2,3,4].map(i => <div key={i} className="ahf-skel" style={{ height: 130 }} />)}
+        </div>
+        <div className="ahf-grid-2eq" style={{ marginTop: 16 }}>
+          {[1,2].map(i => <div key={i} className="ahf-skel" style={{ height: 190 }} />)}
+        </div>
       ) : (
         <>
           <div className="ahf-grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', display: 'grid' }}>

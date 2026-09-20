@@ -3,67 +3,82 @@
 import { useMemo, useState } from 'react';
 import StatusBadge from '@/components/admin/StatusBadge';
 import DataTable from '@/components/admin/DataTable';
-import { ModuleShell, useAdminFetch, LoadingList } from '@/components/admin/ModuleBits';
-import { ADMIN_MODULES } from '@/lib/admin-roles';
+import UIDropdown from '@/components/UIDropdown';
+import DateRangePicker from '@/components/DateRangePicker';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
 
-interface U { _id: string; name: string; email: string; role: string; active: boolean }
-
-const ROLES = ['admin', 'manager', 'staff', 'customer'];
+interface U { _id: string; name: string; email: string; role: string; active: boolean; createdAt: string }
 
 export default function AdminStaff() {
-  const { data, loading, refresh } = useAdminFetch<{ users: U[] }>('/api/admin/users');
+  const { data, loading } = useAdminFetch<{ users: U[] }>('/api/admin/users');
   const [q, setQ] = useState('');
-  const [toast, setToast] = useState('');
-  const users = useMemo(() => (data?.users || []).filter((u) => {
-    const s = q.toLowerCase();
-    return !s || `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(s);
-  }), [data, q]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
 
-  const setRole = async (id: string, role: string) => {
-    const res = await fetch('/api/admin/users', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, role }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (res.ok) { setToast(`Role updated to ${role}`); refresh(); }
-    else alert(d.error || 'Failed to update role');
-    setTimeout(() => setToast(''), 2500);
-  };
+  const users = useMemo(() => (data?.users || []).filter((u) => {
+    const s = q.trim().toLowerCase();
+    if (statusFilter !== 'all') {
+      const isActive = statusFilter === 'active';
+      if (u.active !== isActive) return false;
+    }
+    if (!s) return true;
+    return `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(s);
+  }), [data, q, statusFilter]);
+
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(users, 10, [q, statusFilter]);
 
   return (
-    <ModuleShell title="Staff / Users" sub="Roles control which admin modules each member can open">
-      {toast && <div className="admin-toast" style={{ position: 'fixed' }}><i className="fas fa-check-circle"></i> {toast}</div>}
+    <ModuleShell
+      title="Staff / Users"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <DateRangePicker fromDate={fromDate} toDate={toDate} onChange={(f, t) => { setFromDate(f); setToDate(t); }} />
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+          </div>
+        </div>
+      )}
+    >
       <div className="ahf-panel" style={{ marginBottom: 16 }}>
         <div className="ahf-panel-body">
-          <div className="ahf-toolbar" style={{ marginBottom: 0 }}>
-            <div className="ahf-search-inline">
-              <i className="fas fa-search"></i>
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search staff…" />
-            </div>
-            <span style={{ fontSize: 12.5, color: 'var(--ahf-muted)' }}>
-              Modules available for assignment: {ADMIN_MODULES.join(', ')}
-            </span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <UIDropdown
+              label="Status filter"
+              value={statusFilter}
+              options={[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Cancelled' }]}
+              onChange={(v) => setStatusFilter(v as string)}
+            />
           </div>
         </div>
       </div>
-      <div className="ahf-panel">
-        <div className="ahf-panel-head"><div><h3>Team & Accounts ({users.length})</h3><p>Admins can change roles — changes apply on next login</p></div></div>
-        {loading ? <LoadingList /> : (
-          <DataTable
+
+      <div className="ahf-panel list-compact">
+        <DataTable
             columns={[
               { key: 'n', header: 'Member', render: (u) => (
                 <div className="ahf-cust"><span className="ahf-avatar">{(u.name || '?')[0].toUpperCase()}</span>
                 <div><strong>{u.name}</strong><span>{u.email}</span></div></div>) },
-              { key: 'r', header: 'Current Role', render: (u) => <StatusBadge status={u.role} /> },
+              { key: 'r', header: 'Role', render: (u) => <StatusBadge status={u.role} /> },
               { key: 's', header: 'Status', render: (u) => <StatusBadge status={u.active ? 'Active' : 'Cancelled'} /> },
-              { key: 'a', header: 'Change Role', render: (u) => (
-                <select className="ahf-select" style={{ padding: '6px 8px', fontSize: 12 }} value={u.role} onChange={(e) => setRole(u._id, e.target.value)}>
-                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>) },
+              { key: 'd', header: 'Joined', render: (u) => <span>{u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '—'}</span> },
             ]}
-            rows={users}
+            rows={paged}
             emptyText="No team members found."
           />
+          loading={loading}
+        />
+        {!loading && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={users.length} onPage={setPage} />
         )}
       </div>
     </ModuleShell>

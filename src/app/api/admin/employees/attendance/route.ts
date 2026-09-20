@@ -3,16 +3,24 @@ import dbConnect from '@/lib/mongodb';
 import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
 import Employee from '@/lib/models/Employee';
 import { calculateEarnedDays } from '@/lib/payroll-service';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get('employeeId');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
 
     await dbConnect();
-    let query: any = {};
+    // If an employee filter is given, verify it belongs to this tenant.
+    if (employeeId) {
+      const emp = await Employee.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: employeeId })).select('_id').lean();
+      if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+    let query: Record<string, unknown> = tenantFilter(gate.ctx.user.tenantId!);
     if (employeeId) query.employeeId = employeeId;
     if (month && year) {
       const startDate = new Date(Number(year), Number(month) - 1, 1);
@@ -37,13 +45,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const data = await request.json();
+    delete data.tenantId;
     await dbConnect();
 
-    const employee = await Employee.findById(data.employeeId);
+    const employee = await Employee.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: data.employeeId }));
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
+    data.tenantId = gate.ctx.user.tenantId;
 
     const earnedDays = calculateEarnedDays(data.workHours, employee.standardHours);
     data.earnedDays = earnedDays;
@@ -59,6 +71,7 @@ export async function POST(request: Request) {
 
     // Check if an attendance record already exists for this employee on this date
     const existing = await EmployeeAttendance.findOne({
+      tenantId: gate.ctx.user.tenantId,
       employeeId: data.employeeId,
       date: { $gte: startOfDay, $lte: endOfDay },
     });

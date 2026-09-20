@@ -35,6 +35,7 @@ const navigation = [
   { label: 'About', href: '/about' },
   { label: 'Packages', href: '/projects' },
   { label: 'Services', href: '/services' },
+  { label: 'Get Quotation', href: '/quotation-maker' },
   { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },
   { label: 'Contact', href: '/contact' },

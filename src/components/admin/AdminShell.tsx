@@ -5,8 +5,29 @@ import type { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header, { type SessionUser } from './Header';
-import { moduleForPath } from './AdminNav';
+import { moduleForPath, CATALOG_ADMIN_MODULES, isDefaultTenant } from './AdminNav';
 import { roleCanAccess } from '@/lib/admin-roles';
+
+/** Client-safe mirror of the server sales-module map. */
+const SALES_MODULE_FOR_ADMIN: Record<string, string | null> = {
+  dashboard: null,
+  quotations: 'QUOTATION',
+  projects: null,
+  team: 'EMPLOYEE_MANAGEMENT',
+  staff: null,
+  customers: null,
+  settings: null,
+  products: 'INVENTORY',
+  inventory: 'INVENTORY',
+  categories: 'INVENTORY',
+  collections: 'INVENTORY',
+  orders: 'INVENTORY',
+  offers: 'INVENTORY',
+  payments: 'ACCOUNTING',
+  reports: 'ACCOUNTING',
+  shipping: 'INVENTORY',
+  reviews: 'INVENTORY',
+};
 
 const TITLES: Record<string, { title: string; trail: { label: string; href?: string }[] }> = {
   '/admin/dashboard': { title: 'Dashboard', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Dashboard' }] },
@@ -14,8 +35,10 @@ const TITLES: Record<string, { title: string; trail: { label: string; href?: str
   '/admin/orders': { title: 'Orders', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Orders' }] },
   '/admin/categories': { title: 'Categories', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Categories' }] },
   '/admin/customers': { title: 'Customers', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Customers' }] },
+  '/admin/leads': { title: 'Leads', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Sales' }, { label: 'Leads' }] },
   '/admin/inventory': { title: 'Inventory', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Inventory' }] },
   '/admin/collections': { title: 'Furniture Collections', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Collections' }] },
+  '/admin/gallery': { title: 'Design Gallery', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Gallery' }] },
   '/admin/offers': { title: 'Offers & Discounts', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Offers' }] },
   '/admin/payments': { title: 'Payments', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Payments' }] },
   '/admin/shipping': { title: 'Shipping & Delivery', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Shipping' }] },
@@ -31,17 +54,31 @@ const TITLES: Record<string, { title: string; trail: { label: string; href?: str
   '/admin/team/live-attendance': { title: 'Live Attendance', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Employee Management' }, { label: 'Live Attendance' }] },
   '/admin/team/sites': { title: 'Job Sites', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Employee Management' }, { label: 'Job Sites' }] },
   '/admin/team/payroll': { title: 'Payroll & Settlement', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Employee Management' }, { label: 'Payroll' }] },
+  '/admin/projects': { title: 'Projects', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Projects' }, { label: 'All Projects' }] },
+  '/admin/tasks': { title: 'Tasks', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Projects' }, { label: 'Tasks' }] },
+  '/admin/progress': { title: 'Site Progress', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Projects' }, { label: 'Site Progress' }] },
+  '/admin/measurements': { title: 'Measurements', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Design' }, { label: 'Measurements' }] },
+  '/admin/expenses': { title: 'Expenses', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Finance' }, { label: 'Expenses' }] },
+  '/admin/invoices': { title: 'Invoices', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Finance' }, { label: 'Invoices' }] },
+  '/admin/project-payments': { title: 'Project Payments', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Finance' }, { label: 'Payments' }] },
+  '/admin/profitability': { title: 'Profitability', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Finance' }, { label: 'Profitability' }] },
+  '/admin/site-visits': { title: 'Site Visits', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Sales' }, { label: 'Site Visits' }] },
+  '/admin/vendors': { title: 'Suppliers', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Materials' }, { label: 'Suppliers' }] },
+  '/super': { title: 'Super Admin', trail: [{ label: 'Platform', href: '/super' }, { label: 'Companies' }] },
 };
 
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
+  const [authState, setAuthState] = useState<'ok' | 'denied'>('ok');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
-  const [counts, setCounts] = useState<{ pendingReviews?: number; pendingOrders?: number; products?: number }>({});
+  const [counts, setCounts] = useState<{ pendingReviews?: number; pendingOrders?: number; pendingQuotations?: number; pendingLeads?: number; products?: number }>({});
+  const [tenantName, setTenantName] = useState<string>('');
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+  const [enabledModules, setEnabledModules] = useState<string[]>([]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -52,7 +89,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         return;
       }
       const data = await res.json();
-      // /admin/* is for staff roles only (admin/manager/staff or explicit permission).
+      // /admin/* is for staff roles only (owner/admin/manager/staff or explicit permission).
       // Customers get their own custom page at /account; outsiders get Access Denied.
       // Menu items and pages are further filtered by role/permissions below and on the server.
       if (!data.user) {
@@ -65,11 +102,20 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         setAuthState('denied');
         return;
       }
+      if (!data.user.isSuperAdmin && !data.user.tenant) {
+        setAuthState('denied');
+        return;
+      }
+      setTenantName(data.user?.tenant?.name || '');
+      setTenantSlug(data.user?.tenant?.slug || null);
+      setEnabledModules(Array.isArray(data.user?.enabledModules) ? data.user.enabledModules : []);
       setUser({
         name: data.user.name,
         email: data.user.email,
         role: data.user.role || (data.user.isAdmin ? 'admin' : 'staff'),
         permissions: data.user.permissions || [],
+        tenantName: data.user?.tenant?.name || '',
+        isSuperAdmin: !!data.user.isSuperAdmin,
       });
       setAuthState('ok');
     } catch {
@@ -82,8 +128,10 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   }, [checkAuth]);
 
   // Badge counts from the lightweight badges API (never blocks the shell).
+  // Super admins have no tenant — skip tenant badges.
   useEffect(() => {
     if (authState !== 'ok') return;
+    if (user?.isSuperAdmin) return;
     (async () => {
       try {
         const res = await fetch('/api/admin/badges', { cache: 'no-store' });
@@ -92,11 +140,13 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         setCounts({
           pendingReviews: s.pendingReviews,
           pendingOrders: s.pendingOrders,
+          pendingQuotations: s.pendingQuotations,
+          pendingLeads: s.pendingLeads,
           products: s.products,
         });
       } catch {}
     })();
-  }, [authState]);
+  }, [authState, user?.isSuperAdmin]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -112,6 +162,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const notifications = useMemo(() => {
     const list: { icon: string; color: string; bg: string; title: string; sub: string }[] = [];
     if (counts.pendingOrders) list.push({ icon: 'fa-cart-shopping', color: '#9a6b0a', bg: '#fdf3dd', title: `${counts.pendingOrders} orders need attention`, sub: 'Pending / processing orders' });
+    if (counts.pendingLeads) list.push({ icon: 'fa-magnet', color: '#7a5327', bg: '#f3e8d3', title: `${counts.pendingLeads} new leads need follow-up`, sub: 'Website enquiries awaiting first contact' });
+    if (counts.pendingQuotations) list.push({ icon: 'fa-file-invoice', color: '#6e4c22', bg: '#f1e4cb', title: `${counts.pendingQuotations} quotations awaiting decision`, sub: 'Sent quotations needing follow-up' });
     if (counts.pendingReviews) list.push({ icon: 'fa-star', color: '#8a5f32', bg: '#f3e8d3', title: `${counts.pendingReviews} reviews awaiting approval`, sub: 'Customer feedback queue' });
     return list;
   }, [counts]);
@@ -120,25 +172,30 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
   // Per-page gate: same dashboard shell for everyone, pages filtered by permission.
   // (Server APIs enforce the same map — this only controls what renders.)
-  const pageAllowed = !user
-    ? false
-    : roleCanAccess(user.role || 'customer', user.permissions || [], moduleForPath(pathname || '/admin/dashboard'));
-
-  if (authState === 'loading') {
-    return (
-      <div className="ahf-admin">
-        <div className="ahf-loading-wrap">
-          <div className="ahf-spinner" />
-          <p>Loading your workspace…</p>
-          <div style={{ display: 'flex', gap: 12, width: 'min(560px, 90%)' }}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="ahf-skel" style={{ height: 90, flex: 1 }} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Disabled sold modules are also hidden here; the server re-checks on every request.
+  // /super/* is super-admin-only and bypasses tenant module gating (fixed shell, no layout switch).
+  const pageAllowed = useMemo(() => {
+    if (!user) return false;
+    const path = pathname || '/admin/dashboard';
+    const isSuperRoute = path === '/super' || path.startsWith('/super/');
+    if (isSuperRoute) return user.isSuperAdmin === true || String(user.role || '').toLowerCase() === 'super_admin';
+    // Job Sites + Payroll & Settlement are owner/admin-only (manager sees
+    // Employee List + Live Attendance only). Server APIs enforce the same.
+    const restrictedTeam = path === '/admin/team/sites' || path.startsWith('/admin/team/sites/') || path === '/admin/team/payroll' || path.startsWith('/admin/team/payroll/');
+    if (restrictedTeam) {
+      const r = String(user.role || '').toLowerCase();
+      if (user.isSuperAdmin) return true;
+      if (r === 'owner' || r === 'admin') return true;
+      return false;
+    }
+    const adminModule = moduleForPath(path);
+    // Catalog pages are exclusive to the default (Ananya) tenant — block direct URLs too.
+    if (CATALOG_ADMIN_MODULES.has(String(adminModule)) && !isDefaultTenant(tenantSlug) && !user.isSuperAdmin) return false;
+    if (!roleCanAccess(user.role || 'customer', user.permissions || [], adminModule)) return false;
+    const salesKey = SALES_MODULE_FOR_ADMIN[adminModule];
+    if (salesKey && enabledModules.length > 0 && !enabledModules.includes(salesKey)) return false;
+    return true;
+  }, [user, pathname, enabledModules, tenantSlug]);
 
   if (authState === 'denied') {
     return (
@@ -175,6 +232,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             query={menuQuery}
             onQuery={setMenuQuery}
             onNavigate={() => setMobileOpen(false)}
+            enabledModules={enabledModules}
+            tenantName={tenantName}
+            tenantSlug={tenantSlug}
           />
         </aside>
         <div className="ahf-scrim" onClick={() => setMobileOpen(false)} />

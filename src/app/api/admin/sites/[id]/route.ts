@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Site from '@/lib/models/Site';
+import { requireTenant, tenantFilter, writeAudit } from '@/lib/tenant';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
     await dbConnect();
     const { id } = await params;
-    const site = await Site.findById(id).lean();
+    const site = await Site.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: id })).lean();
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
@@ -25,9 +28,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage job sites.' }, { status: 403 });
+    }
     await dbConnect();
     const { id } = await params;
     const body = await req.json();
+    delete body.tenantId;
 
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name.trim();
@@ -44,8 +54,8 @@ export async function PUT(
       };
     }
 
-    const updatedSite = await Site.findByIdAndUpdate(
-      id,
+    const updatedSite = await Site.findOneAndUpdate(
+      tenantFilter(gate.ctx.user.tenantId!, { _id: id }),
       { $set: updateData },
       { new: true, runValidators: true }
     );
@@ -53,6 +63,7 @@ export async function PUT(
     if (!updatedSite) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
+    await writeAudit(gate.ctx.user.tenantId, gate.ctx.user.id, gate.ctx.user.email, 'site.update', 'Site', id, updateData);
 
     return NextResponse.json(updatedSite);
   } catch (err: any) {
@@ -66,12 +77,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage job sites.' }, { status: 403 });
+    }
     await dbConnect();
     const { id } = await params;
-    const deletedSite = await Site.findByIdAndDelete(id);
+    const deletedSite = await Site.findOneAndDelete(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!deletedSite) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
+    await writeAudit(gate.ctx.user.tenantId, gate.ctx.user.id, gate.ctx.user.email, 'site.delete', 'Site', id, {});
     return NextResponse.json({ message: 'Site deleted successfully' });
   } catch (err: any) {
     console.error('Error deleting site:', err);

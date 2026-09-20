@@ -24,7 +24,17 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    // Public signups belong to the storefront (default) tenant.
+    // Tenant members/staff are created via /api/admin/users or super-admin onboarding instead.
+    const Tenant = (await import('@/lib/models/Tenant')).default;
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
+    let defaultTenant = await Tenant.findOne({ slug: defaultSlug });
+    if (!defaultTenant) defaultTenant = await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 });
+    const tenantId = defaultTenant ? defaultTenant._id : null;
+
+    const existingUser = tenantId
+      ? await User.findOne({ email: email.toLowerCase(), tenantId })
+      : await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
         { error: 'Email already registered' },
@@ -32,9 +42,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if this is the first user - make them admin automatically
-    const userCount = await User.countDocuments();
-    const isAdmin = userCount === 0;
+    // First user of the default tenant becomes its owner; everyone else is a customer.
+    const userCount = tenantId ? await User.countDocuments({ tenantId }) : await User.countDocuments();
+    const isFirst = userCount === 0;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -42,8 +52,9 @@ export async function POST(request: NextRequest) {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      isAdmin,
-      role: isAdmin ? 'admin' : 'customer',
+      isAdmin: isFirst,
+      role: isFirst ? 'owner' : 'customer',
+      tenantId,
     });
 
     return NextResponse.json({
@@ -54,6 +65,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         isAdmin: user.isAdmin,
         role: user.role,
+        tenantId: user.tenantId ? String(user.tenantId) : null,
       },
     });
   } catch (error) {

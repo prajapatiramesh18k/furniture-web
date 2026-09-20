@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const employeeAttendanceSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   employeeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
@@ -69,7 +70,9 @@ const employeeAttendanceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Prevent duplicate attendance for the same employee on the same date
+employeeAttendanceSchema.index({ tenantId: 1, employeeId: 1, date: 1 }, { unique: true });
 employeeAttendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+employeeAttendanceSchema.index({ tenantId: 1, date: -1 });
 employeeAttendanceSchema.index({ date: -1 });
 employeeAttendanceSchema.index({ status: 1, date: -1 });
 

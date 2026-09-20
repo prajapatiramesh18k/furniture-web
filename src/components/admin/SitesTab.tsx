@@ -4,16 +4,21 @@ import { useState, useEffect } from 'react';
 import FloatingInput from './FloatingInput';
 import ConfirmationModal from './ConfirmationModal';
 import DeleteButton from './DeleteButton';
+import DataTable from '@/components/admin/DataTable';
+import StatusBadge from '@/components/admin/StatusBadge';
+import { ListPagination, usePagination } from '@/components/admin/ListPagination';
+import { ModuleShell, LoadingList } from '@/components/admin/ModuleBits';
+import { AdminToast, AdminModal, AdminModalFooter } from '@/components/admin/AdminUI';
 
 interface Site {
   _id: string;
   name: string;
   clientName?: string;
   address: string;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
+  location?: {
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
   radiusMeters: number;
   isActive: boolean;
   notes?: string;
@@ -102,8 +107,8 @@ export default function SitesTab() {
       name: site.name,
       clientName: site.clientName || '',
       address: site.address,
-      latitude: site.location.latitude.toString(),
-      longitude: site.location.longitude.toString(),
+      latitude: site.location?.latitude != null ? String(site.location.latitude) : '',
+      longitude: site.location?.longitude != null ? String(site.location.longitude) : '',
       radiusMeters: site.radiusMeters || 200,
       isActive: site.isActive,
       notes: site.notes || '',
@@ -215,322 +220,117 @@ export default function SitesTab() {
     );
   });
 
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(filteredSites, 10, [search]);
+
   return (
-    <div>
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '20px',
-          zIndex: 99999,
-          padding: '15px 30px',
-          borderRadius: '8px',
-          color: '#ffffff',
-          backgroundColor: toast.type === 'success' ? '#25D366' : '#dc2626',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontSize: '16px',
-          fontWeight: 600,
-          animation: 'slideIn 0.3s ease-out',
-        }}>
-          {toast.message}
+    <ModuleShell
+      title="Job Sites"
+      sub=""
+      action={(
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="ahf-search-inline">
+            <i className="fas fa-search"></i>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search sites" />
+          </div>
         </div>
       )}
+    >
+      <AdminToast message={toast?.message || ''} tone={toast?.type} />
 
-      {/* Header Toolbar: Title on left, Search keyword & '+' button on right */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <i className="fas fa-map-marker-alt"></i> Job Sites
-          <span style={{ fontSize: '1.25rem', color: '#64748b', fontWeight: 600, background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
-            {filteredSites.length}
-          </span>
-        </h2>
-
-        {/* Toolbar matching reference screenshot: Search keyword & '+' Add Button ONLY */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Search keyword input */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <i
-              className="fas fa-search"
-              style={{
-                position: 'absolute',
-                left: '11px',
-                color: '#94a3b8',
-                fontSize: '1.25rem',
-                pointerEvents: 'none',
-              }}
-            ></i>
-            <input
-              type="text"
-              placeholder="Search keyword"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                padding: '0.65rem 2.2rem 0.65rem 2.8rem',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '1.35rem',
-                color: '#0f172a',
-                outline: 'none',
-                background: '#ffffff',
-                minWidth: '220px',
-                height: '38px',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary-color, #ce962e)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(206, 150, 46, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                title="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '1.4rem',
-                  lineHeight: 1,
-                  padding: 0,
-                }}
-              >
-                &times;
-              </button>
-            )}
+      <div className="ahf-panel" style={{ marginBottom: 16 }}>
+        <div className="ahf-panel-body">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12.5, color: '#8a7a66' }}>
+              {filteredSites.length} site{filteredSites.length === 1 ? '' : 's'}
+            </span>
+            <button
+              className="ahf-btn ahf-btn-primary ahf-btn-sm"
+              onClick={handleOpenAdd}
+              title="Add New Job Site"
+              style={{ marginLeft: 'auto' }}
+            >
+              <i className="fas fa-plus"></i> Create
+            </button>
           </div>
-
-          {/* Plus '+' Button to Add Job Site */}
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            title="Add New Job Site"
-            style={{
-              width: '38px',
-              height: '38px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'var(--primary-color, #ce962e)',
-              border: 'none',
-              borderRadius: '8px',
-              color: '#ffffff',
-              fontSize: '1.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-              transition: 'filter 0.15s, transform 0.1s',
-              boxSizing: 'border-box',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.filter = 'brightness(0.9)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.filter = 'none';
-            }}
-          >
-            <i className="fas fa-plus" style={{ fontSize: '1.35rem' }}></i>
-          </button>
         </div>
       </div>
 
       {/* Sites List Table */}
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1.3rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Site / Project Name</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Address</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>GPS Location</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Allowed Radius</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700 }}>Status</th>
-                <th style={{ padding: '1rem 1.2rem', fontWeight: 700, textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Loading job sites...
-                  </td>
-                </tr>
-              ) : filteredSites.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b' }}>
-                    <i className="fas fa-search" style={{ fontSize: '2.4rem', marginBottom: '1rem', display: 'block', color: '#cbd5e1' }}></i>
-                    <div style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e293b' }}>
-                      No job sites found matching {search ? `"${search}"` : 'records'}
-                    </div>
-                    {search && (
-                      <button
-                        type="button"
-                        onClick={() => setSearch('')}
-                        style={{
-                          marginTop: '1.2rem',
-                          padding: '6px 16px',
-                          border: '1.5px solid #cbd5e1',
-                          borderRadius: '6px',
-                          background: '#fff',
-                          color: 'var(--primary-color, #ce962e)',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          fontSize: '1.25rem',
-                        }}
-                      >
-                        Clear Search
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredSites.map((site) => (
-                  <tr
-                    key={site._id}
-                    onClick={() => handleOpenEdit(site)}
-                    style={{
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#faf8f5';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{site.name}</div>
-                      {site.clientName && (
-                        <div style={{ fontSize: '1.15rem', color: '#64748b', marginTop: '2px' }}>
-                          Client: {site.clientName}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem', color: '#334155', maxWidth: '240px' }}>
-                      {site.address}
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <a
-                        href={`https://www.google.com/maps?q=${site.location.latitude},${site.location.longitude}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <i className="fas fa-map-marker-alt"></i>
-                        {site.location.latitude.toFixed(4)}, {site.location.longitude.toFixed(4)}
-                      </a>
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, fontSize: '1.2rem' }}>
-                        {site.radiusMeters || 200} meters
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '1.15rem',
-                        fontWeight: 700,
-                        backgroundColor: site.isActive ? '#dcfce7' : '#f1f5f9',
-                        color: site.isActive ? '#15803d' : '#64748b',
-                      }}>
-                        {site.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.2rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                        <button
-                          onClick={() => handleOpenEdit(site)}
-                          title="Edit Site"
-                          style={{
-                            backgroundColor: '#f1f5f9',
-                            border: 'none',
-                            borderRadius: '8px',
-                            width: '32px',
-                            height: '32px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#0284c7',
-                            cursor: 'pointer',
-                            padding: 0,
-                          }}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <DeleteButton
-                          size={32}
-                          iconSize={16}
-                          onClick={() => handleDelete(site._id, site.name)}
-                          title="Delete Site"
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="ahf-panel list-compact">
+        <div className="ahf-panel-head">
+          <div><h3>Sites ({filteredSites.length})</h3></div>
         </div>
+        {loading && sites.length === 0 ? <LoadingList /> : (
+          <DataTable
+            columns={[
+              {
+                key: 'n', header: 'Site / Project Name', render: (site) => (
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{site.name}</div>
+                    {site.clientName && (
+                      <div style={{ fontSize: 11.5, color: '#8a7a66' }}>Client: {site.clientName}</div>
+                    )}
+                  </div>
+                ),
+              },
+              { key: 'a', header: 'Address', render: (site) => <span style={{ fontSize: 12.5 }}>{site.address}</span> },
+              {
+                key: 'g', header: 'GPS Location', render: (site) => (
+                  site.location?.latitude != null && site.location?.longitude != null ? (
+                    <a
+                      href={`https://www.google.com/maps?q=${site.location.latitude},${site.location.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: '#8a5f32', fontWeight: 600, fontSize: 12.5 }}
+                    >
+                      <i className="fas fa-map-marker-alt"></i>{' '}
+                      {Number(site.location.latitude).toFixed(4)}, {Number(site.location.longitude).toFixed(4)}
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: 12.5, color: '#8a7a66' }}><i className="fas fa-map-marker-alt"></i> No GPS set</span>
+                  )
+                ),
+              },
+              { key: 'r', header: 'Allowed Radius', render: (site) => <span style={{ fontSize: 12.5 }}>{site.radiusMeters || 200} meters</span> },
+              { key: 's', header: 'Status', render: (site) => <StatusBadge status={site.isActive ? 'Active' : 'Inactive'} /> },
+              {
+                key: 'act', header: 'Action', render: (site) => (
+                  <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    <button className="ahf-mini-btn" title="Edit Site" onClick={() => handleOpenEdit(site)}>
+                      <i className="fas fa-pen"></i>
+                    </button>
+                    <DeleteButton
+                      size={32}
+                      iconSize={16}
+                      onClick={() => handleDelete(site._id, site.name)}
+                      title="Delete Site"
+                    />
+                  </div>
+                ),
+              },
+            ]}
+            rows={paged}
+            emptyText={search ? `No job sites found matching "${search}"` : 'No job sites yet.'}
+            onRowClick={handleOpenEdit}
+          />
+        )}
+        {!(loading && sites.length === 0) && (
+          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filteredSites.length} onPage={setPage} />
+        )}
       </div>
 
       {/* Add / Edit Site Modal */}
       {modalOpen && (
-        <div
-          onClick={() => setModalOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            padding: '1rem',
-          }}
+        <AdminModal
+          eyebrow={editingSite ? 'EDIT SITE' : 'NEW SITE'}
+          title={editingSite ? 'Edit Job Site' : 'Add New Job Site'}
+          subtitle="GPS geofence controls where workers can punch in"
+          onClose={() => setModalOpen(false)}
+          width={560}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '16px',
-              width: '100%',
-              maxWidth: '560px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '2rem',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                {editingSite ? 'Edit Job Site' : 'Add New Job Site'}
-              </h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: '#64748b' }}
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
               <FloatingInput
                 id="site-name"
                 label="Site / Project Name *"
@@ -558,36 +358,24 @@ export default function SitesTab() {
               />
 
               {/* GPS Coordinates Header & Capture Button */}
-              <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-                    <i className="fas fa-crosshairs" style={{ color: '#a27341', marginRight: '6px' }}></i>
+              <div style={{ background: '#faf7ef', border: '1px solid #eee3cd', borderRadius: 10, padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>
+                    <i className="fas fa-crosshairs" style={{ color: '#a27341', marginRight: 6 }}></i>
                     GPS Geofence Location
                   </span>
                   <button
                     type="button"
+                    className="ahf-btn ahf-btn-ghost ahf-btn-sm"
                     onClick={handleUseCurrentLocation}
                     disabled={locating}
-                    style={{
-                      background: '#a27341',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '1.15rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
                   >
                     <i className={locating ? 'fas fa-spinner fa-spin' : 'fas fa-location-arrow'}></i>
-                    {locating ? 'Capturing...' : 'Use My Current Location'}
+                    {locating ? 'Capturing…' : 'Use My Current Location'}
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <FloatingInput
                     id="site-lat"
                     label="Latitude *"
@@ -606,8 +394,8 @@ export default function SitesTab() {
                   />
                 </div>
 
-                <div style={{ marginTop: '0.8rem' }}>
-                  <label style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>
                     Allowed Geofence Radius: <strong>{formData.radiusMeters} meters</strong>
                   </label>
                   <input
@@ -619,7 +407,7 @@ export default function SitesTab() {
                     onChange={(e) => setFormData({ ...formData, radiusMeters: Number(e.target.value) })}
                     style={{ width: '100%', accentColor: '#a27341' }}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#8a7a66' }}>
                     <span>50m (Strict)</span>
                     <span>200m (Standard)</span>
                     <span>1000m (Large Campus)</span>
@@ -627,56 +415,29 @@ export default function SitesTab() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="checkbox"
                   id="site-active"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  style={{ width: '18px', height: '18px', accentColor: '#a27341' }}
+                  style={{ width: 18, height: 18, accentColor: '#a27341' }}
                 />
-                <label htmlFor="site-active" style={{ fontSize: '1.25rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                <label htmlFor="site-active" style={{ fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
                   Site is currently active (Workers can punch here)
                 </label>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  style={{
-                    padding: '0.8rem 1.4rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontSize: '1.3rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    color: '#475569',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '0.8rem 1.8rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#a27341',
-                    fontSize: '1.3rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    color: '#ffffff',
-                    boxShadow: '0 2px 6px rgba(162, 115, 65, 0.3)',
-                  }}
-                >
-                  {editingSite ? 'Save Changes' : 'Create Site'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </div>
+            <AdminModalFooter>
+              <button type="button" className="ahf-btn ahf-btn-ghost" onClick={() => setModalOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="ahf-btn ahf-btn-primary">
+                <i className="fas fa-check"></i> {editingSite ? 'Save Changes' : 'Create Site'}
+              </button>
+            </AdminModalFooter>
+          </form>
+        </AdminModal>
       )}
 
       <ConfirmationModal
@@ -690,6 +451,6 @@ export default function SitesTab() {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
-    </div>
+    </ModuleShell>
   );
 }

@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Site from '@/lib/models/Site';
+import { requireTenant, tenantFilter, writeAudit } from '@/lib/tenant';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
     await dbConnect();
-    const sites = await Site.find().sort({ createdAt: -1 }).limit(500).lean();
+    const sites = await Site.find(tenantFilter(gate.ctx.user.tenantId!)).sort({ createdAt: -1 }).limit(500).lean();
     return NextResponse.json(sites);
   } catch (err: any) {
     console.error('Error fetching sites:', err);
@@ -15,8 +18,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const gate = await requireTenant(req as never, 'team');
+    if ('error' in gate) return gate.error;
+    // Job Sites are owner/admin-only (manager keeps Employee List + Live Attendance).
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage job sites.' }, { status: 403 });
+    }
     await dbConnect();
     const body = await req.json();
+    delete body.tenantId;
 
     const { name, clientName, address, latitude, longitude, radiusMeters, isActive, notes } = body;
 
@@ -34,6 +45,7 @@ export async function POST(req: Request) {
     }
 
     const newSite = await Site.create({
+      tenantId: gate.ctx.user.tenantId,
       name: name.trim(),
       clientName: clientName?.trim() || '',
       address: address.trim(),
@@ -45,6 +57,7 @@ export async function POST(req: Request) {
       isActive: isActive !== undefined ? Boolean(isActive) : true,
       notes: notes?.trim() || '',
     });
+    await writeAudit(gate.ctx.user.tenantId, gate.ctx.user.id, gate.ctx.user.email, 'site.create', 'Site', String(newSite._id), { name: newSite.name });
 
     return NextResponse.json(newSite, { status: 201 });
   } catch (err: any) {

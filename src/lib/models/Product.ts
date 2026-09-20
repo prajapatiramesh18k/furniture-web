@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IProduct extends Document {
+  tenantId?: mongoose.Types.ObjectId | string | null;
   name: string;
   slug: string;
   price: number;
@@ -17,6 +18,7 @@ export interface IProduct extends Document {
 }
 
 const ProductSchema = new Schema<IProduct>({
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   name: { type: String, required: true },
   slug: { type: String, required: true },
   price: { type: Number, required: true },
@@ -32,6 +34,9 @@ const ProductSchema = new Schema<IProduct>({
   createdAt: { type: Date, default: Date.now },
 });
 
+ProductSchema.index({ tenantId: 1, slug: 1 });
+ProductSchema.index({ tenantId: 1, category: 1 });
+ProductSchema.index({ tenantId: 1, createdAt: -1 });
 ProductSchema.index({ slug: 1 });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ name: 1 });

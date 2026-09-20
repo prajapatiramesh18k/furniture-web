@@ -1,224 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import DeleteButton from '@/components/DeleteButton';
 import { trackQuotationPdfDownload } from '@/lib/analytics';
-
-type LineItem = { id: number; name: string; material: string; height: number; width: number; quantity: number; rate: number };
-
-const lineAmount = (item: Pick<LineItem, 'height' | 'width' | 'quantity' | 'rate'>) => {
-  const height = Number(item.height) || 0;
-  const width = Number(item.width) || 0;
-  const qty = Number(item.quantity) || 0;
-  const rate = Number(item.rate) || 0;
-  if (height > 0 && width > 0) {
-    return height * width * rate * qty;
-  }
-  return rate * qty;
-};
-
-const hasDimensions = (item: Pick<LineItem, 'height' | 'width'>) => {
-  const height = Number(item.height) || 0;
-  const width = Number(item.width) || 0;
-  return height > 0 && width > 0;
-};
-
-const normalizeQtyText = (text: string) => {
-  const digits = text.replace(/\D/g, '');
-  if (!digits || Number(digits) < 1) return { text: '1', qty: 1 };
-  return { text: digits, qty: Number(digits) };
-};
-
-type WorkType = 'material-labour' | 'labour-only';
-
-const WORK_TYPE_OPTIONS: { value: WorkType; label: string }[] = [
-  { value: 'material-labour', label: 'Material + Labour (Full Furniture Work)' },
-  { value: 'labour-only', label: 'Labour Only' },
-];
-
-const WORK_TYPE_CONTENT: Record<WorkType, { terms: string; inclusions: string }> = {
-  'material-labour': {
-    terms: [
-      '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
-      'This quotation is valid for 30 days from the date of issue.',
-      'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
-      'All required materials will be purchased/procured by us as per the specifications, designs, and finishes mutually agreed upon before execution.',
-      'Furniture will be manufactured/fabricated using the materials and specifications mentioned in this quotation.',
-      'Materials, hardware, laminates, finishes, and fittings will be provided as specified in the quotation and as mutually agreed before execution.',
-      'Any additional work, material, design changes, or modifications requested after approval of the quotation will be charged separately.',
-      'Any changes in material, brand, finish, or specification requested by the client after approval may result in additional charges and/or changes to the completion timeline.',
-    ].join('\n'),
-    inclusions: [
-      'Material procurement/purchase as per approved specifications',
-      'Furniture manufacturing/fabrication',
-      'Soft-close hinges (Hettich / Ebco) on all applicable doors and drawers',
-      'Premium-quality hardware, handles, channels, screws, and fittings',
-      'High-quality laminate finish as per selected design',
-      'Professional installation and on-site fitting',
-      'Free site measurement and consultation',
-      'Quality inspection before handover',
-      'Site cleaning after installation',
-    ].join('\n'),
-  },
-  'labour-only': {
-    terms: [
-      '50% advance payment is required upon approval of this quotation. The remaining balance shall be paid before completion/handing over of the work.',
-      'This quotation is valid for 30 days from the date of issue.',
-      'Work will commence only after written or verbal approval of this quotation and receipt of the advance payment.',
-      'All materials, hardware, laminates, fittings, accessories, and other required items shall be provided by the client unless specifically mentioned otherwise in the quotation.',
-      'Labour charges cover fabrication/assembly, installation, and fitting work as specified in this quotation.',
-      'The client is responsible for ensuring that all required materials are available at the site before the scheduled work begins.',
-      'Any additional labour, rework, modifications, or changes requested after approval of the quotation will be charged separately.',
-      'Delays caused by non-availability of materials, site access, or client-requested changes may affect the completion timeline.',
-    ].join('\n'),
-    inclusions: [
-      'Skilled labour for furniture fabrication/assembly',
-      'Professional installation and on-site fitting',
-      'Assembly and fixing of furniture components',
-      'Installation of hinges, handles, channels, and other hardware supplied by the client',
-      'Basic alignment and adjustment of doors and drawers',
-      'On-site fitting and finishing adjustments',
-      'Quality check before handover',
-      'Site cleaning after installation',
-    ].join('\n'),
-  },
-};
-
-const defaultWorkType: WorkType = 'material-labour';
-const defaultTerms = WORK_TYPE_CONTENT[defaultWorkType].terms;
-const defaultInclusions = WORK_TYPE_CONTENT[defaultWorkType].inclusions;
-
-const materialOptions = [
-  '',
-  'BWR Plywood',
-  'BWP Plywood',
-  'Plywood',
-  'PVC',
-  'HDHMR',
-  'MDF',
-  'Particle Board',
-  'Solid Wood (Teak)',
-  'Solid Wood (Sheesham)',
-  'Acrylic Finish',
-  'PU Finish',
-  'Laminate (Matte)',
-  'Laminate (Glossy)',
-  'Membrane',
-  'Veneer (Natural)',
-  'Veneer (Engineered)',
-];
-
-const VARIANT_MATERIAL: Record<'pvc' | 'plywood', { material: string; rate: number }> = {
-  pvc: { material: 'PVC', rate: 850 },
-  plywood: { material: 'Plywood', rate: 1000 },
-};
-
-const itemPresets: { name: string; material: string; height: number; width: number; rate: number }[] = [
-  { name: 'King Bed with Storage (6x6.5 ft)', material: 'Plywood', height: 6, width: 6.5, rate: 1800 },
-  { name: 'Queen Bed with Storage (5x6.5 ft)', material: 'BWR Plywood', height: 5, width: 6.5, rate: 1800 },
-  { name: 'Single Bed (3x6.5 ft)', material: 'BWR Plywood', height: 3, width: 6.5, rate: 1800 },
-  { name: '3-Door Wardrobe (7x7 ft)', material: 'BWR Plywood', height: 7, width: 7, rate: 1900 },
-  { name: '4-Door Sliding Wardrobe (8x7 ft)', material: 'BWR Plywood', height: 7, width: 8, rate: 2000 },
-  { name: 'Modular Kitchen — L-Shape', material: 'BWR Plywood', height: 3, width: 10, rate: 2200 },
-  { name: 'Modular Kitchen — U-Shape', material: 'BWR Plywood', height: 3, width: 12, rate: 2200 },
-  { name: 'Modular Kitchen — Parallel', material: 'BWR Plywood', height: 3, width: 8, rate: 2200 },
-  { name: 'TV Unit with Storage', material: 'HDHMR', height: 2, width: 6, rate: 1600 },
-  { name: 'Shoe Rack with Drawers', material: 'BWR Plywood', height: 4, width: 3, rate: 1700 },
-  { name: 'Dining Table (6-Seater)', material: 'Solid Wood (Sheesham)', height: 3, width: 6, rate: 3500 },
-  { name: 'Dining Table (4-Seater)', material: 'Solid Wood (Sheesham)', height: 3, width: 4, rate: 3500 },
-  { name: 'Crockery Unit', material: 'HDHMR', height: 7, width: 4, rate: 1800 },
-  { name: 'Bookshelf with Shutters', material: 'BWR Plywood', height: 7, width: 3, rate: 1700 },
-  { name: 'Study Desk with Hutch', material: 'BWR Plywood', height: 3, width: 4, rate: 1700 },
-  { name: 'Pooja Unit', material: 'BWR Plywood', height: 6, width: 3, rate: 2000 },
-  { name: 'Bar Cabinet', material: 'HDHMR', height: 4, width: 5, rate: 1900 },
-  { name: 'Sofa (3+1+1) with Frame', material: 'Solid Wood (Teak)', height: 3, width: 7, rate: 2800 },
-  { name: 'False Ceiling — POP', material: '', height: 0, width: 0, rate: 0 },
-  { name: 'Custom Loft / Overhead Storage', material: 'BWR Plywood', height: 2, width: 8, rate: 1500 },
-];
-
-const packagePresets: { label: string; projectType: string; items: { name: string; material: string; height: number; width: number; rate: number }[] }[] = [
-  {
-    label: '1 BHK Starter',
-    projectType: '1 BHK',
-    items: [
-      { name: 'Kitchen', material: 'BWR Plywood', height: 10, width: 8, rate: 900 },
-      { name: 'Kitchen Loft', material: 'BWR Plywood', height: 10, width: 2, rate: 900 },
-      { name: 'Wardrobe with Loft', material: 'BWR Plywood', height: 8, width: 7, rate: 900 },
-      { name: 'Bed with Storage', material: 'BWR Plywood', height: 6, width: 6, rate: 900 },
-      { name: 'TV Unit', material: 'HDHMR', height: 4, width: 6, rate: 900 },
-      { name: 'Shoe Rack', material: 'BWR Plywood', height: 4, width: 3, rate: 900 },
-      { name: 'Study Unit', material: 'BWR Plywood', height: 4, width: 2, rate: 900 },
-      { name: 'Pooja Unit', material: 'BWR Plywood', height: 4, width: 5, rate: 900 },
-      { name: 'Bathroom Vanity with Mirror', material: 'BWR Plywood', height: 3, width: 3, rate: 900 },
-      { name: 'Dining Table (4-Seater)', material: 'Solid Wood (Sheesham)', height: 4, width: 3, rate: 900 },
-      { name: 'Sofa Set (3-Seater)', material: 'BWR Plywood', height: 3, width: 6, rate: 900 },
-     // { name: 'Centre Table', material: 'BWR Plywood', height: 4, width: 2, rate: 900 },
-    ],
-  },
-  {
-    label: '2 BHK Family',
-    projectType: '2 BHK',
-    items: [
-      { name: 'Kitchen', material: 'BWR Plywood', height: 10, width: 8, rate: 850 },
-      { name: 'Kitchen Loft', material: 'BWR Plywood', height: 10, width: 2, rate: 850 },
-      { name: 'Master Wardrobe', material: 'BWR Plywood', height: 8, width: 7, rate: 850 },
-      { name: 'Master Wardrobe Loft', material: 'BWR Plywood', height: 8, width: 2, rate: 850 },
-      { name: 'Bedroom Wardrobe', material: 'BWR Plywood', height: 7, width: 7, rate: 850 },
-      { name: 'Bedroom Wardrobe Loft', material: 'Plywood', height: 7, width: 2, rate: 850 },
-      { name: 'King Bed with Storage', material: 'BWR Plywood', height: 6, width: 6.5, rate: 850 },
-      { name: 'Queen Bed with Storage', material: 'BWR Plywood', height: 6, width: 6, rate: 850 },
-      { name: 'TV Unit', material: 'HDHMR', height: 4, width: 7, rate: 850 },
-      { name: 'Shoe Rack', material: 'BWR Plywood', height: 5, width: 3, rate: 850 },
-      { name: 'Pooja Unit', material: 'BWR Plywood', height: 7, width: 4, rate: 850 },
-      { name: 'Crockery Unit', material: 'HDHMR', height: 5, width: 7, rate: 850 },
-      { name: 'Study Unit', material: 'BWR Plywood', height: 5, width: 2, rate: 850 },
-      { name: 'Bathroom Vanity with Mirror', material: 'BWR Plywood', height: 3, width: 3, rate: 850 },
-      { name: 'Bathroom Vanity with Mirror', material: 'BWR Plywood', height: 3, width: 3, rate: 850 },
-      { name: 'Dining Table (4-Seater)', material: 'Solid Wood (Sheesham)', height: 4, width: 3, rate: 850 },
-      { name: 'Sofa Set (3+1)', material: 'BWR Plywood', height: 3, width: 7.33, rate: 850 },
-      { name: 'Centre Table', material: 'BWR Plywood', height: 4, width: 2, rate: 850 },
-    ],
-  },
-  {
-    label: '3 BHK Premium',
-    projectType: '3 BHK',
-    items: [
-      { name: 'Modular Kitchen', material: 'PVC', height: 10, width: 8, rate: 850 },
-      { name: 'Kitchen Loft', material: 'PVC', height: 10, width: 2, rate: 850 },
-      { name: 'Master Wardrobe', material: 'PVC', height: 8, width: 7, rate: 850 },
-      { name: 'Master Wardrobe Loft', material: 'PVC', height: 8, width: 2, rate: 850 },
-      { name: 'Bedroom Wardrobe', material: 'PVC', height: 7, width: 7, rate: 850 },
-      { name: 'Bedroom Wardrobe', material: 'PVC', height: 7, width: 7, rate: 850 },
-      { name: 'Bedroom Wardrobe Loft', material: 'PVC', height: 7, width: 2, rate: 850 },
-      { name: 'Bedroom Wardrobe Loft', material: 'PVC', height: 7, width: 2, rate: 850 },
-      { name: 'King Bed with Storage', material: 'PVC', height: 6, width: 6.5, rate: 850 },
-      { name: 'Queen Bed with Storage', material: 'PVC', height: 6, width: 6.5, rate: 850 },
-      { name: 'Queen Bed with Storage', material: 'PVC', height: 6, width: 6.5, rate: 850 },
-      { name: 'TV Unit', material: 'HDHMR', height: 5, width: 7, rate: 850 },
-      { name: 'Shoe Rack', material: 'PVC', height: 5, width: 3, rate: 850 },
-      { name: 'Pooja Unit', material: 'PVC', height: 7, width: 5, rate: 850 },
-      { name: 'Crockery Unit', material: 'HDHMR', height: 5, width: 7, rate: 850 },
-      { name: 'Bar Cabinet', material: 'HDHMR', height: 3, width: 7, rate: 850 },
-      { name: 'Study Unit', material: 'PVC', height: 5, width: 2, rate: 850 },
-      { name: 'Bathroom Vanity with Mirror', material: 'PVC', height: 3, width: 3, rate: 850 },
-      { name: 'Bathroom Vanity with Mirror', material: 'PVC', height: 3, width: 3, rate: 850 },
-      { name: 'Bathroom Vanity with Mirror', material: 'PVC', height: 3, width: 3, rate: 850 },
-      { name: 'Dining Table (6-Seater)', material: 'Solid Wood (Sheesham)', height: 5, width: 3, rate: 850 },
-      { name: 'Sofa Set (3+1+1)', material: 'PVC', height: 3, width: 8.33, rate: 850 },
-      { name: 'Centre Table', material: 'PVC', height: 4, width: 2, rate: 850 },
-    ],
-  },
-  {
-    label: 'Custom Single Item',
-    projectType: 'Custom Furniture',
-    items: [
-      { name: '', material: 'BWR Plywood', height: 0, width: 0, rate: 0 },
-    ],
-  },
-];
+import DepartmentSelector from '@/components/quotation/DepartmentSelector';
+import DynamicItemForm from '@/components/quotation/DynamicItemForm';
+import DynamicItemsTable from '@/components/quotation/DynamicItemsTable';
+import QMSelect from '@/components/quotation/QMSelect';
+import QuotationPreview from '@/components/quotation/QuotationPreview';
+import MultiTradeSections, { AddTradePills, calcOfTrade, newCategoryFor } from '@/components/quotation/MultiTradeSections';
+import type { DepartmentId, QuotationCategory, QuotationItem, TenantBrand } from '@/lib/quotation/types';
+import {
+  DEPARTMENT_CONFIGS,
+  getDepartmentConfig,
+  joinLines,
+  makeEmptyItem,
+  packageToItems,
+  presetToItem,
+  workTypeOf,
+} from '@/lib/quotation/departments';
+import { configOfTrade, tradeForDepartment } from '@/lib/quotation/trades';
+import { multiTotalsOf, totalsOf } from '@/lib/quotation/calculations';
 
 const initialCustomer = {
   name: '',
@@ -281,87 +85,79 @@ const branches: BranchInfo[] = [
 
 const getBranch = (label: string): BranchInfo =>
   branches.find((b) => b.label === label) || branches[0];
-const projectTypes = [
-  '1 BHK',
-  '2 BHK',
-  '3 BHK',
-  '4 BHK / Villa',
-  'Office',
-  'Shop / Retail',
-  'Restaurant',
-  'Showroom',
-  'Modular Kitchen',
-  'Custom Furniture',
-  'Other',
-];
 
-const formatINR = (n: number) =>
-  '₹' +
-  n.toLocaleString('en-IN', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  });
-
-const numberToWords = (num: number): string => {
-  if (num === 0) return 'Zero';
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-  const two = (n: number): string => {
-    if (n < 10) return ones[n];
-    if (n < 20) return teens[n - 10];
-    return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-  };
-
-  const three = (n: number): string => {
-    const h = Math.floor(n / 100);
-    const r = n % 100;
-    return (h ? ones[h] + ' Hundred' + (r ? ' ' : '') : '') + (r ? two(r) : '');
-  };
-
-  let result = '';
-  const crore = Math.floor(num / 10000000);
-  const lakh = Math.floor((num % 10000000) / 100000);
-  const thousand = Math.floor((num % 100000) / 1000);
-  const hundred = num % 1000;
-
-  if (crore) result += three(crore) + ' Crore ';
-  if (lakh) result += two(lakh) + ' Lakh ';
-  if (thousand) result += two(thousand) + ' Thousand ';
-  if (hundred) result += three(hundred);
-
-  return result.trim() + ' Rupees Only';
-};
+const DEFAULT_DEPARTMENT: DepartmentId = 'furniture';
 
 export default function QuotationMakerPage() {
+  const [department, setDepartment] = useState<DepartmentId>(DEFAULT_DEPARTMENT);
+  const config = DEPARTMENT_CONFIGS[department];
+
+  // Multi-trade (interior package) mode: one quotation, many trade sections.
+  // Single mode is byte-for-byte the legacy flow.
+  const [mode, setMode] = useState<'single' | 'multi'>('single');
+  const [categories, setCategories] = useState<QuotationCategory[]>([]);
+  const [activeCatKey, setActiveCatKey] = useState('');
+  const [pendingMode, setPendingMode] = useState<'single' | 'multi' | null>(null);
+
   const [customer, setCustomer] = useState(initialCustomer);
   const [project, setProject] = useState(initialProject);
-  const [items, setItems] = useState<LineItem[]>([]);
+  const [items, setItems] = useState<QuotationItem[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<LineItem>({
-    id: -1,
-    name: '',
-    material: '',
-    height: 0,
-    width: 0,
-    quantity: 1,
-    rate: 0,
-  });
-  const [inclusionsText, setInclusionsText] = useState<string>(defaultInclusions);
-  const [notes, setNotes] = useState(defaultTerms);
-  const [workType, setWorkType] = useState<WorkType>(defaultWorkType);
+  const [draft, setDraft] = useState<QuotationItem>(() => makeEmptyItem(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT]));
+  const [workType, setWorkType] = useState<string>(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT].defaultWorkType);
+  const [inclusionsText, setInclusionsText] = useState<string>(
+    () => joinLines(workTypeOf(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT], DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT].defaultWorkType).inclusions),
+  );
+  const [notes, setNotes] = useState<string>(
+    () => joinLines(workTypeOf(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT], DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT].defaultWorkType).terms),
+  );
+  // Baselines for dirty-detection: terms/inclusions are only auto-replaced while pristine.
+  const [termsBaseline, setTermsBaseline] = useState<string>(() =>
+    joinLines(workTypeOf(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT], DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT].defaultWorkType).terms),
+  );
+  const [inclusionsBaseline, setInclusionsBaseline] = useState<string>(() =>
+    joinLines(workTypeOf(DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT], DEPARTMENT_CONFIGS[DEFAULT_DEPARTMENT].defaultWorkType).inclusions),
+  );
   const [includeGst, setIncludeGst] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
-  const [activeVariant, setActiveVariant] = useState<'pvc' | 'plywood' | null>(null);
+  const [tenantBrand, setTenantBrand] = useState<TenantBrand | null>(null);
+  // Whoever is logged in signs the quotation — shown under Authorised Signatory.
+  const [loginName, setLoginName] = useState('');
+  const [activeVariant, setActiveVariant] = useState<string | null>(null);
   const [activePresetLabel, setActivePresetLabel] = useState<string | null>(null);
-  const [draftQtyText, setDraftQtyText] = useState('1');
-  const [listQtyTexts, setListQtyTexts] = useState<Record<number, string>>({});
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [pendingDept, setPendingDept] = useState<DepartmentId | null>(null);
+  const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
   const router = useRouter();
+
+  type SiteVisitRow = {
+    _id: string;
+    customerName: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    visitDate: string;
+    status?: string;
+    quoteStatus?: string;
+    requirements?: string;
+    notes?: string;
+    leadId?: { email?: string; name?: string; phone?: string } | string | null;
+  };
+  const [linkedVisitId, setLinkedVisitId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+
+  const showNotice = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
+    setNotice({ message, type });
+    window.setTimeout(() => setNotice(null), 4000);
+  };
+  const pathname = usePathname();
+  // Inside admin the X should go back to the request list (sidebar stays),
+  // not to the public home which unmounts the whole portal.
+  const closeHref = pathname?.startsWith('/admin') ? '/admin/quotations/new' : '/';
 
   useEffect(() => {
     document.title = 'Quotation Maker | Ananya House of Furniture';
@@ -369,9 +165,17 @@ export default function QuotationMakerPage() {
       const raw = sessionStorage.getItem('auth-user');
       const user = raw ? JSON.parse(raw) : null;
       setAuthorized(!!(user && user.isAdmin));
+      if (user?.name) setLoginName(String(user.name));
     } catch {
       setAuthorized(false);
     }
+    // Source of truth — the session copy can be stale after profile edits.
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.name) setLoginName(String(d.user.name));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -407,6 +211,31 @@ export default function QuotationMakerPage() {
     };
   }, []);
 
+  // Tenant branding: quotations/PDFs must use the CURRENT tenant's company info,
+  // never hardcoded details. Falls back to defaults on the public maker.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/tenant/settings', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const t = data?.tenant;
+        if (t) {
+          setTenantBrand({
+            name: t.name || 'Ananya House of Furniture',
+            address: t.address || '',
+            phone: t.phone || '',
+            email: t.email || '',
+            gstNumber: t.gstNumber || '',
+            website: t.website || '',
+            logo: t.logo || '',
+          });
+          if (t.logo) setLogoSrc(t.logo);
+        }
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     if (authorized !== true) return;
     let cancelled = false;
@@ -414,7 +243,11 @@ export default function QuotationMakerPage() {
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled && data?.quoteNo) {
-          setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
+          // Don't overwrite quote no when editing an existing quotation.
+          const params = new URLSearchParams(window.location.search);
+          if (!params.get('edit')) {
+            setProject((p) => ({ ...p, quoteNo: data.quoteNo }));
+          }
         }
       })
       .catch(() => {});
@@ -423,11 +256,132 @@ export default function QuotationMakerPage() {
     };
   }, [authorized]);
 
+  // Site-visit requests (source for new quotations) + edit mode (?edit=id).
   useEffect(() => {
-    if (!activeVariant) return;
-    const { material, rate } = VARIANT_MATERIAL[activeVariant];
-    setDraft((d) => ({ ...d, material, rate }));
-  }, [activeVariant]);
+    if (authorized !== true) return;
+    let cancelled = false;
+    const params = new URLSearchParams(window.location.search);
+    const eid = params.get('edit');
+    const vid = params.get('visit');
+    if (eid) setEditId(eid);
+
+    fetch('/api/site-visits', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const list = Array.isArray(d?.visits) ? d.visits : [];
+        // Autofill when opened from request list (?visit=id).
+        if (vid && !eid) {
+          const leadEmailOf = (x: SiteVisitRow) =>
+            x.email || (x.leadId && typeof x.leadId === 'object' ? x.leadId.email || '' : '');
+          const v = list.find((x: SiteVisitRow) => String(x._id) === String(vid));
+          if (v) {
+            setCustomer((c) => ({
+              ...c,
+              name: v.customerName || c.name,
+              phone: String(v.phone || '').replace(/\D/g, '').slice(-10),
+              email: leadEmailOf(v) || c.email,
+              address: v.address || c.address,
+            }));
+            if (v.requirements && v.requirements.trim()) {
+              setProject((p) => ({ ...p, type: v.requirements.trim() }));
+            }
+            setLinkedVisitId(v._id);
+            showNotice(`Autofilled from site visit — ${v.customerName}.`, 'success');
+          } else {
+            // Fallback: fetch single visit directly.
+            fetch(`/api/site-visits?id=${encodeURIComponent(vid)}`, { cache: 'no-store' })
+              .then((r) => r.json())
+              .then((sd) => {
+                if (cancelled) return;
+                const sv = sd?.visit;
+                if (sv) {
+                  const em = sv.email || (sv.leadId && typeof sv.leadId === 'object' ? sv.leadId.email || '' : '');
+                  setCustomer((c) => ({
+                    ...c,
+                    name: sv.customerName || c.name,
+                    phone: String(sv.phone || '').replace(/\D/g, '').slice(-10),
+                    email: em || c.email,
+                    address: sv.address || c.address,
+                  }));
+                  if (sv.requirements && String(sv.requirements).trim()) {
+                    setProject((p) => ({ ...p, type: String(sv.requirements).trim() }));
+                  }
+                  setLinkedVisitId(sv._id);
+                  showNotice(`Autofilled from site visit — ${sv.customerName}.`, 'success');
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
+
+    if (eid) {
+      setEditLoading(true);
+      fetch(`/api/quotations?id=${encodeURIComponent(eid)}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => {
+          if (cancelled) return;
+          const q = d?.quotation;
+          if (!q) {
+            showNotice('Quotation to edit not found.', 'error');
+            return;
+          }
+          if (q.department) setDepartment(q.department);
+          if (q.mode === 'multi' || q.mode === 'single') {
+            setMode(q.mode);
+            if (q.mode === 'multi' && Array.isArray(q.categories) && q.categories.length > 0) {
+              setCategories(q.categories);
+              setActiveCatKey(q.categories[0].key);
+            }
+          }
+          if (q.customer) {
+            setCustomer({
+              name: q.customer.name || '',
+              phone: String(q.customer.phone || ''),
+              email: q.customer.email || '',
+              address: q.customer.address || '',
+              branch: q.customer.branch || 'Mumbai (Head Office)',
+            });
+          }
+          if (q.project) {
+            setProject({
+              type: q.project.type || '',
+              quoteNo: q.project.quoteNo || '',
+              date: q.project.date || new Date().toISOString().split('T')[0],
+              validTill: q.project.validTill || '',
+            });
+          }
+          if (Array.isArray(q.items)) {
+            setItems(q.items.map((it: QuotationItem, idx: number) => ({ ...it, id: Date.now() + idx })));
+          }
+          if (typeof q.workType === 'string' && q.workType) setWorkType(q.workType);
+          const t = typeof q.terms === 'string' ? q.terms : '';
+          const inc = typeof q.inclusions === 'string' ? q.inclusions : '';
+          if (t) {
+            setNotes(t);
+            setTermsBaseline(t);
+          }
+          if (inc) {
+            setInclusionsText(inc);
+            setInclusionsBaseline(inc);
+          }
+          if (q.totals && Number(q.totals.gst) > 0) setIncludeGst(true);
+          showNotice(`Editing ${q.project?.quoteNo || 'quotation'} — changes will update the same quotation.`, 'info');
+        })
+        .catch(() => {
+          if (!cancelled) showNotice('Failed to load quotation for editing.', 'error');
+        })
+        .finally(() => {
+          if (!cancelled) setEditLoading(false);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized]);
 
   if (authorized === null) {
     return <div style={{ minHeight: '60vh' }} />;
@@ -437,7 +391,7 @@ export default function QuotationMakerPage() {
     return (
       <div className="quotation-page">
         <div className="quotation-hero no-print">
-          <CloseButton href="/" />
+          <CloseButton href={closeHref} />
           <h1>Admin <span>Access</span></h1>
           <p>This page is restricted to administrators.</p>
         </div>
@@ -453,26 +407,62 @@ export default function QuotationMakerPage() {
     );
   }
 
-  const subtotal = items.reduce((s, i) => s + lineAmount(i), 0);
-  const gst = includeGst ? subtotal * 0.18 : 0;
-  const total = subtotal + gst;
+  const activeCat = mode === 'multi' ? categories.find((c) => c.key === activeCatKey) || categories[0] : undefined;
+  const activeConfig = activeCat ? configOfTrade(activeCat.trade) : config;
 
-  const addItem = () => {
+  const singleTotals = totalsOf(items, config.calculationType, includeGst);
+  const multi = mode === 'multi'
+    ? multiTotalsOf(items, categories, calcOfTrade, includeGst)
+    : null;
+  const subtotal = multi ? multi.subtotal : singleTotals.subtotal;
+  const gst = multi ? multi.gst : singleTotals.gst;
+  const total = multi ? multi.total : singleTotals.total;
+  const totalDiscount = multi ? multi.totalDiscount : 0;
+  const categoryTotals = multi ? multi.categoryTotals : undefined;
+  const totalsByKey = new Map((categoryTotals || []).map((c) => [c.key, c]));
+  const termsDirty = notes !== termsBaseline;
+  const inclusionsDirty = inclusionsText !== inclusionsBaseline;
+
+  const updateDraft = (key: string, value: string | number) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+  };
+
+  const handleDraftBlur = (key: string) => {
+    if (key === 'quantity') {
+      setDraft((d) => ({ ...d, quantity: Number(d.quantity) > 0 ? Number(d.quantity) : 1 }));
+      return;
+    }
+    // Preset lookup: typing a known preset name fills its fields.
+    if (key === 'name' && activeConfig.presets && draft.name.trim()) {
+      const match = activeConfig.presets.find((p) => p.name === draft.name.trim());
+      if (match) {
+        const filled = presetToItem(match, draft.id);
+        setDraft((d) => ({ ...d, ...filled, id: d.id }));
+      }
+    }
+  };
+
+  const submitDraft = () => {
     if (!draft.name.trim()) return;
-    const qty = draft.quantity > 0 ? draft.quantity : 1;
-    const newItem: LineItem = { ...draft, quantity: qty, id: Date.now() };
-    setItems([...items, newItem]);
-    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, quantity: 1, rate: 0 });
-    setDraftQtyText('1');
-    setEditingId(null);
+    const qty = Number(draft.quantity) > 0 ? Number(draft.quantity) : 1;
+    const stamped = mode === 'multi' && activeCat ? { ...draft, trade: activeCat.key, quantity: qty } : { ...draft, quantity: qty };
+    if (editingId !== null) {
+      setItems((list) => list.map((it) => (it.id === editingId ? { ...stamped, id: editingId } : it)));
+      setEditingId(null);
+    } else {
+      setItems((list) => [...list, { ...stamped, id: Date.now() }]);
+    }
+    setDraft(makeEmptyItem(activeConfig));
   };
 
   const startEdit = (id: number) => {
     const target = items.find((it) => it.id === id);
     if (!target) return;
-    const qty = target.quantity || 1;
-    setDraft({ ...target, quantity: qty });
-    setDraftQtyText(String(qty));
+    // Jump the form to the item's trade section in multi mode.
+    if (mode === 'multi' && target.trade && target.trade !== activeCatKey) {
+      setActiveCatKey(target.trade);
+    }
+    setDraft({ ...target, quantity: Number(target.quantity) || 1 });
     setEditingId(id);
     setTimeout(() => {
       const el = document.getElementById('line-items-form-anchor');
@@ -482,91 +472,243 @@ export default function QuotationMakerPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setDraft({ id: -1, name: '', material: '', height: 0, width: 0, quantity: 1, rate: 0 });
-    setDraftQtyText('1');
-  };
-
-  const updateDraft = (field: keyof LineItem, value: string | number) => {
-    setDraft({ ...draft, [field]: value });
-  };
-
-  const updateItem = (id: number, field: keyof LineItem, value: string | number) => {
-    if (editingId === id) {
-      setDraft({ ...draft, [field]: value });
-      return;
-    }
-    setItems(items.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+    setDraft(makeEmptyItem(activeConfig));
   };
 
   const removeItem = (id: number) => {
-    setItems(items.filter((it) => it.id !== id));
-    setListQtyTexts((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    setItems((list) => list.filter((it) => it.id !== id));
     if (editingId === id) cancelEdit();
   };
 
-  const applyPackage = (
-    preset: (typeof packagePresets)[number],
-    variant: 'pvc' | 'plywood' | null
-  ) => {
-    const override = variant ? VARIANT_MATERIAL[variant] : null;
-    const newItems: LineItem[] = preset.items.map((it, i) => ({
-      id: Date.now() + i,
-      name: it.name,
-      material: override ? override.material : it.material,
-      height: it.height,
-      width: it.width,
-      quantity: 1,
-      rate: override ? override.rate : it.rate,
-    }));
-    setItems(newItems);
-    setListQtyTexts({});
-    setProject((p) => ({ ...p, type: preset.projectType }));
-    setActiveVariant(variant);
-    setActivePresetLabel(variant ? preset.label : null);
+  /** Apply a package preset (variant overrides first, e.g. furniture PVC/Plywood rates). */
+  const applyPackage = (presetIndex: number, variantKey: string | null) => {
+    const pkg = config.packages?.[presetIndex];
+    if (!pkg) return;
+    const variantFields = variantKey ? config.variants?.find((v) => v.key === variantKey)?.fields : undefined;
+    setItems(packageToItems(pkg, variantFields));
+    setProject((p) => ({ ...p, type: pkg.projectType }));
+    setActiveVariant(variantKey);
+    setActivePresetLabel(pkg.label);
   };
 
-  const customInclusionsList = inclusionsText
-    .split('\n')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const applyVariantToDraft = (variantKey: string) => {
+    const v = config.variants?.find((x) => x.key === variantKey);
+    if (!v) return;
+    setDraft((d) => ({ ...d, ...v.fields }));
+    setActiveVariant(variantKey);
+  };
 
-  const formMaterialOptions = materialOptions;
+  const loadWorkTypeDefaults = (value: string) => {
+    const wt = workTypeOf(config, value);
+    const t = joinLines(wt.terms);
+    const inc = joinLines(wt.inclusions);
+    setWorkType(value);
+    setNotes(t);
+    setInclusionsText(inc);
+    setTermsBaseline(t);
+    setInclusionsBaseline(inc);
+  };
 
-  const inclusionsList = customInclusionsList;
+  const requestWorkType = (next: string) => {
+    if (next === workType) return;
+    if (termsDirty || inclusionsDirty) setPendingWorkType(next);
+    else loadWorkTypeDefaults(next);
+  };
 
-  const applyWorkType = (next: WorkType) => {
-    setWorkType(next);
-    setNotes(WORK_TYPE_CONTENT[next].terms);
-    setInclusionsText(WORK_TYPE_CONTENT[next].inclusions);
+  const applyDepartment = (next: DepartmentId) => {
+    const nextConfig = getDepartmentConfig(next);
+    const wt = workTypeOf(nextConfig, nextConfig.defaultWorkType);
+    const t = joinLines(wt.terms);
+    const inc = joinLines(wt.inclusions);
+    setDepartment(next);
+    setItems([]);
+    setDraft(makeEmptyItem(nextConfig));
+    setEditingId(null);
+    setWorkType(nextConfig.defaultWorkType);
+    setNotes(t);
+    setInclusionsText(inc);
+    setTermsBaseline(t);
+    setInclusionsBaseline(inc);
+    setProject((p) => ({ ...p, type: '' }));
+    setActiveVariant(null);
+    setActivePresetLabel(null);
+  };
+
+  const requestDepartment = (next: DepartmentId) => {
+    if (next === department) return;
+    if (items.length > 0 || termsDirty || inclusionsDirty) setPendingDept(next);
+    else applyDepartment(next);
+  };
+
+  /* ---------- multi-trade mode ---------- */
+
+  const applyMode = (next: 'single' | 'multi') => {
+    if (next === 'multi') {
+      const t = tradeForDepartment(department);
+      const cat: QuotationCategory = {
+        key: `${t.key}-0-${Date.now().toString(36).slice(-4)}`,
+        trade: t.key,
+        label: t.label,
+        room: '',
+        discount: 0,
+        taxPct: undefined,
+        sortOrder: 0,
+      };
+      setCategories([cat]);
+      setActiveCatKey(cat.key);
+      // Existing single-trade items move into the first section untouched.
+      setItems((list) => list.map((it) => ({ ...it, trade: cat.key })));
+      setDraft(makeEmptyItem(configOfTrade(t.key)));
+      // Pristine quotes adopt Interior defaults (project types, terms).
+      if (items.length === 0 && !termsDirty && !inclusionsDirty && department !== 'interior') {
+        const ic = DEPARTMENT_CONFIGS.interior;
+        const wt = workTypeOf(ic, ic.defaultWorkType);
+        const wtTerms = joinLines(wt.terms);
+        const wtInc = joinLines(wt.inclusions);
+        setDepartment('interior');
+        setWorkType(ic.defaultWorkType);
+        setNotes(wtTerms);
+        setInclusionsText(wtInc);
+        setTermsBaseline(wtTerms);
+        setInclusionsBaseline(wtInc);
+      }
+    } else {
+      setCategories([]);
+      setActiveCatKey('');
+      setDraft(makeEmptyItem(config));
+    }
+    setEditingId(null);
+    setMode(next);
+  };
+
+  const requestMode = (next: 'single' | 'multi') => {
+    if (next === mode) return;
+    if (items.length > 0 || termsDirty || inclusionsDirty) setPendingMode(next);
+    else applyMode(next);
+  };
+
+  const addCategory = (tradeKey: string) => {
+    const taken = categories.map((c) => c.label);
+    const cat = newCategoryFor(tradeKey, taken, categories.length);
+    setCategories((list) => [...list, cat]);
+    setActiveCatKey(cat.key);
+    setEditingId(null);
+    setDraft(makeEmptyItem(configOfTrade(cat.trade)));
+  };
+
+  const removeCategory = (key: string) => {
+    if (categories.length <= 1) return;
+    const remaining = categories.filter((c) => c.key !== key);
+    const fallback = [...remaining].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))[0];
+    setItems((list) => list.map((it) => ((it.trade || key) === key ? { ...it, trade: fallback.key } : it)));
+    setCategories(remaining);
+    if (activeCatKey === key) {
+      setActiveCatKey(fallback.key);
+      setDraft(makeEmptyItem(configOfTrade(fallback.trade)));
+    }
+    setEditingId(null);
+  };
+
+  const patchCategory = (key: string, patch: Partial<QuotationCategory>) => {
+    setCategories((list) => list.map((c) => (c.key === key ? { ...c, ...patch } : c)));
   };
 
   const handleDownload = async () => {
     if (subtotal === 0) {
-      alert('Please add at least one item with a rate before downloading.');
+      showNotice('Please add at least one item with a rate before downloading.', 'info');
+      return;
+    }
+    const custPhone = customer.phone.replace(/\D/g, '');
+    if (custPhone.length !== 10) {
+      showNotice('Customer phone must be exactly 10 digits.', 'info');
+      document.getElementById('qm-cust-phone')?.focus();
       return;
     }
     const target = document.getElementById('print-area');
     if (!target) return;
     setDownloading(true);
-    
-    // Save to database asynchronously
-    fetch('/api/quotations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer,
-        project,
-        items,
-        totals: { subtotal, gst: includeGst ? subtotal * 0.18 : 0, total: includeGst ? subtotal * 1.18 : subtotal },
-        workType,
-        terms: notes,
-        inclusions: inclusionsText,
+
+    // Save to database asynchronously (POST for new, PUT fullEdit for ?edit=id)
+    const payloadTotals = mode === 'multi'
+      ? { subtotal, gst, total, totalDiscount, categoryTotals }
+      : { subtotal, gst: includeGst ? subtotal * 0.18 : 0, total: includeGst ? subtotal * 1.18 : subtotal };
+    let finalQuoteNo = project.quoteNo;
+    if (editId) {
+      fetch('/api/quotations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editId,
+          fullEdit: true,
+          department,
+          departmentName: mode === 'multi' ? 'Interior (Multi-Trade)' : config.name,
+          mode,
+          ...(mode === 'multi' ? { categories } : {}),
+          customer,
+          project,
+          items,
+          totals: payloadTotals,
+          workType,
+          terms: notes,
+          inclusions: inclusionsText,
+          ...(linkedVisitId ? { visitId: linkedVisitId } : {}),
+        }),
       })
-    }).catch(console.error);
+        .then(() => {
+          showNotice('Quotation updated.', 'success');
+          if (linkedVisitId) {
+            fetch('/api/site-visits', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: linkedVisitId, quoteStatus: 'completed' }),
+            }).catch(() => {});
+          }
+        })
+        .catch(console.error);
+    } else {
+      // Await save so the PDF uses the server-assigned quotation number.
+      try {
+        const res = await fetch('/api/quotations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            department,
+            departmentName: mode === 'multi' ? 'Interior (Multi-Trade)' : config.name,
+            mode,
+            ...(mode === 'multi' ? { categories } : {}),
+            status: 'sent',
+            customer,
+            project,
+            items,
+            totals: payloadTotals,
+            workType,
+            terms: notes,
+            inclusions: inclusionsText,
+            ...(linkedVisitId ? { visitId: linkedVisitId } : {}),
+          }),
+        });
+        const d = await res.json().catch(() => ({}));
+        const assigned = d?.quotation?.project?.quoteNo;
+        if (res.ok && assigned) finalQuoteNo = assigned;
+        if (res.ok && assigned && assigned !== project.quoteNo) {
+          setProject((p) => ({ ...p, quoteNo: assigned }));
+          // Let the preview re-render with the assigned number before capture.
+          await new Promise((r) => setTimeout(r, 150));
+        }
+        if (res.ok) {
+          showNotice(`Quotation saved — ${assigned || project.quoteNo}.`, 'success');
+          if (linkedVisitId) {
+            fetch('/api/site-visits', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: linkedVisitId, quoteStatus: 'completed' }),
+            }).catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
     target.classList.add('qp-compact');
     try {
@@ -636,9 +778,10 @@ export default function QuotationMakerPage() {
         if (i > 0) pdf.addPage();
         pdf.addImage(sliceImg, 'PNG', margin, margin, renderW, sliceRenderH, undefined, 'FAST');
       }
-      const safeQuote = (project.quoteNo || 'quotation').replace(/[^\w-]/g, '_');
+      const safeQuote = (finalQuoteNo || 'quotation').replace(/[^\w-]/g, '_');
       pdf.save(`${safeQuote}.pdf`);
       trackQuotationPdfDownload({
+        department,
         branch: customer.branch === 'ahmedabad' ? 'ahmedabad' : 'mumbai',
         cta: 'quotation_pdf_download',
         source: 'quotation_maker',
@@ -646,7 +789,7 @@ export default function QuotationMakerPage() {
       });
     } catch (err) {
       console.error('PDF generation failed', err);
-      alert('PDF generation failed. Please try again or use the browser print dialog.');
+      showNotice('PDF generation failed. Please try again or use the browser print dialog.', 'error');
     } finally {
       target.classList.remove('qp-compact');
       setDownloading(false);
@@ -659,12 +802,27 @@ export default function QuotationMakerPage() {
 
   const executeReset = () => {
     setIsResetConfirmOpen(false);
+    const wt = workTypeOf(config, config.defaultWorkType);
+    const t = joinLines(wt.terms);
+    const inc = joinLines(wt.inclusions);
+    setEditId(null);
+    setLinkedVisitId(null);
     setCustomer(initialCustomer);
     setProject({ ...initialProject });
     setItems([]);
-    setInclusionsText(defaultInclusions);
-    setNotes(defaultTerms);
-    setWorkType(defaultWorkType);
+    setDraft(makeEmptyItem(config));
+    setEditingId(null);
+    setMode('single');
+    setCategories([]);
+    setActiveCatKey('');
+    setPendingMode(null);
+    setInclusionsText(inc);
+    setNotes(t);
+    setTermsBaseline(t);
+    setInclusionsBaseline(inc);
+    setWorkType(config.defaultWorkType);
+    setActiveVariant(null);
+    setActivePresetLabel(null);
     fetch('/api/quotation-counter')
       .then((r) => r.json())
       .then((data) => {
@@ -673,18 +831,29 @@ export default function QuotationMakerPage() {
       .catch(() => {});
   };
 
-  const isActive = (key: string) => focused === key;
-
-  const formatDate = (iso: string) => {
-    if (!iso) return '';
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
+  const branch = getBranch(customer.branch);
+  // Whoever is logged in signs the quotation. Branch contacts are only the
+  // fallback for non-logged-in use — the maker itself requires an admin login.
+  const signer =
+    loginName ||
+    (customer.branch.toLowerCase().includes('mumbai')
+      ? 'Mahesh Prajapati'
+      : 'Ramesh Prajapati');
+  const ctaItems =
+    department === 'furniture'
+      ? [
+          { icon: 'fa-calendar-check', title: 'Next step:', sub: `Book a free site visit Call ${tenantBrand?.phone || '+91 93218 12823'} — we measure on-site at no charge.` },
+          { icon: 'fa-cube', title: 'See before you decide', sub: '3D design preview included with every confirmed order.' },
+        ]
+      : [
+          { icon: 'fa-calendar-check', title: 'Next step:', sub: `Call ${tenantBrand?.phone || '+91 93218 12823'} to confirm this quotation.` },
+          { icon: 'fa-cube', title: 'Quality checked', sub: 'Every order is inspected before handover.' },
+        ];
 
   return (
     <div className="quotation-page">
       <div className="quotation-hero no-print">
-        <CloseButton href="/" />
+        <CloseButton href={closeHref} />
         <h1>Quotation <span>Maker</span></h1>
         <p>Create a professional quotation for your customer — download as PDF in one click.</p>
       </div>
@@ -692,431 +861,386 @@ export default function QuotationMakerPage() {
       <div className="quotation-page-layout no-print">
         {/* EDITOR (left) */}
         <div className="quotation-editor">
+          {editId && (
+            <div className="quotation-section" style={{ border: '1.5px solid #a27341', background: '#faf3e3' }}>
+              <h3 className="quotation-section-title">
+                <i className="fas fa-pen"></i> Editing {project.quoteNo || 'quotation'}
+                {editLoading && <span className="qm-hint"> — loading…</span>}
+              </h3>
+              <p className="qm-hint">Changes will update the same quotation. Quote no is kept to preserve identity.</p>
+              <button
+                type="button"
+                className="qm-cancel"
+                onClick={() => {
+                  setEditId(null);
+                  setLinkedVisitId(null);
+                  const params = new URLSearchParams(window.location.search);
+                  params.delete('edit');
+                  const qs = params.toString();
+                  router.replace(`${window.location.pathname}${qs ? `?${qs}` : ''}`);
+                  showNotice('Edit mode off — new quotation.', 'info');
+                }}
+              >
+                <i className="fas fa-times"></i> Exit edit mode
+              </button>
+            </div>
+          )}
+
+          <div className="quotation-section">
+            <h3 className="quotation-section-title">Quotation type</h3>
+            <div className="quotation-package-pills">
+              <button
+                type="button"
+                className={`quotation-package-pill${mode === 'single' ? ' is-active' : ''}`}
+                onClick={() => requestMode('single')}
+                title="One trade per quotation (current behaviour)"
+              >
+                <i className="fas fa-hammer"></i> Single trade
+              </button>
+              <button
+                type="button"
+                className={`quotation-package-pill${mode === 'multi' ? ' is-active' : ''}`}
+                onClick={() => requestMode('multi')}
+                title="One quotation with many trades — Furniture, Electrical, Civil, Painting…"
+              >
+                <i className="fas fa-layer-group"></i> Interior package (multi-trade)
+              </button>
+            </div>
+            {mode === 'multi' && (
+              <p className="qm-hint">Add trade sections below. Each section keeps its own rates, room, discount &amp; tax — with section subtotals and one grand total. Approval creates one project with the same packages.</p>
+            )}
+          </div>
+
+          {mode === 'single' ? (
+            <DepartmentSelector
+              value={department}
+              onChange={requestDepartment}
+              branchValue={customer.branch}
+              branchOptions={branches.map((b) => b.label)}
+              onBranchChange={(b) => setCustomer({ ...customer, branch: b })}
+            />
+          ) : (
+            <div className="quotation-section">
+              <h3 className="quotation-section-title">Department & Branch</h3>
+              <div className="qm-grid2">
+                <div className="qm-field">
+                  <label className="qm-label"><i className="fas fa-briefcase"></i> Department</label>
+                  <input className="qm-input" value="Interior (Multi-Trade)" disabled aria-label="Department" />
+                </div>
+                <div className="qm-field">
+                  <label className="qm-label" htmlFor="qm-branch-multi"><i className="fas fa-code-branch"></i> Branch</label>
+                  <QMSelect label="Select branch" value={customer.branch} options={branches.map((b) => b.label)} onChange={(b) => setCustomer({ ...customer, branch: b })} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="quotation-section">
             <h3 className="quotation-section-title">Customer Details</h3>
-            <div className="quotation-grid-2">
-              <div className="floating-field">
+            <div className="qm-grid2">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-cust-name"><i className="fas fa-user"></i> Customer name <span className="qm-req">*</span></label>
                 <input
+                  id="qm-cust-name"
                   type="text"
-                  className="cpf-input"
+                  className="qm-input"
+                  placeholder="e.g. Rahul Mehta"
                   value={customer.name}
                   onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                  onFocus={() => setFocused('c-name')}
-                  onBlur={() => setFocused(null)}
                 />
-                <label className="floating-label">Customer Name</label>
               </div>
-              <div className="floating-field">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-cust-phone"><i className="fas fa-phone"></i> Phone <span className="qm-req">*</span></label>
                 <input
+                  id="qm-cust-phone"
                   type="tel"
-                  className="cpf-input"
+                  className="qm-input"
+                  placeholder="10-digit mobile number"
                   value={customer.phone}
+                  aria-invalid={customer.phone.length > 0 && customer.phone.length !== 10}
+                  aria-describedby="qm-cust-phone-hint"
                   onChange={(e) => setCustomer({ ...customer, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                  onFocus={() => setFocused('c-phone')}
-                  onBlur={() => setFocused(null)}
                 />
-                <label className="floating-label">Phone</label>
+                <p id="qm-cust-phone-hint" className="qm-hint" style={{ margin: '0.15rem 0 0' }}>
+                  {customer.phone.length === 0
+                    ? 'Enter the 10-digit mobile number.'
+                    : customer.phone.length !== 10
+                      ? `Enter ${10 - customer.phone.length} more digit${10 - customer.phone.length === 1 ? '' : 's'} (${customer.phone.length}/10).`
+                      : 'Looks good.'}
+                </p>
               </div>
             </div>
-            <div className="floating-field">
+            <div className="qm-field" style={{ marginBottom: '0.75rem' }}>
+              <label className="qm-label" htmlFor="qm-cust-email"><i className="fas fa-envelope"></i> Email <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
               <input
+                id="qm-cust-email"
                 type="email"
-                className="cpf-input"
+                className="qm-input"
+                placeholder="customer@email.com"
                 value={customer.email}
                 onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                onFocus={() => setFocused('c-email')}
-                onBlur={() => setFocused(null)}
               />
-              <label className="floating-label">Email (optional)</label>
             </div>
-            <div className="floating-field">
+            <div className="qm-field">
+              <label className="qm-label" htmlFor="qm-cust-addr"><i className="fas fa-map-marker-alt"></i> Site address</label>
               <textarea
-                className="cpf-input cpf-textarea-short"
+                id="qm-cust-addr"
+                className="qm-input"
+                style={{ minHeight: 64 }}
                 rows={2}
+                placeholder="Flat / plot, road, area, city, PIN"
                 value={customer.address}
                 onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                onFocus={() => setFocused('c-address')}
-                onBlur={() => setFocused(null)}
               />
-              <label className="floating-label">Site Address</label>
-            </div>
-            <div className="floating-field">
-              <select
-                className="cpf-input cpf-select"
-                value={customer.branch}
-                onChange={(e) => setCustomer({ ...customer, branch: e.target.value })}
-                onFocus={() => setFocused('c-branch')}
-                onBlur={() => setFocused(null)}
-              >
-                {branches.map((b) => (
-                  <option key={b.key} value={b.label}>{b.label}</option>
-                ))}
-              </select>
-              <label className="floating-label">Branch</label>
             </div>
           </div>
 
           <div className="quotation-section">
             <h3 className="quotation-section-title">Project Info</h3>
-            <div className="quotation-grid-2">
-              <div className="floating-field">
+            <div className="qm-grid2">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-quote-no"><i className="fas fa-hashtag"></i> Quote no.</label>
                 <input
+                  id="qm-quote-no"
                   type="text"
-                  className="cpf-input"
+                  className="qm-input"
                   value={project.quoteNo}
                   onChange={(e) => setProject({ ...project, quoteNo: e.target.value })}
-                  onFocus={() => setFocused('p-qno')}
-                  onBlur={() => setFocused(null)}
                 />
-                <label className="floating-label">Quote No.</label>
               </div>
-              <div className="floating-field">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-date"><i className="fas fa-calendar"></i> Date</label>
                 <input
+                  id="qm-date"
                   type="date"
-                  className="cpf-input cpf-date"
+                  className="qm-input"
                   value={project.date}
                   onChange={(e) => setProject({ ...project, date: e.target.value })}
-                  onFocus={() => setFocused('p-date')}
-                  onBlur={() => setFocused(null)}
                 />
-                <label className="floating-label">Date</label>
               </div>
             </div>
-            <div className="quotation-grid-2">
-              <div className="floating-field">
-                <select
-                  className="cpf-input cpf-select"
+            <div className="qm-grid2">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-proj-type"><i className="fas fa-diagram-project"></i> Project type</label>
+                <QMSelect
+                  label="Project type"
                   value={project.type}
-                  onChange={(e) => setProject({ ...project, type: e.target.value })}
-                  onFocus={() => setFocused('p-type')}
-                  onBlur={() => setFocused(null)}
-                >
-                  <option value=""></option>
-                  {projectTypes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <label className="floating-label">Project Type</label>
+                  options={config.projectTypes}
+                  onChange={(t) => setProject({ ...project, type: t })}
+                />
               </div>
-              <div className="floating-field">
-                <select
-                  className="cpf-input cpf-select"
-                  value={workType}
-                  onChange={(e) => applyWorkType(e.target.value as WorkType)}
-                  onFocus={() => setFocused('p-work-type')}
-                  onBlur={() => setFocused(null)}
-                >
-                  {WORK_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <label className="floating-label">Work Type</label>
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-work-type"><i className="fas fa-helmet-safety"></i> Work type</label>
+                <QMSelect
+                  label="Work type"
+                  value={config.workTypes.find((w) => w.value === workType)?.label || workType}
+                  options={config.workTypes.map((w) => w.label)}
+                  onChange={(label) => {
+                    const hit = config.workTypes.find((w) => w.label === label);
+                    if (hit) requestWorkType(hit.value);
+                  }}
+                />
               </div>
             </div>
-            <div className="quotation-grid-2">
-              <div className="floating-field">
+            <div className="qm-grid2">
+              <div className="qm-field">
+                <label className="qm-label" htmlFor="qm-valid"><i className="fas fa-hourglass-half"></i> Valid till</label>
                 <input
+                  id="qm-valid"
                   type="date"
-                  className="cpf-input cpf-date"
+                  className="qm-input"
                   value={project.validTill}
                   onChange={(e) => setProject({ ...project, validTill: e.target.value })}
-                  onFocus={() => setFocused('p-valid')}
-                  onBlur={() => setFocused(null)}
                 />
-                <label className="floating-label">Valid Till</label>
               </div>
             </div>
 
-            <div className="quotation-package-pills">
-              <span className="quotation-package-label">Quick start:</span>
-              {([
-                { preset: packagePresets[0], variant: 'pvc' as const, label: '1 BHK PVC (₹850)' },
-                { preset: packagePresets[0], variant: 'plywood' as const, label: '1 BHK Plywood (₹1000)' },
-                { preset: packagePresets[1], variant: 'pvc' as const, label: '2 BHK PVC (₹850)' },
-                { preset: packagePresets[1], variant: 'plywood' as const, label: '2 BHK Plywood (₹1000)' },
-                { preset: packagePresets[2], variant: 'pvc' as const, label: '3 BHK PVC (₹850)' },
-                { preset: packagePresets[2], variant: 'plywood' as const, label: '3 BHK Plywood (₹1000)' },
-                { preset: packagePresets[3], variant: null, label: 'Custom Single Item' },
-              ]).map((entry) => {
-                const isActive =
-                  entry.variant !== null &&
-                  activeVariant === entry.variant &&
-                  activePresetLabel === entry.preset.label;
-                return (
+            {mode === 'single' && config.quickStart && (
+              <div className="quotation-package-pills">
+                <span className="quotation-package-label">Quick start:</span>
+                {config.quickStart.map((entry) => {
+                  const isActive =
+                    entry.variantKey !== null &&
+                    entry.variantKey !== undefined &&
+                    activeVariant === entry.variantKey &&
+                    activePresetLabel === config.packages?.[entry.presetIndex]?.label;
+                  return (
+                    <button
+                      type="button"
+                      key={entry.label}
+                      className={`quotation-package-pill${isActive ? ' is-active' : ''}`}
+                      onClick={() => applyPackage(entry.presetIndex, entry.variantKey ?? null)}
+                      title={`Fill items for ${entry.label}`}
+                    >
+                      <i className="fas fa-magic-wand-sparkles"></i> {entry.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {mode === 'single' && !config.quickStart && config.packages && (
+              <div className="quotation-package-pills">
+                <span className="quotation-package-label">Quick start:</span>
+                {config.packages.map((pkg, i) => (
                   <button
                     type="button"
-                    key={entry.label}
-                    className={`quotation-package-pill${isActive ? ' is-active' : ''}`}
-                    onClick={() => applyPackage(entry.preset, entry.variant)}
-                    title={`Fill items for ${entry.label}`}
+                    key={pkg.label}
+                    className={`quotation-package-pill${activePresetLabel === pkg.label ? ' is-active' : ''}`}
+                    onClick={() => applyPackage(i, null)}
+                    title={`Fill items for ${pkg.label}`}
                   >
-                    <i className="fas fa-magic-wand-sparkles"></i> {entry.label}
+                    <i className="fas fa-magic-wand-sparkles"></i> {pkg.label}
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+            {mode === 'single' && config.variants && (
+              <div className="quotation-package-pills">
+                <span className="quotation-package-label">Rate variant:</span>
+                {config.variants.map((v) => (
+                  <button
+                    type="button"
+                    key={v.key}
+                    className={`quotation-package-pill${activeVariant === v.key && !activePresetLabel ? ' is-active' : ''}`}
+                    onClick={() => applyVariantToDraft(v.key)}
+                    title={`Set draft to ${v.label}`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {mode === 'multi' && (
+            <div className="quotation-section">
+              <h3 className="quotation-section-title">Add trade</h3>
+              <p className="qm-hint">Pick a trade first — the item form below follows the selected section.</p>
+              <AddTradePills categories={categories} onAdd={addCategory} />
+            </div>
+          )}
 
           <div className="quotation-section" id="line-items-form-anchor">
             <div className="quotation-section-head">
               <h3 className="quotation-section-title">
-                {editingId !== null ? 'Edit Item' : 'Add New Item'}
+                {editingId !== null
+                  ? 'Edit Item'
+                  : mode === 'multi' && activeCat
+                    ? `Add item — ${activeCat.label}${activeCat.room ? ` · ${activeCat.room}` : ''}`
+                    : config.labels.itemsTitle}
               </h3>
             </div>
-            <div className="quotation-items">
-              <div className="quotation-items-header">
-                <span>Item Description</span>
-                <span>Height (ft)</span>
-                <span>Width (ft)</span>
-                <span>Qty</span>
-                <span>Rate (₹/sqft)</span>
-                <span>Amount</span>
-                <span></span>
-              </div>
-              <div className={`quotation-item-card${editingId !== null ? ' is-editing' : ''}`}>
-                <div className="quotation-item-row">
-                  <input
-                    type="text"
-                    className="quotation-item-name"
-                    list="preset-list-draft"
-                    placeholder="e.g. Modular kitchen — L-shaped"
-                    value={draft.name}
-                    onChange={(e) => updateDraft('name', e.target.value)}
-                    onBlur={(e) => {
-                      const match = itemPresets.find((p) => p.name === e.target.value.trim());
-                      if (match) {
-                        setDraft({
-                          ...draft,
-                          name: match.name,
-                          material: match.material,
-                          height: match.height,
-                          width: match.width,
-                          rate: match.rate,
-                        });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') addItem();
-                    }}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    className="quotation-item-qty"
-                    value={draft.height || ''}
-                    onChange={(e) => updateDraft('height', Number(e.target.value) || 0)}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    className="quotation-item-qty"
-                    value={draft.width || ''}
-                    onChange={(e) => updateDraft('width', Number(e.target.value) || 0)}
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="quotation-item-qty"
-                    value={draftQtyText}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\D/g, '');
-                      setDraftQtyText(v);
-                      updateDraft('quantity', v === '' ? 0 : Number(v));
-                    }}
-                    onBlur={() => {
-                      const { text, qty } = normalizeQtyText(draftQtyText);
-                      setDraftQtyText(text);
-                      updateDraft('quantity', qty);
-                    }}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    className="quotation-item-rate"
-                    value={draft.rate || ''}
-                    onChange={(e) => updateDraft('rate', Number(e.target.value) || 0)}
-                  />
-                  <span className="quotation-item-amount">
-                    {formatINR(lineAmount(draft))}
-                  </span>
-                  <span></span>
+            <div className="quotation-items" style={{ border: 'none', background: 'transparent', overflow: 'visible' }}>
+              <DynamicItemForm
+                config={activeConfig}
+                draft={draft}
+                onChange={updateDraft}
+                onSubmit={submitDraft}
+                onBlurField={handleDraftBlur}
+                submitLabel={editingId !== null ? 'Save Changes' : 'Submit'}
+                datalistOptions={activeConfig.presets?.map((p) => p.name)}
+                tradeExtras={mode === 'multi'}
+                calcOverride={mode === 'multi' ? calcOfTrade(activeCat?.trade) : undefined}
+              />
+              {editingId !== null && (
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <button type="button" className="qm-cancel" onClick={cancelEdit}>
+                    <i className="fas fa-times"></i> Cancel editing
+                  </button>
                 </div>
-                <datalist id="preset-list-draft">
-                  {itemPresets.map((p) => (
-                    <option key={p.name} value={p.name} />
-                  ))}
-                </datalist>
-                <div className="quotation-item-meta">
-                  <label className="quotation-item-material">
-                    <i className="fas fa-layer-group"></i>
-                    <span>Material / Finish:</span>
-                    <select
-                      value={draft.material}
-                      onChange={(e) => updateDraft('material', e.target.value)}
-                    >
-                      {formMaterialOptions.map((m) => (
-                        <option key={m} value={m}>{m || '— Select —'}</option>
-                      ))}
-                    </select>
-                  </label>
-                  {editingId === null && (
-                    <button
-                      type="button"
-                      className="quotation-item-submit"
-                      onClick={addItem}
-                      disabled={!draft.name.trim()}
-                    >
-                      <i className="fas fa-paper-plane"></i> Submit
-                    </button>
-                  )}
-                  {editingId !== null && (
-                    <div className="quotation-item-actions">
-                      <button
-                        type="button"
-                        className="quotation-item-cancel"
-                        onClick={cancelEdit}
-                      >
-                        <i className="fas fa-times"></i> Cancel
-                      </button>
-                      <button
-                        type="button"
-                        className="quotation-item-submit"
-                        onClick={() => {
-                          if (!draft.name.trim()) return;
-                          setItems(items.map((it) => (it.id === editingId ? { ...draft, id: editingId } : it)));
-                          cancelEdit();
-                        }}
-                      >
-                        <i className="fas fa-check"></i> Save Changes
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
 
-            {items.filter((it) => it.name.trim() !== '').length > 0 && (
-              <div className="quotation-items-list">
-                <div className="quotation-items-list-head">
-                  <i className="fas fa-list-check"></i>
-                  <span>Added Items ({items.filter((it) => it.name.trim() !== '').length})</span>
-                </div>
-                <div className="quotation-items-list-header">
-                  <span>Item Description</span>
-                  <span>Material</span>
-                  <span>Height (ft)</span>
-                  <span>Width (ft)</span>
-                  <span>Qty</span>
-                  <span>Rate (₹/sqft)</span>
-                  <span>Amount</span>
-                  <span>Update</span>
-                  <span>Delete</span>
-                </div>
-                {items
-                  .filter((it) => it.name.trim() !== '')
-                  .map((it) => {
-                    const amount = lineAmount(it);
-                    return (
-                      <div className="quotation-items-list-row" key={it.id}>
-                        <div className="quotation-items-list-name-cell">
-                          <div className="quotation-items-list-name">{it.name}</div>
-                        </div>
-                        <div className="quotation-items-list-material-cell">
-                          {it.material ? (
-                            <span><i className="fas fa-layer-group"></i> {it.material}</span>
-                          ) : (
-                            <span className="quotation-items-list-empty">—</span>
-                          )}
-                        </div>
-                        <div className="quotation-items-list-num">{it.height || 0}</div>
-                        <div className="quotation-items-list-num">{it.width || 0}</div>
-                        <div className="quotation-items-list-num">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            className="quotation-items-list-qty-input"
-                            value={it.quantity || 1}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(/[^\d]/g, '');
-                              updateItem(it.id, 'quantity', raw === '' ? 1 : Math.max(1, parseInt(raw, 10)));
-                            }}
-                          />
-                        </div>
-                        <div className="quotation-items-list-num">{formatINR(Number(it.rate) || 0)}</div>
-                        <div className="quotation-items-list-num quotation-items-list-amt">{formatINR(amount)}</div>
-                        <div className="quotation-items-list-action-cell">
-                          <button
-                            type="button"
-                            className="quotation-list-btn quotation-list-btn-update"
-                            onClick={() => startEdit(it.id)}
-                            title="Edit this item"
-                          >
-                            <i className="fas fa-pen"></i> Update
-                          </button>
-                        </div>
-                        <div className="quotation-items-list-action-cell">
-                          <DeleteButton
-                            size={32}
-                            iconSize={16}
-                            onClick={() => removeItem(it.id)}
-                            title="Delete this item"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
+            {mode === 'multi' ? (
+              <>
+                {categories.length > 0 && (
+                  <MultiTradeSections
+                    hidePicker
+                    categories={categories}
+                    activeKey={activeCat?.key || ''}
+                    onActive={(k) => {
+                      setActiveCatKey(k);
+                      setEditingId(null);
+                      const cat = categories.find((c) => c.key === k);
+                      setDraft(makeEmptyItem(configOfTrade(cat?.trade)));
+                    }}
+                    onAdd={addCategory}
+                    onRemove={removeCategory}
+                    onPatch={patchCategory}
+                    items={items.filter((it) => it.name.trim() !== '')}
+                    totalsByKey={totalsByKey}
+                    onEdit={startEdit}
+                    onDelete={removeItem}
+                  />
+                )}
+                {items.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 4px 0', fontSize: 15 }}>
+                    <strong>Quotation total: {total.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</strong>
+                  </div>
+                )}
+              </>
+            ) : (
+              items.filter((it) => it.name.trim() !== '').length > 0 && (
+                <DynamicItemsTable
+                  config={config}
+                  items={items.filter((it) => it.name.trim() !== '')}
+                  variant="editor"
+                  onEdit={startEdit}
+                  onDelete={removeItem}
+                />
+              )
             )}
 
-            <label className="quotation-gst-toggle">
+            <label className="qm-gst">
               <input
                 type="checkbox"
                 checked={includeGst}
                 onChange={(e) => setIncludeGst(e.target.checked)}
               />
-              <span>Include 18% GST</span>
+              <span className="qm-switch" aria-hidden="true"></span>
+              <span>{mode === 'multi' ? 'Apply 18% GST where section/item tax is not set' : 'Include 18% GST'}</span>
             </label>
           </div>
 
           <div className="quotation-section">
-            <h3 className="quotation-section-title">Terms &amp; Conditions</h3>
-            <p className="quotation-section-hint">
-              Auto-filled from Work Type. Edit any line if needed (one term per line).
-            </p>
-            <div className="floating-field">
+            <h3 className="quotation-section-title">
+              Terms &amp; Conditions
+              {termsDirty && <span className="qm-badge"><i className="fas fa-pen"></i> customized</span>}
+            </h3>
+            <p className="qm-hint">Auto-filled from Work Type — one term per line. Edits are preserved when you change other fields.</p>
+            <div className="qm-field">
+              <label className="qm-label" htmlFor="qm-terms"><i className="fas fa-file-contract"></i> Terms &amp; conditions</label>
               <textarea
-                className="cpf-input cpf-textarea"
+                id="qm-terms"
+                className="qm-textarea"
                 rows={8}
+                placeholder="Payment terms, validity, scope…"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                onFocus={() => setFocused('notes')}
-                onBlur={() => setFocused(null)}
               />
-              <label className="floating-label floating-label-textarea">Terms &amp; Conditions</label>
             </div>
           </div>
 
           <div className="quotation-section">
-            <h3 className="quotation-section-title">What&apos;s Included</h3>
-            <p className="quotation-section-hint">
-              Auto-filled from Work Type. Edit any line if needed (one inclusion per line).
-            </p>
-            <div className="floating-field">
+            <h3 className="quotation-section-title">
+              What&apos;s Included
+              {inclusionsDirty && <span className="qm-badge"><i className="fas fa-pen"></i> customized</span>}
+            </h3>
+            <p className="qm-hint">Auto-filled from Work Type — one inclusion per line.</p>
+            <div className="qm-field">
+              <label className="qm-label" htmlFor="qm-inclusions"><i className="fas fa-list-check"></i> Inclusions</label>
               <textarea
-                className="cpf-input cpf-textarea"
+                id="qm-inclusions"
+                className="qm-textarea"
                 rows={8}
+                placeholder="What this quotation covers…"
                 value={inclusionsText}
                 onChange={(e) => setInclusionsText(e.target.value)}
-                onFocus={() => setFocused('inclusions')}
-                onBlur={() => setFocused(null)}
               />
-              <label className="floating-label floating-label-textarea">What&apos;s Included</label>
             </div>
           </div>
 
-          <div className="quotation-actions">
+          <div className="qm-actions">
             <button
               type="button"
               className="cpf-submit quotation-print-btn"
@@ -1129,185 +1253,76 @@ export default function QuotationMakerPage() {
                 </>
               ) : (
                 <>
-                  <i className="fas fa-download"></i> Download PDF
+                  <i className="fas fa-download"></i> {editId ? 'Update & Download PDF' : 'Download PDF'}
                 </>
               )}
             </button>
-            <button type="button" className="quotation-reset-btn" onClick={handleReset}>
+            <button type="button" className="qm-reset" onClick={handleReset}>
               <i className="fas fa-rotate-left"></i> Reset
             </button>
           </div>
         </div>
 
         {/* PREVIEW (right) — also the print area */}
-        <div className="quotation-preview" id="print-area">
-          <div className="qp-branch-card">
-            <div className="qp-branch-left">
-              <div className="qp-logo">
-                <div className="qp-logo-img-wrap">
-                  {logoSrc ? (
-                    <img src={logoSrc} alt="Ananya" />
-                  ) : (
-                    <div className="qp-logo-fallback">AHF</div>
-                  )}
-                </div>
-                <h2>Ananya House of Furniture.</h2>
-              </div>
-              <h3 className="qp-branch-title">{getBranch(customer.branch).label}</h3>
-              <p className="qp-branch-address">
-                <i className="fas fa-map-marker-alt"></i> {getBranch(customer.branch).address}
-              </p>
-              <div className="qp-branch-contact">
-                {getBranch(customer.branch).contacts.map((c, i) => (
-                  <p key={`${c.name}-${i}`} style={{ margin: '2px 0' }}>
-                    <i className="fas fa-user"></i> {c.name}
-                    <span className="qp-branch-phone"> · {c.phone}</span>
-                  </p>
-                ))}
-              </div>
-              <p className="qp-branch-email">
-                <i className="fas fa-envelope"></i> <span className="qp-lowercase">{getBranch(customer.branch).email}</span>
-              </p>
-              <p className="qp-branch-website">
-                <i className="fas fa-globe"></i> <span className="qp-lowercase">{getBranch(customer.branch).website}</span>
-              </p>
-              <p className="qp-branch-est">Established: {getBranch(customer.branch).established}</p>
-            </div>
-            <div className="qp-branch-right">
-              <h1 className="qp-branch-quote-title">QUOTATION</h1>
-              <div className="qp-meta-row"><span>Quote No.</span><strong>{project.quoteNo}</strong></div>
-              <div className="qp-meta-row"><span>Date</span><strong>{formatDate(project.date)}</strong></div>
-              <div className="qp-meta-row"><span>Valid Till</span><strong>{formatDate(project.validTill)}</strong></div>
-            </div>
-          </div>
-
-          <div className="qp-divider"></div>
-
-          <div className="qp-block">
-            <h4>To</h4>
-            <p className="qp-name">{customer.name || '—'}</p>
-            {customer.phone && <p><i className="fas fa-phone"></i> +91 {customer.phone}</p>}
-            {customer.email && <p style={{ textTransform: 'lowercase' }}><i className="fas fa-envelope"></i> {customer.email}</p>}
-            {customer.address && <p><i className="fas fa-map-marker-alt"></i> {customer.address}</p>}
-            {project.type && (
-              <p className="qp-project">
-                <strong>Project:</strong> {project.type} &nbsp;•&nbsp; <strong>Branch:</strong> {customer.branch}
-              </p>
-            )}
-          </div>
-
-          <table className="qp-table">
-            <thead>
-              <tr>
-                <th style={{ width: '4%' }}>#</th>
-                <th>Item Description &amp; Material</th>
-                <th style={{ width: '11%' }}>H × W (ft)</th>
-                <th style={{ width: '6%' }}>Qty</th>
-                <th style={{ width: '8%' }}>Sqft</th>
-                <th style={{ width: '11%' }}>Rate (₹/sqft)</th>
-                <th style={{ width: '14%' }}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.filter((it) => it.name.trim() || it.rate > 0 || it.height > 0 || it.width > 0).map((it, idx) => {
-                const sqft = hasDimensions(it) ? (Number(it.height) || 0) * (Number(it.width) || 0) : 0;
-                const qty = Number(it.quantity) || 1;
-                const amount = lineAmount(it);
-                return (
-                  <tr key={it.id}>
-                    <td>{idx + 1}</td>
-                    <td>
-                      <div className="qp-item-name">{it.name || '—'}</div>
-                      {it.material && <div className="qp-item-material">{it.material}</div>}
-                    </td>
-                    <td>
-                      {hasDimensions(it)
-                        ? `${Number(it.height) || 0} × ${Number(it.width) || 0}`
-                        : '—'}
-                    </td>
-                    <td>{qty}</td>
-                    <td>{hasDimensions(it) ? sqft.toLocaleString('en-IN') : '—'}</td>
-                    <td>{formatINR(it.rate)}</td>
-                    <td>{formatINR(amount)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="qp-totals">
-            <div className="qp-totals-row"><span>Subtotal</span><strong>{formatINR(subtotal)}</strong></div>
-            {includeGst && (
-              <div className="qp-totals-row"><span>GST @ 18%</span><strong>{formatINR(gst)}</strong></div>
-            )}
-            <div className="qp-totals-row qp-total-final"><span>Grand Total</span><strong>{formatINR(total)}</strong></div>
-            <p className="qp-words">({numberToWords(Math.round(total))})</p>
-          </div>
-
-          {notes && (
-            <div className="qp-notes">
-              <h4>Terms &amp; Conditions</h4>
-              <ol className="qp-notes-list">
-                {notes
-                  .split('\n')
-                  .map((line) => line.trim())
-                  .filter(Boolean)
-                  .map((line, idx) => (
-                    <li key={idx}>{line}</li>
-                  ))}
-              </ol>
-            </div>
-          )}
-
-          {inclusionsList.length > 0 && (
-            <div className="qp-inclusions">
-              <h4>What's Included</h4>
-              <ul>
-                {inclusionsList.map((inc, idx) => (
-                  <li key={idx}><i className="fas fa-check"></i> {inc}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="qp-cta">
-            <div className="qp-cta-item">
-              <i className="fas fa-calendar-check"></i>
-              <div>
-                <strong>Next step:</strong> Book a free site visit
-                <span>Call +91 93218 12823 — we measure on-site at no charge.</span>
-              </div>
-            </div>
-            <div className="qp-cta-item">
-              <i className="fas fa-cube"></i>
-              <div>
-                <strong>See before you decide</strong>
-                <span>3D design preview included with every confirmed order.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="qp-signature">
-            <div className="qp-sig-block">
-              <div className="qp-sig-line"></div>
-              <p>Customer Signature</p>
-            </div>
-            <div className="qp-sig-block">
-              <div className="qp-sig-line"></div>
-              <p>For Ananya House of Furniture</p>
-              <p className="qp-sig-sub" style={{ fontWeight: 'bold', color: 'red' }}>
-                {customer.branch.toLowerCase().includes('mumbai') 
-                  ? 'Mahesh Prajapati' 
-                  : 'Ramesh Prajapati'}
-              </p>
-            </div>
-          </div>
-
-          <div className="qp-footer-note">
-            Thank you for considering Ananya House of Furniture. We look forward to bringing your vision to life.
-          </div>
-        </div>
+        <QuotationPreview
+          config={config}
+          departmentLabel={mode === 'multi' ? 'Interior (Multi-Trade)' : config.name}
+          items={items.filter((it) => it.name.trim() || it.rate > 0)}
+          customer={customer}
+          project={project}
+          branch={branch}
+          tenantBrand={tenantBrand}
+          logoSrc={logoSrc}
+          totals={{ subtotal, gst, total, totalDiscount }}
+          includeGst={includeGst}
+          termsText={notes}
+          inclusionsText={inclusionsText}
+          signer={signer}
+          ctaItems={ctaItems}
+          categories={mode === 'multi' ? categories : null}
+          categoryTotals={categoryTotals}
+          fallbackTradeKey={activeCat?.key || categories[0]?.key}
+        />
       </div>
+
+      {notice && (
+        <div
+          role="status"
+          className="no-print"
+          style={{
+            position: 'fixed',
+            top: '80px',
+            right: '20px',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            maxWidth: 'min(92vw, 400px)',
+            padding: '1rem 1.3rem',
+            borderRadius: '12px',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            color: '#fff',
+            background: notice.type === 'error' ? '#dc3545' : notice.type === 'success' ? '#25D366' : '#1976D2',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+          }}
+        >
+          <i
+            className={`fas ${notice.type === 'error' ? 'fa-circle-exclamation' : notice.type === 'success' ? 'fa-check-circle' : 'fa-circle-info'}`}
+            aria-hidden="true"
+            style={{ fontSize: '1.25rem' }}
+          />
+          <span style={{ fontSize: '1.05rem' }}>{notice.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss notification"
+            style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}
+          >
+            <i className="fas fa-times" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={isResetConfirmOpen}
@@ -1319,6 +1334,48 @@ export default function QuotationMakerPage() {
         confirmButtonVariant="danger"
         onConfirm={executeReset}
         onCancel={() => setIsResetConfirmOpen(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={pendingDept !== null}
+        message={`Switch to ${pendingDept ? DEPARTMENT_CONFIGS[pendingDept].name : ''}?`}
+        afterBold="Current items will be cleared."
+        subtext="Your edited Terms & Conditions will be replaced with the new department defaults."
+        confirmText="Switch Department"
+        confirmButtonVariant="primary"
+        onConfirm={() => {
+          if (pendingDept) applyDepartment(pendingDept);
+          setPendingDept(null);
+        }}
+        onCancel={() => setPendingDept(null)}
+      />
+
+      <ConfirmationModal
+        isOpen={pendingMode !== null}
+        message={pendingMode === 'multi' ? 'Switch to Interior package (multi-trade)?' : 'Switch back to single trade?'}
+        afterBold={pendingMode === 'multi' ? 'Items move into the first trade section.' : 'Trade sections are removed (items stay as one list).'}
+        subtext="Your edited Terms & Conditions are kept."
+        confirmText="Switch"
+        confirmButtonVariant="primary"
+        onConfirm={() => {
+          if (pendingMode) applyMode(pendingMode);
+          setPendingMode(null);
+        }}
+        onCancel={() => setPendingMode(null)}
+      />
+
+      <ConfirmationModal
+        isOpen={pendingWorkType !== null}
+        message="Change work type?"
+        afterBold="Terms & Inclusions will reload."
+        subtext="Your edited Terms & Conditions will be replaced with the new work-type defaults."
+        confirmText="Load Defaults"
+        confirmButtonVariant="primary"
+        onConfirm={() => {
+          if (pendingWorkType) loadWorkTypeDefaults(pendingWorkType);
+          setPendingWorkType(null);
+        }}
+        onCancel={() => setPendingWorkType(null)}
       />
     </div>
   );

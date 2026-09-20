@@ -13,14 +13,15 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
+    const scope = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
     const [products, orders, customers, reviews] = await Promise.all([
-      Product.find().select('category').lean(),
-      Order.find().select('customerInfo items total paymentMethod status date createdAt').sort({ createdAt: -1 }).limit(120).lean(),
-      User.countDocuments(),
-      Review.find().select('name rating text approved').sort({ createdAt: -1 }).limit(20).lean(),
+      Product.find(scope).select('category').lean(),
+      Order.find(scope).select('customerInfo items total paymentMethod status date createdAt').sort({ createdAt: -1 }).limit(120).lean(),
+      User.countDocuments(scope),
+      Review.find(scope).select('name rating text approved').sort({ createdAt: -1 }).limit(20).lean(),
     ]);
 
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments(scope);
     const revenue = orders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
     const pendingOrders = orders.filter((o: any) =>
       ['New Order', 'Pending', 'Processing'].includes(String(o.status || ''))
@@ -80,11 +81,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totals: {
         products: totalProducts,
-        orders: await Order.countDocuments(),
+        orders: await Order.countDocuments(scope),
         pendingOrders,
         customers,
         revenue,
-        reviews: await Review.countDocuments(),
+        reviews: await Review.countDocuments(scope),
       },
       monthly,
       categoryCounts,

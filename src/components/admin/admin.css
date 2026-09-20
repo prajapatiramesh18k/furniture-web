@@ -1235,6 +1235,30 @@
   box-shadow: 0 0 0 3px rgba(162, 115, 65, 0.16);
 }
 
+.ahf-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a27341' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 8px;
+}
+
+/* Option list — brand gradient instead of the OS blue highlight. */
+.ahf-select option {
+  background-color: #fffdf8;
+  color: var(--ahf-ink);
+}
+.ahf-select option:hover,
+.ahf-select option:checked,
+.ahf-select option:focus {
+  background-color: #a27341;
+  background-image: linear-gradient(135deg, #a27341 0%, #8a5f32 100%);
+  color: #ffffff;
+}
+
 .ahf-search-inline {
   display: flex;
   align-items: center;
@@ -1570,4 +1594,34 @@
   .ahf-grid-stats {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Shared compact list (leads-style): 10 rows visible, no scrolling.
+   Apply `list-compact` on the panel wrapping a DataTable. Page-scoped
+   opt-in — existing pages are unaffected unless they add the class. */
+.list-compact .ahf-table { min-width: 700px; }
+.list-compact .ahf-table thead th { padding: 8px 10px; }
+.list-compact .ahf-table tbody td { padding: 8px 10px; }
+
+/* Detail modals must never scroll horizontally: tables inside a modal
+   shrink to the modal width and wrap instead of forcing sideways scroll. */
+.ahf-modal-noscroll .ahf-tablewrap { overflow-x: visible; }
+.ahf-modal-noscroll .ahf-table { min-width: 0; width: 100%; }
+.ahf-modal-noscroll .ahf-table tbody td { overflow-wrap: anywhere; }
+
+/* Invoice print sheet: while open, the browser print dialog outputs only
+   the invoice — sidebar, header, forms and other panels are hidden. */
+@media print {
+  body.ahf-print-invoice .ahf-sidebar,
+  body.ahf-print-invoice .ahf-header,
+  body.ahf-print-invoice .ahf-scrim,
+  body.ahf-print-invoice .admin-toast,
+  body.ahf-print-invoice .ahf-pagehead,
+  body.ahf-print-invoice .ahf-grid-stats,
+  body.ahf-print-invoice .ahf-panel:not(.invoice-sheet) {
+    display: none !important;
+  }
+  body.ahf-print-invoice .ahf-main { margin: 0; }
+  body.ahf-print-invoice .ahf-content { padding: 0; }
+  body.ahf-print-invoice .ahf-panel.invoice-sheet { box-shadow: none; border: none; }
 }

@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import EmployeePayment from '@/lib/models/EmployeePayment';
+import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
     const { id } = await params;
     await dbConnect();
-    const payment = await EmployeePayment.findById(id).populate('employeeId', 'name employeeId');
+    const payment = await EmployeePayment.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: id })).populate('employeeId', 'name employeeId');
     if (!payment) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
@@ -19,11 +22,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage payroll.' }, { status: 403 });
+    }
     const { id } = await params;
     const data = await request.json();
+    delete data.tenantId;
+    delete data.employeeId;
     await dbConnect();
 
-    const payment = await EmployeePayment.findById(id);
+    const payment = await EmployeePayment.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!payment) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
@@ -34,7 +45,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (data.paymentType !== undefined) updateData.paymentType = data.paymentType;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
-    const updated = await EmployeePayment.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+    const updated = await EmployeePayment.findOneAndUpdate(tenantFilter(gate.ctx.user.tenantId!, { _id: id }), { $set: updateData }, { new: true });
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Error updating payment:', error);
@@ -44,9 +55,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireTenant(request as never, 'team');
+    if ('error' in gate) return gate.error;
+    const _r = String(gate.ctx.user.role || '').toLowerCase();
+    if (!gate.ctx.user.isSuperAdmin && _r !== 'owner' && _r !== 'admin') {
+      return NextResponse.json({ error: 'Only owners/admins can manage payroll.' }, { status: 403 });
+    }
     const { id } = await params;
     await dbConnect();
-    const deleted = await EmployeePayment.findByIdAndDelete(id);
+    const deleted = await EmployeePayment.findOneAndDelete(tenantFilter(gate.ctx.user.tenantId!, { _id: id }));
     if (!deleted) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
