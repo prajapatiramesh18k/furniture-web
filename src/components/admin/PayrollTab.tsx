@@ -125,17 +125,29 @@ export default function PayrollTab() {
         fetch(`/api/admin/employees/settlements?employeeId=${emp._id}&month=${month}&year=${year}`),
         fetch(`/api/admin/employees/payments?employeeId=${emp._id}`)
       ]);
-      const settleData = await settleRes.json();
-      const payData = await payRes.json();
+      const settleData = await settleRes.json().catch(() => ({}));
+      const payJson = await payRes.json().catch(() => []);
+      if (!settleRes.ok) {
+        throw new Error(settleData?.error || `Failed to load payroll (${settleRes.status})`);
+      }
       setPreview(settleData);
+      // The payments API returns an array on success but `{ error }` on
+      // failure (404/403/500) — normalize so .filter never throws.
+      const payList = Array.isArray(payJson) ? payJson : [];
+      if (!payRes.ok && !Array.isArray(payJson)) {
+        console.error('Payments fetch failed:', payJson);
+      }
       // Filter payments for the selected month/year (exclude Settlement records from advance payment history)
-      const filtered = payData.filter((p: any) => {
+      const filtered = payList.filter((p: any) => {
         const d = new Date(p.date);
         return d.getMonth() + 1 === month && d.getFullYear() === year && p.paymentType?.toLowerCase() !== 'settlement';
       });
       setPayments(filtered);
     } catch (err) {
       console.error(err);
+      setPreview(null);
+      setPayments([]);
+      showToast(err instanceof Error ? err.message : 'Failed to load payroll', 'error');
     }
     setLoading(false);
   };
