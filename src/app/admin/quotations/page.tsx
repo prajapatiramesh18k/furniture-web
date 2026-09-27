@@ -23,7 +23,7 @@ type QuotationFull = {
   _id: string;
   customer?: { name?: string; phone?: string; email?: string; address?: string };
   project?: { quoteNo?: string; type?: string; date?: string; validTill?: string };
-  items?: { name?: string; quantity?: number; rate?: number; unit?: string }[];
+  items?: { name?: string; quantity?: number; rate?: number; unit?: string; height?: number; width?: number }[];
   totals?: { subtotal?: number; gst?: number; total?: number; totalDiscount?: number };
   status?: string;
   rejectReason?: string;
@@ -114,7 +114,7 @@ export default function AdminQuotations() {
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || 'Update failed');
       setDetail(d.quotation as QuotationFull);
-      setRejectOpen(false);
+      setConfirmReject(false);
       setReason('');
       refresh();
       flash(
@@ -230,34 +230,62 @@ export default function AdminQuotations() {
                 </span>
               </div>
               {(detail.items || []).length > 0 && (
-                <div className="ahf-tablewrap" style={{ marginBottom: 16 }}>
-                  <table className="ahf-table">
-                    <thead>
-                      <tr><th>Item</th><th>Qty</th><th>H (ft)</th><th>W (ft)</th><th>Area (sq ft)</th><th>Rate/sq ft</th><th style={{ textAlign: 'right' }}>Amount</th></tr>
-                    </thead>
-                    <tbody>
-                      {(detail.items || []).map((it, i) => {
-                        const qty = Number(it.quantity) || 1;
-                        const height = Number(it.height) || 0;
-                        const width = Number(it.width) || 0;
-                        const rate = Number(it.rate) || 0;
-                        const area = height > 0 && width > 0 ? height * width : 0;
-                        const amount = area > 0 ? qty * area * rate : qty * rate;
-                        return (
-                          <tr key={i}>
-                            <td><strong>{it.name || '—'}</strong>{it.unit ? <span style={{ color: '#8a7a66', fontSize: 12 }}> · {it.unit}</span> : null}</td>
-                            <td>{qty}</td>
-                            <td>{height > 0 ? height : '—'}</td>
-                            <td>{width > 0 ? width : '—'}</td>
-                            <td>{area > 0 ? area.toFixed(2) : '—'}</td>
-                            <td>{inr(rate)}</td>
-                            <td style={{ textAlign: 'right' }}><span className="ahf-amt">{inr(amount)}</span></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="ahf-tablewrap q-items-table" style={{ marginBottom: 16 }}>
+                    <table className="ahf-table">
+                      <thead>
+                        <tr><th>Item</th><th>Qty</th><th>H (ft)</th><th>W (ft)</th><th>Area (sq ft)</th><th>Rate/sq ft</th><th style={{ textAlign: 'right' }}>Amount</th></tr>
+                      </thead>
+                      <tbody>
+                        {(detail.items || []).map((it, i) => {
+                          const qty = Number(it.quantity) || 1;
+                          const height = Number(it.height) || 0;
+                          const width = Number(it.width) || 0;
+                          const rate = Number(it.rate) || 0;
+                          const area = height > 0 && width > 0 ? height * width : 0;
+                          const amount = area > 0 ? qty * area * rate : qty * rate;
+                          return (
+                            <tr key={i}>
+                              <td><strong>{it.name || '—'}</strong>{it.unit ? <span style={{ color: '#8a7a66', fontSize: 12 }}> · {it.unit}</span> : null}</td>
+                              <td>{qty}</td>
+                              <td>{height > 0 ? height : '—'}</td>
+                              <td>{width > 0 ? width : '—'}</td>
+                              <td>{area > 0 ? area.toFixed(2) : '—'}</td>
+                              <td>{inr(rate)}</td>
+                              <td style={{ textAlign: 'right' }}><span className="ahf-amt">{inr(amount)}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="q-items-cards" style={{ marginBottom: 16 }}>
+                    {(detail.items || []).map((it, i) => {
+                      const qty = Number(it.quantity) || 1;
+                      const height = Number(it.height) || 0;
+                      const width = Number(it.width) || 0;
+                      const rate = Number(it.rate) || 0;
+                      const area = height > 0 && width > 0 ? height * width : 0;
+                      const amount = area > 0 ? qty * area * rate : qty * rate;
+                      return (
+                        <div key={i} className="q-item-card">
+                          <div className="q-item-card-head">
+                            <strong>{it.name || '—'}</strong>
+                            <span className="ahf-amt">{inr(amount)}</span>
+                          </div>
+                          {it.unit && <div className="q-item-card-unit">{it.unit}</div>}
+                          <div className="q-item-card-grid">
+                            <span>Qty <b>{qty}</b></span>
+                            <span>H <b>{height > 0 ? `${height} ft` : '—'}</b></span>
+                            <span>W <b>{width > 0 ? `${width} ft` : '—'}</b></span>
+                            <span>Area <b>{area > 0 ? `${area.toFixed(2)} sq ft` : '—'}</b></span>
+                            <span className="q-item-card-rate">Rate <b>{inr(rate)}/sq ft</b></span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8a7a66' }}>Subtotal</span><strong>{inr(detail.totals?.subtotal)}</strong></div>
