@@ -97,9 +97,9 @@ export default function Header({
                 <span className="ahf-notif-ic" style={{ background: n.bg, color: n.color }}>
                   <i className={`fas ${n.icon}`}></i>
                 </span>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{n.title}</div>
-                  <div style={{ color: 'var(--ahf-muted)', fontSize: 12 }}>{n.sub}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{n.title}</div>
+                  <div style={{ color: 'var(--ahf-muted)', fontSize: 12, overflowWrap: 'anywhere' }}>{n.sub}</div>
                 </div>
               </div>
             ))}

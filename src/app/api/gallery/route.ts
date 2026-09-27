@@ -56,7 +56,11 @@ export async function GET(request: NextRequest) {
       const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
       storefrontTenantId = dt ? String(dt._id) : null;
     } catch {}
-    let filter: Record<string, unknown> = storefrontTenantId ? { tenantId: storefrontTenantId } : {};
+    // Include legacy images saved before multi-tenant (tenantId: null) alongside
+    // the storefront tenant's images, otherwise the public gallery returns 0 rows.
+    let filter: Record<string, unknown> = storefrontTenantId
+      ? { $or: [{ tenantId: storefrontTenantId }, { tenantId: null }] }
+      : {};
     if (category !== 'all') {
       filter.category = category;
     } else if (room && room !== 'all') {
