@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
     const category = request.nextUrl.searchParams.get('category');
-    const scope = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
+    // Include legacy images saved before multi-tenant (tenantId: null) so
+    // tenant owners see previously uploaded images alongside their own.
+    const scope = gate.user.isSuperAdmin && !gate.user.tenantId
+      ? {}
+      : { $or: [{ tenantId: gate.user.tenantId }, { tenantId: null }] };
 
     let images;
     if (category) {
@@ -70,7 +74,9 @@ export async function DELETE(request: NextRequest) {
     await dbConnect();
     const id = request.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId
+      ? { _id: id }
+      : { _id: id, $or: [{ tenantId: gate.user.tenantId }, { tenantId: null }] };
     const deleted = await GalleryImage.findOneAndDelete(filter);
     if (!deleted) return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     return NextResponse.json({ message: 'Image deleted' });

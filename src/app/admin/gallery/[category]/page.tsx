@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import { ModuleShell } from '@/components/admin/ModuleBits';
+import { ModuleShell, LoadingList } from '@/components/admin/ModuleBits';
 import { AdminToast } from '@/components/admin/AdminUI';
 
 interface GalleryImage {
@@ -38,8 +38,8 @@ export default function AdminGalleryCategoryPage() {
   const category = typeof params.category === 'string' ? params.category : '';
   const categoryName = categoryNames[category] || category;
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -47,6 +47,7 @@ export default function AdminGalleryCategoryPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [preview, setPreview] = useState<GalleryImage | null>(null);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -59,36 +60,44 @@ export default function AdminGalleryCategoryPage() {
     setConfirmOpen(true);
   };
 
-  useEffect(() => {
-    const logged = localStorage.getItem('adminLoggedIn');
-    if (logged === 'true') setLoggedIn(true);
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (loggedIn && category) {
-      fetchImages();
-    }
-  }, [loggedIn, category]);
-
   const fetchImages = async () => {
     try {
-      const res = await fetch(`/api/gallery?category=${category}`);
+      const res = await fetch(`/api/admin/gallery?category=${category}`, { cache: 'no-store' });
+      if (res.status === 401) {
+        setAuthError('Your session expired. Please log in again.');
+        return;
+      }
+      if (res.status === 403) {
+        setAuthError('You do not have permission to manage gallery images.');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setImages(data);
+      } else if (Array.isArray(data.images)) {
+        setImages(data.images);
       }
+      setAuthError('');
     } catch (error) {
       console.error('Failed to fetch images:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (category) {
+      fetchImages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   const uploadImage = async (file: File) => {
     setUploading(true);
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        await fetch('/api/admin/gallery', {
+        const res = await fetch('/api/admin/gallery', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -96,11 +105,13 @@ export default function AdminGalleryCategoryPage() {
             url: reader.result,
           }),
         });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
         fetchImages();
-        showToast('Image uploaded successfully!');
+        showToast('Image uploaded successfully! It is now visible in this category and the public gallery.');
       } catch (error) {
         console.error('Upload failed:', error);
-        showToast('Failed to upload image');
+        showToast(error instanceof Error ? error.message : 'Failed to upload image');
       }
       setUploading(false);
     };
@@ -129,37 +140,39 @@ export default function AdminGalleryCategoryPage() {
   const deleteImage = async (id: string) => {
     openConfirm('Are you sure you want to delete this image?', async () => {
       try {
-        await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/admin/gallery?id=${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Delete failed (${res.status})`);
         fetchImages();
         showToast('Image deleted successfully!');
       } catch (error) {
         console.error('Delete failed:', error);
-        showToast('Failed to delete image');
+        showToast(error instanceof Error ? error.message : 'Failed to delete image');
       }
     });
   };
 
-  if (!mounted) {
+  if (loading) {
     return (
-      <ModuleShell title={`${categoryName} Gallery`} sub="Loading images…">
+      <ModuleShell title={categoryName} sub="Loading images…">
         <LoadingList rows={4} />
       </ModuleShell>
     );
   }
 
-  if (!loggedIn) {
+  if (authError) {
     return (
-      <ModuleShell title={`${categoryName} Gallery`} sub="Restricted area">
+      <ModuleShell title={categoryName} sub="Restricted area">
         <div className="ahf-panel">
           <div className="ahf-panel-body" style={{ textAlign: 'center', padding: 40 }}>
             <div className="ahf-denied-ic" style={{ marginBottom: 14 }}>
               <i className="fas fa-lock"></i>
             </div>
-            <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--ahf-serif)' }}>Please login first</h3>
+            <h3 style={{ margin: '0 0 8px', fontFamily: 'var(--ahf-serif)' }}>{authError}</h3>
             <p style={{ color: 'var(--ahf-muted)', fontSize: 13.5, margin: '0 0 18px' }}>
               You need an admin session to manage gallery images.
             </p>
-            <button className="ahf-btn ahf-btn-primary" onClick={() => window.location.href = '/admin'}>Go to Admin</button>
+            <button className="ahf-btn ahf-btn-primary" onClick={() => window.location.href = '/login?next=/admin/gallery'}>Go to Login</button>
           </div>
         </div>
       </ModuleShell>
@@ -168,7 +181,7 @@ export default function AdminGalleryCategoryPage() {
 
   return (
     <ModuleShell
-      title={`${categoryName} Gallery`}
+      title={categoryName}
       sub={`${images.length} image${images.length === 1 ? '' : 's'} in this category`}
       action={(
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -215,10 +228,10 @@ export default function AdminGalleryCategoryPage() {
 
       <div className="ahf-panel">
         <div className="ahf-panel-head">
-          <div>
-            <h3>{categoryName} ({images.length})</h3>
-            <p>Hover an image to delete it</p>
-          </div>
+            <div>
+              <h3>{categoryName} ({images.length})</h3>
+              <p>Click an image to view it full size · hover to delete</p>
+            </div>
         </div>
         <div className="ahf-panel-body">
           {images.length === 0 ? (
@@ -229,7 +242,13 @@ export default function AdminGalleryCategoryPage() {
             <div className="ahf-pgrid">
               {images.map((img) => (
                 <div key={img._id} className="ahf-pcard">
-                  <img src={img.url} alt={img.category} />
+                  <img
+                    src={img.url}
+                    alt={img.category}
+                    onClick={() => setPreview(img)}
+                    title="Click to view full image"
+                    style={{ cursor: 'zoom-in' }}
+                  />
                   <div className="ahf-pcard-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <span style={{ fontSize: 12, color: 'var(--ahf-muted)' }}>{img.isUploaded ? 'Uploaded' : 'Linked'}</span>
                     <button
@@ -246,6 +265,51 @@ export default function AdminGalleryCategoryPage() {
           )}
         </div>
       </div>
+
+      {/* Full-image preview */}
+      {preview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${preview.category} full image`}
+          onClick={() => setPreview(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Close preview"
+            onClick={() => setPreview(null)}
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 16,
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontSize: 30,
+              cursor: 'pointer',
+              lineHeight: 1,
+            }}
+          >
+            &times;
+          </button>
+          <img
+            src={preview.url}
+            alt={`${preview.category} full size`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '94vw', maxHeight: '86vh', objectFit: 'contain', borderRadius: 12 }}
+          />
+        </div>
+      )}
 
       {/* Confirmation Dialog */}
       <ConfirmationModal
