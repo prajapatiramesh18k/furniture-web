@@ -51,6 +51,9 @@ export default function Hero() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setReady(true);
+    // Warm the LCP image cache early (CSS backgrounds can't use priority).
+    const img = new Image();
+    img.src = sliders[0].image;
   }, []);
 
   useEffect(() => {
@@ -62,20 +65,14 @@ export default function Hero() {
 
     const initSwiper = async () => {
       const Swiper = (await import('swiper')).default;
-      const { Autoplay, Navigation } = await import('swiper/modules');
+      const { Autoplay } = await import('swiper/modules');
       if (cancelled) return;
 
       swiper = new Swiper('.home-slider', {
-        modules: [Autoplay, Navigation],
+        modules: [Autoplay],
         autoplay: { delay: 6000, disableOnInteraction: false },
         grabCursor: true,
         loop: true,
-        effect: 'fade',
-        fadeEffect: { crossFade: true },
-        navigation: {
-          nextEl: '#hero-next',
-          prevEl: '#hero-prev',
-        },
         on: {
           slideChange: (s: { realIndex: number }) => {
             setCurrentSlide(s.realIndex);
@@ -151,10 +148,14 @@ export default function Hero() {
                     <span>Get Free 3D Design</span>
                     <i className="fas fa-cube" />
                   </Link>
-                  <a href="#" className="hero-cta-secondary hero-cta-wa" onClick={onWhatsApp}>
+                  <button
+                    type="button"
+                    className="hero-cta-secondary hero-cta-wa"
+                    onClick={onWhatsApp}
+                  >
                     <span>WhatsApp Us</span>
                     <i className="fab fa-whatsapp" />
-                  </a>
+                  </button>
                   <a
                     href={`tel:${PHONES.mumbaiPrimary.tel}`}
                     className="hero-cta-secondary"

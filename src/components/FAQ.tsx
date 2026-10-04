@@ -43,22 +43,49 @@ export default function FAQ() {
   return (
     <section className="faq" id="faq">
       <h2 className="heading">Frequently Asked <span>Questions</span></h2>
+      {/* FAQ rich results → more clicks from search. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqData.map((faq) => ({
+              '@type': 'Question',
+              name: faq.question,
+              acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+            })),
+          }),
+        }}
+      />
       <div className="faq-container">
-        {faqData.map((faq, index) => (
-          <div
-            key={index}
-            className={`faq-item${activeIndex === index ? ' active' : ''}`}
-            onClick={() => toggleFAQ(index)}
-          >
-            <div className="faq-question">
-              <h3>{faq.question}</h3>
-              <i className="fas fa-chevron-down"></i>
+        {faqData.map((faq, index) => {
+          const open = activeIndex === index;
+          return (
+            <div key={index} className={`faq-item${open ? ' active' : ''}`}>
+              <button
+                type="button"
+                className="faq-question"
+                aria-expanded={open}
+                aria-controls={`faq-answer-${index}`}
+                id={`faq-question-${index}`}
+                onClick={() => toggleFAQ(index)}
+                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit' }}
+              >
+                <h3>{faq.question}</h3>
+                <i className="fas fa-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div
+                className="faq-answer"
+                id={`faq-answer-${index}`}
+                role="region"
+                aria-labelledby={`faq-question-${index}`}
+              >
+                <p>{faq.answer}</p>
+              </div>
             </div>
-            <div className="faq-answer">
-              <p>{faq.answer}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

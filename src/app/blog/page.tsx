@@ -1,10 +1,9 @@
 'use client';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import NavbarWrapper from '@/components/NavbarWrapper';
-import Footer from '@/components/Footer';
-import WhatsAppFloat from '@/components/WhatsAppFloat';
 import CloseButton from '@/components/CloseButton';
+// Navbar/Footer/WhatsApp come from src/app/blog/layout.tsx — do not render
+// them here or the page shows two navbars.
 
 const blogData = [
   {
@@ -16,7 +15,7 @@ const blogData = [
       'Offers practical advice on selecting the perfect bed size, material, and design based on client needs and space.',
     category: 'Buying Guide',
     readTime: '5 min read',
-    date: '5th July, 2023',
+    date: '5th July, 2025',
     author: 'Ananya Design Team',
   },
   {
@@ -28,7 +27,7 @@ const blogData = [
       'Helps clients keep their furniture in top condition with easy maintenance tips, enhancing the longevity of their investment.',
     category: 'Maintenance',
     readTime: '4 min read',
-    date: '10th March, 2023',
+    date: '10th March, 2025',
     author: 'Ananya Design Team',
   },
   {
@@ -40,7 +39,7 @@ const blogData = [
       'Provides smart furniture arrangement ideas that maximize space, ideal for clients with smaller homes or apartments.',
     category: 'Interior Design',
     readTime: '3 min read',
-    date: '11th April, 2023',
+    date: '11th April, 2025',
     author: 'Ananya Design Team',
   },
 ];
@@ -50,9 +49,7 @@ export default function BlogPage() {
     document.title = 'Ananya House of Furniture | Blog';
   }, []);
   return (
-    <>
-      <NavbarWrapper />
-      <div className="blog-page">
+    <div className="blog-page">
         <div className="blog-page-hero">
           <CloseButton href="/" />
           <h1>Our <span>Blog</span></h1>
@@ -79,8 +76,5 @@ export default function BlogPage() {
           ))}
         </div>
       </div>
-      <Footer />
-      <WhatsAppFloat />
-    </>
   );
 }

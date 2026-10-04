@@ -1,10 +1,19 @@
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { convertToModelMessages, streamText, UIMessage, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { createGroq } from '@ai-sdk/groq';
 
-const groq = createGroq({ apiKey: process.env.GROQ_KEY });
+function getGroq() {
+  const apiKey = process.env.GROQ_API_KEY || process.env.GROQ_KEY;
+  if (!apiKey) return null;
+  return createGroq({ apiKey });
+}
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+
+// `llama-3.3-70b-versatile` was decommissioned by Groq and now returns
+// "The model does not exist" -> chat silently never replies.
+// `openai/gpt-oss-20b` is verified working with this project's key.
+const CHAT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 // Product catalog for context
 const PRODUCT_CATALOG = `
@@ -42,16 +51,85 @@ DELIVERY:
 - Easy Assembly with manual included
 `;
 
+/** Local FAQ answers so "Hi" / "Delivery charges?" always get a reply, even if the LLM is down. */
+function matchFaq(input: string): string | null {
+  const text = input.toLowerCase().trim();
+  if (!text) return null;
+  if (/^(hi|hii+|hello|hey|namaste|good (morning|afternoon|evening))\b/.test(text) || text === 'hi') {
+    return 'Hi there! Welcome to Ananya House of Furniture. Ask me about our sofas, beds, dining sets, prices, delivery or custom furniture design!';
+  }
+  if (text.includes('deliver') || text.includes('shipping') || text.includes('charge')) {
+    return 'We offer FREE delivery on orders above Rs.5,000, with pan-India shipping available. Delivery time depends on your location — call us on +91-9321812823 and we will confirm for your pincode!';
+  }
+  if (text.includes('warranty')) {
+    return 'All our furniture comes with a 5 Year Warranty. Easy assembly with manual included!';
+  }
+  if (text.includes('contact') || text.includes('phone') || text.includes('address') || text.includes('location') || text.includes('where')) {
+    return 'You can reach us on +91-9321812823 / +91-8318727813 or email contact@ananyahouseoffurniture.com. Visit us at Diva-Shil Road, Khardipada, Thane, Maharashtra - 400612.';
+  }
+  if (text.includes('custom')) {
+    return 'Yes! We specialise in custom furniture design, home office furniture and interior design consultation. Call +91-9321812823 for a free quote!';
+  }
+  if (text.includes('sofa')) {
+    return 'Our Sofa & Chair set is Rs.19,999 (was Rs.24,999) — luxurious fabric sofa with matching chair for your living room. Want delivery details or photos? Call +91-9321812823!';
+  }
+  if (text.includes('price') || text.includes('cost') || text.includes('rate')) {
+    return 'Prices start from Rs.3,999 (Shoe Rack) up to Rs.59,999 (Modular Kitchen). Tell me which product you like — e.g. sofa, bed, wardrobe — and I will share the exact price!';
+  }
+  return null;
+}
+
+/** Send a plain-text reply through the UIMessage SSE protocol so useChat always renders it. */
+function replyStream(text: string) {
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      writer.write({ type: 'start' });
+      writer.write({ type: 'text-start', id: 'text-1' });
+      writer.write({ type: 'text-delta', id: 'text-1', delta: text });
+      writer.write({ type: 'text-end', id: 'text-1' });
+      writer.write({ type: 'finish' });
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
+}
+
+function lastUserText(messages: UIMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== 'user' || !Array.isArray(m.parts)) continue;
+    const text = m.parts
+      .filter((p) => p.type === 'text')
+      .map((p) => (p as { text: string }).text)
+      .join(' ');
+    if (text) return text;
+  }
+  return '';
+}
+
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json() as { messages: UIMessage[] };
+    const { messages } = (await req.json()) as { messages: UIMessage[] };
 
-    const modelMessages = await convertToModelMessages(
-      messages.map(({ id: _id, ...rest }) => rest as Omit<UIMessage, 'id'>),
-    );
+    if (!messages || messages.length === 0) {
+      return Response.json({ error: 'No messages provided' }, { status: 400 });
+    }
+
+    const userText = lastUserText(messages);
+    const faqReply = matchFaq(userText);
+
+    const groq = getGroq();
+    if (!groq) {
+      // No API key configured — still reply instead of a silent failure.
+      return replyStream(
+        faqReply ??
+          'Thanks for reaching out to Ananya House of Furniture! Please call us on +91-9321812823 and we will help you right away.',
+      );
+    }
+
+    const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: groq('llama-3.3-70b-versatile'),
+      model: groq(CHAT_MODEL),
       system: `You are a helpful AI assistant for Ananya House of Furniture, a custom furniture store in Thane, Maharashtra, India.
 
 IMPORTANT RULES:
@@ -67,14 +145,25 @@ IMPORTANT RULES:
 PRODUCT CATALOG:
 ${PRODUCT_CATALOG}
 
-Start every response as a friendly furniture expert. Keep responses short and helpful.`,
+Keep responses short and helpful.`,
       messages: modelMessages,
     });
 
-    return result.toUIMessageStreamResponse();
+    // If the LLM call fails (bad key, retired model, network), convert the
+    // error into a readable chat reply instead of a blank/500 response
+    // that the widget silently swallows.
+    return result.toUIMessageStreamResponse({
+      onError: (error) => {
+        console.error('Chat stream error:', error);
+        if (faqReply) return faqReply;
+        return 'Sorry, I am having trouble right now. Please call us on +91-9321812823 and we will help you immediately!';
+      },
+    });
   } catch (error) {
     console.error('Chat error:', error);
-    return new Response(`Error processing chat request: ${error instanceof Error ? error.message : error}`, { status: 500 });
+    // Return a stream the chat widget can render instead of plain-text 500.
+    return replyStream(
+      'Sorry, something went wrong. Please try again or call us on +91-9321812823!',
+    );
   }
 }
-

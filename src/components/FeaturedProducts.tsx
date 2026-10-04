@@ -6,16 +6,24 @@ import { cachedGetJSON } from '@/lib/api-cache';
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     let cancelled = false;
-    cachedGetJSON<{ products: any[] }>('/api/products?limit=50')
+    // Fetch only what we render (was limit=50 → slice 6).
+    cachedGetJSON<{ products: any[] }>('/api/products?limit=6')
       .then(data => {
-        if (!cancelled) setProducts((data.products || []).slice(0, 6));
+        if (!cancelled) {
+          setProducts((data.products || []).slice(0, 6));
+          setLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setProducts([]);
+        if (!cancelled) {
+          setProducts([]);
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -42,6 +50,19 @@ export default function FeaturedProducts() {
   return (
     <section className="featured-products" id="products">
       <h2 className="heading">our <span>products</span></h2>
+      {loading && products.length === 0 ? (
+        <div className="featured-products-grid" aria-hidden="true">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="featured-product-card">
+              <div className="fp-card-img" style={{ background: '#f0ebe1', minHeight: 220 }} />
+              <div className="fp-card-info">
+                <p className="fp-category">Loading…</p>
+                <h3>Loading products…</h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="featured-products-grid">
         {products.map((product) => {
           const discount =
@@ -91,6 +112,7 @@ export default function FeaturedProducts() {
           );
         })}
       </div>
+      )}
       <div className="fp-view-all">
         <Link href="/products" className="btn">
           View All Products

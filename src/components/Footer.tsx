@@ -27,8 +27,7 @@ const contactInfo = {
 const socials = [
   { label: 'Facebook', href: 'https://www.facebook.com/share/18eDGjuM47/', icon: 'fab fa-facebook-f' },
   { label: 'Instagram', href: 'https://www.instagram.com/ananyahouseoffurniture', icon: 'fab fa-instagram' },
-  { label: 'Twitter', href: '#', icon: 'fab fa-twitter' },
-  { label: 'LinkedIn', href: '#', icon: 'fab fa-linkedin' },
+  { label: 'WhatsApp', href: 'https://wa.me/919321812823?text=Hi%2C%20I%20am%20interested%20in%20custom%20furniture.', icon: 'fab fa-whatsapp' },
 ];
 
 export default function Footer() {
@@ -236,7 +235,7 @@ export default function Footer() {
             </div>
           </div>
           <p className="ahf-desc">
-            Custom furniture, modular kitchens and interiors crafted in-house for Mumbai, Navi Mumbai and Thane homes.
+            Custom furniture, modular kitchens and interiors crafted in-house for Mumbai, Thane &amp; Ahmedabad homes — free site visit &amp; 3D design.
           </p>
           <div className="ahf-social-row">
             {socials.map((s) => (

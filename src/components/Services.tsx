@@ -9,7 +9,7 @@ export default function Services() {
         our <span> services</span>
       </h2>
       <p className="services-subtitle" style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.5rem' }}>
-        Modular kitchens, wardrobes, TV units &amp; custom furniture for Mumbai, Navi Mumbai &amp; Thane
+        Modular kitchens, wardrobes, TV units &amp; custom furniture for Mumbai, Thane &amp; Ahmedabad — free site visit &amp; 3D design
       </p>
       <div className="box-container">
         {marketingServices.map((service) => (

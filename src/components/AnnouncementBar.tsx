@@ -4,8 +4,10 @@ import { handleTrackedPhoneClick } from '@/lib/analytics';
 
 export default function AnnouncementBar() {
   const [visible, setVisible] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const dismissed = sessionStorage.getItem('announcement-dismissed');
     if (dismissed) setVisible(false);
   }, []);
@@ -15,17 +17,20 @@ export default function AnnouncementBar() {
     sessionStorage.setItem('announcement-dismissed', '1');
   };
 
-  if (!visible) return null;
+  // Avoid SSR flash: render only after mount reads dismissal state.
+  if (!mounted || !visible) return null;
+
+  const year = new Date().getFullYear();
 
   return (
     <div className="announcement-bar">
       <div className="announcement-bar-inner">
         <span className="announcement-bar-item">
-          <i className="fas fa-hard-hat"></i> Now booking projects for 2026
+          <i className="fas fa-hard-hat"></i> Now booking projects for {year}
         </span>
         <span className="announcement-bar-divider">|</span>
         <span className="announcement-bar-item">
-          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Navi Mumbai &amp; Thane
+          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Thane &amp; Ahmedabad
         </span>
         <span className="announcement-bar-divider">|</span>
         <a
