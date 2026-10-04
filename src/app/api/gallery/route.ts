@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import GalleryImage from '@/lib/models/GalleryImage';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 const IMAGES_PER_PAGE = 12;
 
@@ -48,17 +49,11 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    // Public gallery shows the default storefront tenant's images.
-    let storefrontTenantId: string | null = null;
-    try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      storefrontTenantId = dt ? String(dt._id) : null;
-    } catch {}
+    // Public gallery shows the default storefront tenant's images (cached id).
+    const storefrontTenantId = await getStorefrontTenantId();
     // Include legacy images saved before multi-tenant (tenantId: null) alongside
     // the storefront tenant's images, otherwise the public gallery returns 0 rows.
-    let filter: Record<string, unknown> = storefrontTenantId
+    const filter: Record<string, unknown> = storefrontTenantId
       ? { $or: [{ tenantId: storefrontTenantId }, { tenantId: null }] }
       : {};
     if (category !== 'all') {

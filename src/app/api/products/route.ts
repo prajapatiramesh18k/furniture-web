@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 const staticProducts = [
   { id: 1, slug: 'bedside-table', name: 'Bedside Table', image: '/images/bed-side-table.jpg', images: ['/images/bed-side-table.jpg', '/images/kids-bedroom.jpeg', '/images/home-slide1.jpg'], price: 4999, originalPrice: 6999, rating: 4.5, category: 'bedroom', description: 'Elegant wooden bedside table with 2 drawers, perfect for modern bedrooms.' },
@@ -48,14 +49,9 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
-    // Public storefront serves the default tenant's catalog.
-    let storefrontTenantId: string | null = null;
-    try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      storefrontTenantId = dt ? String(dt._id) : null;
-    } catch {}
+    // Public storefront serves the default tenant's catalog (cached id — saves
+    // 1-2 Mongo roundtrips per request vs Tenant.findOne on every hit).
+    const storefrontTenantId = await getStorefrontTenantId();
 
     // Push search down to Mongo with indexed prefix-friendly regex instead of
     // fetching the whole collection and filtering in Node.

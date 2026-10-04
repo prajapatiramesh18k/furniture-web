@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
 
     let images;
     if (category) {
-      images = await GalleryImage.find({ ...scope, category }).sort({ uploadedAt: -1 });
+      images = await GalleryImage.find({ ...scope, category }).sort({ uploadedAt: -1 }).limit(200).lean();
     } else {
-      images = await GalleryImage.find(scope).sort({ uploadedAt: -1 });
+      images = await GalleryImage.find(scope).sort({ uploadedAt: -1 }).limit(200).lean();
     }
     return NextResponse.json(images);
   } catch (error) {

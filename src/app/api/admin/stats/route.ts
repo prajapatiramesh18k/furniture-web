@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
 import Order from '@/lib/models/Order';
@@ -13,93 +14,134 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
-    const scope = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
-    const [products, orders, customers, reviews] = await Promise.all([
-      Product.find(scope).select('category').lean(),
-      Order.find(scope).select('customerInfo items total paymentMethod status date createdAt').sort({ createdAt: -1 }).limit(120).lean(),
+    const tenantId = gate.user.isSuperAdmin && !gate.user.tenantId ? null : gate.user.tenantId;
+    const scope: Record<string, unknown> = tenantId ? { tenantId } : {};
+    const match: Record<string, unknown> = tenantId
+      ? { tenantId: new mongoose.Types.ObjectId(tenantId) }
+      : {};
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+
+    const [
+      totalProducts,
+      totalOrders,
+      customers,
+      totalReviews,
+      pendingOrders,
+      revenueRows,
+      categoryRows,
+      monthlyRows,
+      bestSellerRows,
+      recentOrders,
+      recentReviews,
+      pendingReviews,
+    ] = await Promise.all([
+      Product.countDocuments(scope),
+      Order.countDocuments(scope),
       User.countDocuments(scope),
-      Review.find(scope).select('name rating text approved').sort({ createdAt: -1 }).limit(20).lean(),
+      Review.countDocuments(scope),
+      Order.countDocuments({ ...scope, status: { $in: ['New Order', 'Pending', 'Processing'] } }),
+      Order.aggregate([{ $match: match }, { $group: { _id: null, revenue: { $sum: '$total' } } }]),
+      // Category breakdown computed in Mongo (was: fetch ALL products into Node).
+      Product.aggregate([{ $match: match }, { $group: { _id: '$category', count: { $sum: 1 } } }]),
+      // Monthly revenue/orders for last 6 months computed in Mongo (was: fetch
+      // 120 orders + filter in JS).
+      Order.aggregate([
+        { $match: { ...match, createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } },
+            revenue: { $sum: '$total' },
+            orders: { $sum: 1 },
+          },
+        },
+      ]),
+      // Best sellers computed in Mongo (was: unwind 120 orders in JS).
+      Order.aggregate([
+        { $match: match },
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: '$items.name',
+            qty: { $sum: '$items.quantity' },
+            revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+            image: { $first: '$items.image' },
+          },
+        },
+        { $sort: { qty: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, name: '$_id', qty: 1, revenue: 1, image: 1 } },
+      ]),
+      Order.find(scope)
+        .select('customerInfo items total paymentMethod status date createdAt')
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .lean(),
+      Review.find(scope).select('name rating text approved').sort({ createdAt: -1 }).limit(5).lean(),
+      Review.countDocuments({ ...scope, approved: { $ne: true } }),
     ]);
 
-    const totalProducts = await Product.countDocuments(scope);
-    const revenue = orders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
-    const pendingOrders = orders.filter((o: any) =>
-      ['New Order', 'Pending', 'Processing'].includes(String(o.status || ''))
-    ).length;
+    const revenue = (revenueRows as { revenue?: number }[])[0]?.revenue || 0;
 
-    // Category breakdown from real products
     const categoryCounts: Record<string, number> = {};
-    for (const p of products as any[]) {
-      const c = String(p.category || 'uncategorized');
-      categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+    for (const r of categoryRows as { _id?: string; count?: number }[]) {
+      categoryCounts[String(r._id || 'uncategorized')] = r.count || 0;
     }
 
-    // Monthly revenue (last 6 months) from real orders
+    const monthlyMap = new Map<string, { revenue: number; orders: number }>();
+    for (const r of monthlyRows as { _id?: { y?: number; m?: number }; revenue?: number; orders?: number }[]) {
+      if (r._id?.y && r._id?.m) monthlyMap.set(`${r._id.y}-${r._id.m}`, { revenue: r.revenue || 0, orders: r.orders || 0 });
+    }
     const monthly: { label: string; revenue: number; orders: number }[] = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const label = d.toLocaleDateString('en-US', { month: 'short' });
-      const monthOrders = (orders as any[]).filter((o: any) => {
-        const created = o.createdAt ? new Date(o.createdAt) : null;
-        return created && created.getMonth() === d.getMonth() && created.getFullYear() === d.getFullYear();
-      });
-      monthly.push({
-        label,
-        revenue: monthOrders.reduce((s, o) => s + (Number(o.total) || 0), 0),
-        orders: monthOrders.length,
-      });
+      const hit = monthlyMap.get(`${d.getFullYear()}-${d.getMonth() + 1}`) || { revenue: 0, orders: 0 };
+      monthly.push({ label, ...hit });
     }
 
-    // Best sellers from real order items
-    const itemSales: Record<string, { name: string; qty: number; revenue: number; image: string }> = {};
-    for (const o of orders as any[]) {
-      for (const item of o.items || []) {
-        const key = String(item.name || 'Unknown');
-        if (!itemSales[key]) itemSales[key] = { name: key, qty: 0, revenue: 0, image: item.image || '' };
-        itemSales[key].qty += Number(item.quantity) || 0;
-        itemSales[key].revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0);
-      }
-    }
-    const bestSellers = Object.values(itemSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
-
-    // Low stock: products have no stock field in this schema yet — flag lowest-priced
-    // items as "review stock" only when catalog is small; otherwise empty (no fake data).
-    const recentOrders = (orders as any[]).slice(0, 8).map((o: any) => ({
-      _id: String(o._id),
-      customer: o.customerInfo?.name || '—',
-      phone: o.customerInfo?.phone || '',
-      city: o.customerInfo?.city || '',
-      items: (o.items || []).length,
-      itemNames: (o.items || []).map((i: any) => i.name).slice(0, 2).join(', '),
-      total: Number(o.total) || 0,
-      paymentMethod: o.paymentMethod || '—',
-      status: o.status || 'New Order',
-      date: o.date || '',
-    }));
+    const recentOrdersOut = (recentOrders as Record<string, unknown>[]).map((o) => {
+      const info = (o.customerInfo as { name?: string; phone?: string; city?: string } | undefined) || {};
+      const items = (o.items as { name?: string }[] | undefined) || [];
+      return {
+        _id: String(o._id),
+        customer: info.name || '—',
+        phone: info.phone || '',
+        city: info.city || '',
+        items: items.length,
+        itemNames: items.map((i) => i.name).slice(0, 2).join(', '),
+        total: Number(o.total) || 0,
+        paymentMethod: (o.paymentMethod as string) || '—',
+        status: (o.status as string) || 'New Order',
+        date: (o.date as string) || '',
+      };
+    });
 
     return NextResponse.json({
       totals: {
         products: totalProducts,
-        orders: await Order.countDocuments(scope),
+        orders: totalOrders,
         pendingOrders,
         customers,
         revenue,
-        reviews: await Review.countDocuments(scope),
+        reviews: totalReviews,
       },
       monthly,
       categoryCounts,
-      bestSellers,
-      recentOrders,
+      bestSellers: bestSellerRows,
+      recentOrders: recentOrdersOut,
       lowStock: [],
-      recentReviews: (reviews as any[]).slice(0, 5).map((r: any) => ({
+      recentReviews: (recentReviews as Record<string, unknown>[]).map((r) => ({
         _id: String(r._id),
         name: r.name,
         rating: r.rating,
         text: r.text,
         approved: !!r.approved,
       })),
-      pendingReviews: (reviews as any[]).filter((r: any) => !r.approved).length,
+      pendingReviews,
     });
   } catch (error) {
     console.error('Admin stats error:', error);

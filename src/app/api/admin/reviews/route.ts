@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
   if ('error' in gate) return gate.error;
   try {
     await dbConnect();
-    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
+    // Include legacy pre-multitenancy reviews (tenantId: null) so tenant
+    // admins can see/approve older entries instead of them going invisible.
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: { $in: [gate.user.tenantId, null] } };
     const reviews = await Review.find(filter).sort({ createdAt: -1 }).limit(200).lean();
     return NextResponse.json({ reviews });
   } catch (error) {
@@ -30,9 +32,14 @@ export async function PUT(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
     const { id, approved } = body;
-    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: { $in: [gate.user.tenantId, null] } };
     const updated = await Review.findOneAndUpdate(filter, { approved });
     if (!updated) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+    // Approving/unapproving must refresh the public wall immediately.
+    try {
+      const { clearReviewsListCache } = await import('@/app/api/reviews/route');
+      clearReviewsListCache();
+    } catch {}
     return NextResponse.json({ message: 'Review updated' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update review' }, { status: 500 });
@@ -47,9 +54,13 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: { $in: [gate.user.tenantId, null] } };
     const deleted = await Review.findOneAndDelete(filter);
     if (!deleted) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+    try {
+      const { clearReviewsListCache } = await import('@/app/api/reviews/route');
+      clearReviewsListCache();
+    } catch {}
     return NextResponse.json({ message: 'Review deleted' });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete review' }, { status: 500 });

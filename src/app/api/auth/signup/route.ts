@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,17 +25,19 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Public signups belong to the storefront (default) tenant.
+    // Public signups belong to the storefront (default) tenant (cached id).
     // Tenant members/staff are created via /api/admin/users or super-admin onboarding instead.
-    const Tenant = (await import('@/lib/models/Tenant')).default;
-    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-    let defaultTenant = await Tenant.findOne({ slug: defaultSlug });
-    if (!defaultTenant) defaultTenant = await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 });
-    const tenantId = defaultTenant ? defaultTenant._id : null;
+    const tenantId = await getStorefrontTenantId();
 
-    const existingUser = tenantId
-      ? await User.findOne({ email: email.toLowerCase(), tenantId })
-      : await User.findOne({ email: email.toLowerCase() });
+    // Run existence check + first-user check + password hash in parallel
+    // (was: 3 sequential awaits before create).
+    const [existingUser, userCount, hashedPassword] = await Promise.all([
+      tenantId
+        ? User.findOne({ email: email.toLowerCase(), tenantId }).select('_id').lean()
+        : User.findOne({ email: email.toLowerCase() }).select('_id').lean(),
+      tenantId ? User.countDocuments({ tenantId }) : User.countDocuments(),
+      bcrypt.hash(password, 10),
+    ]);
     if (existingUser) {
       return NextResponse.json(
         { error: 'Email already registered' },
@@ -43,10 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First user of the default tenant becomes its owner; everyone else is a customer.
-    const userCount = tenantId ? await User.countDocuments({ tenantId }) : await User.countDocuments();
     const isFirst = userCount === 0;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,

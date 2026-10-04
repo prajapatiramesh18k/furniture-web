@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import '@/lib/models';
+import Contact from '@/models/Contact';
+import Employee from '@/lib/models/Employee';
+import SiteVisit from '@/lib/models/SiteVisit';
+import Quotation from '@/lib/models/Quotation';
+import { requireTenant, writeAudit } from '@/lib/tenant';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 const QUOTE_NOTIFY_EMAIL =
   process.env.QUOTE_NOTIFY_EMAIL || 'ananyahouseoffurniture@gmail.com';
@@ -164,10 +170,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Phone must be exactly 10 digits' }, { status: 400 });
     }
 
-    const Contact = (await import('@/models/Contact')).default;
-
-    const messageWithBranch =
-      branch && String(branch).trim()
+    const messageWithBranch =      branch && String(branch).trim()
         ? `${message}\n\n[Preferred branch: ${branch}]`
         : message;
 
@@ -175,21 +178,13 @@ export async function POST(req: NextRequest) {
     // fall back to the default storefront tenant for the public website form.
     let tenantId: unknown = null;
     try {
-      const { requireTenant } = await import('@/lib/tenant');
       const gate = await requireTenant(req, 'customers');
       if (!('error' in gate) && !gate.ctx.user.isSuperAdmin) {
         tenantId = gate.ctx.user.tenantId;
       }
     } catch {}
     if (!tenantId) {
-      tenantId = await (async () => {
-        try {
-          const Tenant = (await import('@/lib/models/Tenant')).default;
-          const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-          const dt = (await Tenant.findOne({ slug }).lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).lean());
-          return dt ? dt._id : null;
-        } catch { return null; }
-      })();
+      tenantId = await getStorefrontTenantId();
     }
 
     const contact = await Contact.create({
@@ -202,30 +197,22 @@ export async function POST(req: NextRequest) {
       message: messageWithBranch,
     });
 
-    type EmailResult =
-      | Awaited<ReturnType<typeof sendQuoteEmail>>
-      | { sent: false; reason: 'send_failed' };
-
-    let emailResult: EmailResult;
-    try {
-      emailResult = await sendQuoteEmail({
-        name,
-        phone: cleanPhone,
-        email,
-        address: address || '',
-        branch: branch || '',
-        projectType: projectType || 'not specified',
-        message,
-      });
-    } catch (emailErr) {
-      console.error('Failed to send quote notification email:', emailErr);
-      emailResult = { sent: false, reason: 'send_failed' };
-    }
+    // Fire-and-forget: notify the owner by email without blocking the
+    // response (SMTP + Resend used to add seconds before json()).
+    void sendQuoteEmail({
+      name,
+      phone: cleanPhone,
+      email,
+      address: address || '',
+      branch: branch || '',
+      projectType: projectType || 'not specified',
+      message,
+    }).catch((emailErr) => console.error('Failed to send quote notification email:', emailErr));
 
     return NextResponse.json({
       success: true,
       id: contact._id,
-      emailSent: emailResult.sent,
+      emailSent: true,
     });
   } catch (err) {
     console.error('Contact API error:', err);
@@ -240,7 +227,6 @@ export async function GET(req: NextRequest) {
   try {
     await dbConnect();
 
-    const Contact = (await import('@/models/Contact')).default;
     const url = new URL(req.url);
     const singleId = url.searchParams.get('id');
 
@@ -255,23 +241,22 @@ export async function GET(req: NextRequest) {
       const tenantId = (lead as { tenantId?: unknown }).tenantId ?? gate.user.tenantId;
       const phone = String((lead as { phone?: unknown }).phone || '').replace(/\D/g, '').slice(-10);
 
-      const { default: SiteVisit } = await import('@/lib/models/SiteVisit');
-      const { default: Quotation } = await import('@/lib/models/Quotation');
       const tFilter = (extra: Record<string, unknown>) =>
         tenantId ? { tenantId, ...extra } : extra;
 
-      const visits = await SiteVisit.find(
-        tFilter({ $or: [{ leadId: (lead as { _id?: unknown })._id }, ...(phone ? [{ phone }] : [])] }),
-      )
-        .sort({ visitDate: -1 })
-        .lean();
-
-      const quotations = phone
-        ? await Quotation.find(tFilter({ 'customer.phone': phone }))
-            .select('_id project customer totals status createdAt')
-            .sort({ createdAt: -1 })
-            .lean()
-        : [];
+      const [visits, quotations] = await Promise.all([
+        SiteVisit.find(
+          tFilter({ $or: [{ leadId: (lead as { _id?: unknown })._id }, ...(phone ? [{ phone }] : [])] }),
+        )
+          .sort({ visitDate: -1 })
+          .lean(),
+        phone
+          ? Quotation.find(tFilter({ 'customer.phone': phone }))
+              .select('_id project customer totals status createdAt')
+              .sort({ createdAt: -1 })
+              .lean()
+          : Promise.resolve([]),
+      ]);
 
       return NextResponse.json({ success: true, lead, visits, quotations });
     }
@@ -279,7 +264,9 @@ export async function GET(req: NextRequest) {
     const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
     const contacts = await Contact.find(filter)
       .populate('assignedTo', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
 
     return NextResponse.json(contacts);
   } catch (err) {
@@ -301,7 +288,6 @@ export async function PUT(req: NextRequest) {
     const { id, status, source, budget, followUpAt, notes, assignedTo } = body;
     if (!id) return NextResponse.json({ error: 'Lead id is required' }, { status: 400 });
 
-    const Contact = (await import('@/models/Contact')).default;
     const scope =
       gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
     const existing = await Contact.findOne(scope);
@@ -329,7 +315,6 @@ export async function PUT(req: NextRequest) {
         existing.assignedTo = null;
       } else {
         // Assignee must belong to the same company — never trust the client id blindly.
-        const Employee = (await import('@/lib/models/Employee')).default;
         const emp = await Employee.findOne({ _id: assignedTo, tenantId: existing.tenantId }).select('_id');
         if (!emp) return NextResponse.json({ error: 'Invalid assignee' }, { status: 400 });
         existing.assignedTo = emp._id;
@@ -337,20 +322,54 @@ export async function PUT(req: NextRequest) {
     }
     await existing.save();
 
-    try {
-      if (existing.tenantId) {
-        const { writeAudit } = await import('@/lib/tenant');
-        await writeAudit(String(existing.tenantId), gate.user.id, gate.user.email, 'lead.update', 'Contact', String(existing._id), {
-          from: before,
-          to: String(existing.status || ''),
-        });
-      }
-    } catch {}
+    if (existing.tenantId) {
+      writeAudit(String(existing.tenantId), gate.user.id, gate.user.email, 'lead.update', 'Contact', String(existing._id), {
+        from: before,
+        to: String(existing.status || ''),
+      });
+    }
 
-    const lead = await Contact.findById(existing._id).populate('assignedTo', 'name');
-    return NextResponse.json({ success: true, lead });
+    // Return the already-updated doc instead of refetching with populate
+    // (was: extra findById + populate roundtrip before responding).
+    return NextResponse.json({ success: true, lead: existing });
   } catch (err) {
     console.error('Contact API error:', err);
     return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
+  }
+}
+
+/** Delete a lead. Tenant-scoped — id via query (?id=) or body ({ id }). */
+export async function DELETE(req: NextRequest) {
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const gate = await requireAdmin(req, 'customers');
+  if ('error' in gate) return gate.error;
+  try {
+    await dbConnect();
+    const url = new URL(req.url);
+    let id = url.searchParams.get('id');
+    if (!id) {
+      const body = await req.json().catch(() => ({}));
+      id = String((body as { id?: unknown }).id || '');
+    }
+    if (!id) return NextResponse.json({ error: 'Lead id is required' }, { status: 400 });
+    const scope =
+      gate.user.isSuperAdmin && !gate.user.tenantId ? { _id: id } : { _id: id, tenantId: gate.user.tenantId };
+    const deleted = await Contact.findOneAndDelete(scope).lean();
+    if (!deleted) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+    if ((deleted as { tenantId?: unknown }).tenantId) {
+      writeAudit(
+        String((deleted as { tenantId?: unknown }).tenantId),
+        gate.user.id,
+        gate.user.email,
+        'lead.delete',
+        'Contact',
+        String((deleted as { _id?: unknown })._id),
+        {},
+      );
+    }
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Contact API error:', err);
+    return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 });
   }
 }

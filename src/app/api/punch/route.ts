@@ -3,8 +3,10 @@ import dbConnect from '@/lib/mongodb';
 import Employee from '@/lib/models/Employee';
 import Site from '@/lib/models/Site';
 import EmployeeAttendance from '@/lib/models/EmployeeAttendance';
+import Tenant from '@/lib/models/Tenant';
 import mongoose from 'mongoose';
 import { calculateDistanceMeters, calculateShiftMetrics } from '@/lib/geo-utils';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 // Helper to get normalized start & end of day
 function getDayBounds(date: Date = new Date()) {
@@ -23,18 +25,13 @@ function getDayBounds(date: Date = new Date()) {
  */
 async function resolvePunchTenantId(searchParams: URLSearchParams): Promise<string | null> {
   try {
-    const Tenant = (await import('@/lib/models/Tenant')).default;
     const slug = (searchParams.get('tenant') || '').toLowerCase().trim();
     if (slug) {
       const t = await Tenant.findOne({ slug, status: 'active' }).select('_id').lean();
-      if (t) return String(t._id);
+      if (t) return String((t as { _id: unknown })._id);
       return null;
     }
-    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-    const t =
-      (await Tenant.findOne({ slug: defaultSlug }).select('_id').lean()) ||
-      (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-    return t ? String(t._id) : null;
+    return await getStorefrontTenantId();
   } catch {
     return null;
   }
@@ -221,21 +218,24 @@ export async function POST(req: Request) {
     // Resolve punch tenant (body.tenant slug or default storefront tenant).
     let punchTenantId: string | null = null;
     try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
       const slug = String(body.tenant || '').toLowerCase().trim();
-      const t = slug
-        ? await Tenant.findOne({ slug, status: 'active' }).select('_id').lean()
-        : (await Tenant.findOne({ slug: process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture' }).select('_id').lean()) ||
-          (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      punchTenantId = t ? String(t._id) : null;
+      if (slug) {
+        const t = await Tenant.findOne({ slug, status: 'active' }).select('_id').lean();
+        punchTenantId = t ? String((t as { _id: unknown })._id) : null;
+      } else {
+        punchTenantId = await getStorefrontTenantId();
+      }
     } catch {}
     const pScope = punchTenantId ? { tenantId: punchTenantId } : {};
 
+    // Single employee lookup (was: 2 sequential findOne when _id lookup missed).
     let employee = null;
     if (mongoose.Types.ObjectId.isValid(employeeId)) {
-      employee = await Employee.findOne({ _id: employeeId, ...pScope });
-    }
-    if (!employee) {
+      employee = await Employee.findOne({
+        $or: [{ _id: employeeId }, { employeeId: { $regex: new RegExp(`^${employeeId}$`, 'i') } }],
+        ...pScope,
+      });
+    } else {
       employee = await Employee.findOne({ employeeId: { $regex: new RegExp(`^${employeeId}$`, 'i') }, ...pScope });
     }
     if (!employee) {

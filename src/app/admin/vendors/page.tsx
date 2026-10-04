@@ -113,7 +113,7 @@ export default function AdminVendors() {
                 <input className="ahf-input" value={f.contactName} onChange={(e) => setF({ ...f, contactName: e.target.value })} placeholder="Contact person" />
               </AdminField>
               <AdminField label="Phone">
-                <input className="ahf-input" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 12) })} placeholder="Phone (10 digits)" inputMode="numeric" />
+                <input className="ahf-input" value={f.phone} onChange={(e) => { let d = e.target.value.replace(/\D/g, ''); if (d.length > 10 && d.startsWith('91')) d = d.slice(2); else if (d.length === 11 && d.startsWith('0')) d = d.slice(1); setF({ ...f, phone: d.slice(0, 10) }); }} placeholder="Phone (10 digits)" inputMode="numeric" maxLength={10} />
               </AdminField>
               <AdminField label="Email">
                 <input className="ahf-input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="Email" />

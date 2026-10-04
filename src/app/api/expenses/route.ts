@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Expense from '@/lib/models/Expense';
+import Project from '@/lib/models/Project';
 import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 const CATEGORIES = ['material', 'labour', 'transport', 'contractor', 'misc'];
 
-async function scopedProject(tenantId: string, projectId: string) {
-  const Project = (await import('@/lib/models/Project')).default;
-  return Project.findOne(tenantFilter(tenantId, { _id: projectId })).select('_id');
+function scopedProject(tenantId: string, projectId: string) {
+  return Project.findOne(tenantFilter(tenantId, { _id: projectId })).select('_id').lean();
 }
 
 export async function GET(request: NextRequest) {

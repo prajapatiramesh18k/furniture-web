@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Quotation from "@/lib/models/Quotation";
+import Tenant from "@/lib/models/Tenant";
+import Counter from "@/lib/models/Counter";
 import { requireTenant, tenantFilter, writeAudit } from "@/lib/tenant";
+import { getStorefrontTenantId } from "@/lib/storefront-tenant";
 
 // Lead-pipeline sync: never overwrite a closed lead.
 const CLOSED_LEAD = ['won', 'lost', 'converted'];
@@ -56,10 +59,7 @@ export async function POST(request: NextRequest) {
     } catch {}
     if (!tenantId) {
       await dbConnect();
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const defaultSlug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const t = (await Tenant.findOne({ slug: defaultSlug }).lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).lean());
-      tenantId = t ? String(t._id) : null;
+      tenantId = await getStorefrontTenantId();
     }
     await dbConnect();
     const body = await request.json();
@@ -96,16 +96,28 @@ export async function POST(request: NextRequest) {
 
     // Consume the next quotation number atomically — only on actual save,
     // so refresh/preview never burns a number.
+    // Single Tenant fetch reused for prefix + company snapshot below
+    // (was: 2 separate Tenant.findById per quotation create).
+    interface TenantBranding {
+      quotationPrefix?: string;
+      name?: string;
+      address?: string;
+      phone?: string;
+      email?: string;
+      gstNumber?: string;
+      logo?: string;
+      website?: string;
+    }
+    let tenantDoc: TenantBranding | null = null;
+    if (tenantId) {
+      try {
+        tenantDoc = (await Tenant.findById(tenantId)
+          .select('quotationPrefix name address phone email gstNumber logo website')
+          .lean()) as unknown as TenantBranding | null;
+      } catch {}
+    }
     try {
-      const Counter = (await import('@/lib/models/Counter')).default;
-      let prefix = 'Q';
-      if (tenantId) {
-        try {
-          const Tenant = (await import('@/lib/models/Tenant')).default;
-          const t = await Tenant.findById(tenantId).select('quotationPrefix').lean() as { quotationPrefix?: string } | null;
-          if (t?.quotationPrefix) prefix = t.quotationPrefix;
-        } catch {}
-      }
+      const prefix = tenantDoc?.quotationPrefix || 'Q';
       const key = tenantId ? `quotation:${tenantId}` : 'quotation';
       const result = await Counter.findByIdAndUpdate(
         key,
@@ -128,32 +140,26 @@ export async function POST(request: NextRequest) {
 
     const newQuotation = new Quotation({ ...body, tenantId, createdBy });
     // Attach issuing-company snapshot so generated PDFs use the tenant's branding.
-    try {
-      if (tenantId) {
-        const Tenant = (await import('@/lib/models/Tenant')).default;
-        const t = await Tenant.findById(tenantId).lean();
-        if (t) {
-          newQuotation.company = {
-            name: t.name || '',
-            address: t.address || '',
-            phone: t.phone || '',
-            email: t.email || '',
-            gstNumber: t.gstNumber || '',
-            logo: t.logo || '',
-            website: t.website || '',
-          };
-        }
-      }
-    } catch {}
+    if (tenantDoc) {
+      newQuotation.company = {
+        name: tenantDoc.name || '',
+        address: tenantDoc.address || '',
+        phone: tenantDoc.phone || '',
+        email: tenantDoc.email || '',
+        gstNumber: tenantDoc.gstNumber || '',
+        logo: tenantDoc.logo || '',
+        website: tenantDoc.website || '',
+      };
+    }
     await newQuotation.save();
     if (tenantId) {
-      await writeAudit(tenantId, createdBy, '', 'quotation.create', 'Quotation', String(newQuotation._id), {
+      writeAudit(tenantId, createdBy, '', 'quotation.create', 'Quotation', String(newQuotation._id), {
         quoteNo: body?.project?.quoteNo,
       });
     }
-    // A newly made quotation moves its source lead to 'quotation'.
+    // Fire-and-forget: lead pipeline sync without blocking the response.
     if (tenantId && linkedLeadId) {
-      await syncLeadStatus(tenantId, linkedLeadId, 'quotation');
+      void syncLeadStatus(tenantId, linkedLeadId, 'quotation');
     }
 
     return NextResponse.json(
@@ -192,13 +198,23 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const singleId = url.searchParams.get('id');
     if (singleId) {
-      const one = await Quotation.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: singleId }));
+      const one = await Quotation.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: singleId })).lean();
       if (!one) return NextResponse.json({ error: 'Quotation not found' }, { status: 404 });
       return NextResponse.json({ success: true, quotation: one });
     }
 
+    // Bounded + paginated lean list (was: unbounded hydrated fetch of full
+    // quotation docs which grow large with multi-trade items).
+    const limitParam = parseInt(url.searchParams.get('limit') || '100', 10);
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 200) : 100;
+    const pageParam = parseInt(url.searchParams.get('page') || '1', 10);
+    const page = Number.isFinite(pageParam) ? Math.max(pageParam, 1) : 1;
     // Fetch tenant quotations, latest activity first (recently decided quotes surface on top)
-    const quotations = await Quotation.find(filter).sort({ createdAt: -1 });
+    const quotations = await Quotation.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
     return NextResponse.json({ success: true, quotations });
   } catch (error: any) {

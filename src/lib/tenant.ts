@@ -7,6 +7,7 @@ import Tenant from '@/lib/models/Tenant';
 import TenantModule, { ADMIN_MODULE_TO_SALES_MODULE } from '@/lib/models/TenantModule';
 import AuditLog from '@/lib/models/AuditLog';
 import { roleCanAccess, type AdminModule, type StaffRole } from '@/lib/admin-roles';
+import { resolveRole } from '@/lib/admin-auth';
 
 export interface TenantContext {
   user: {
@@ -55,53 +56,58 @@ export async function getTenantContext(request: NextRequest): Promise<TenantCont
     const superAdmin = isSuperAdminRole(String(user.role || ''), user.isSuperAdmin);
     let tenant: TenantContext['tenant'] = null;
     const tenantId: string | null = user.tenantId ? String(user.tenantId) : null;
+    let enabledModules = new Set<string>();
 
+    // Run tenant lookup + enabled-modules lookup in parallel (was 2 sequential
+    // roundtrips). Modules key off the tenantId string directly, no need to
+    // wait for the Tenant doc first.
     if (!superAdmin) {
       if (!tenantId) return null;
-      const t = await Tenant.findById(tenantId).lean();
-      if (!t || t.status !== 'active') return null;
+      const [t, rows] = await Promise.all([
+        Tenant.findById(tenantId).lean(),
+        TenantModule.find({ tenantId, enabled: true }).select('moduleKey').lean(),
+      ]);
+      if (!t || (t as { status?: string }).status !== 'active') return null;
+      const tt = t as { _id: unknown; name: string; slug: string; status: string; logo?: string; address?: string; phone?: string; email?: string; gstNumber?: string; quotationPrefix?: string; plan?: string };
       tenant = {
-        id: String(t._id),
-        name: t.name,
-        slug: t.slug,
-        status: t.status,
-        logo: t.logo || '',
-        address: t.address || '',
-        phone: t.phone || '',
-        email: t.email || '',
-        gstNumber: t.gstNumber || '',
-        quotationPrefix: t.quotationPrefix || 'Q',
-        plan: t.plan,
+        id: String(tt._id),
+        name: tt.name,
+        slug: tt.slug,
+        status: tt.status,
+        logo: tt.logo || '',
+        address: tt.address || '',
+        phone: tt.phone || '',
+        email: tt.email || '',
+        gstNumber: tt.gstNumber || '',
+        quotationPrefix: tt.quotationPrefix || 'Q',
+        plan: tt.plan,
       };
+      enabledModules = new Set((rows as { moduleKey: string }[]).map((r) => String(r.moduleKey)));
     } else if (tenantId) {
       // Super admin impersonating / assigned — still load tenant for context if present.
-      const t = await Tenant.findById(tenantId).lean();
-      if (t) {
+      const [t, rows] = await Promise.all([
+        Tenant.findById(tenantId).lean(),
+        TenantModule.find({ tenantId, enabled: true }).select('moduleKey').lean(),
+      ]);
+      const tt = t as { _id: unknown; name: string; slug: string; status: string; logo?: string; address?: string; phone?: string; email?: string; gstNumber?: string; quotationPrefix?: string; plan?: string } | null;
+      if (tt) {
         tenant = {
-          id: String(t._id),
-          name: t.name,
-          slug: t.slug,
-          status: t.status,
-          logo: t.logo || '',
-          address: t.address || '',
-          phone: t.phone || '',
-          email: t.email || '',
-          gstNumber: t.gstNumber || '',
-          quotationPrefix: t.quotationPrefix || 'Q',
-          plan: t.plan,
+          id: String(tt._id),
+          name: tt.name,
+          slug: tt.slug,
+          status: tt.status,
+          logo: tt.logo || '',
+          address: tt.address || '',
+          phone: tt.phone || '',
+          email: tt.email || '',
+          gstNumber: tt.gstNumber || '',
+          quotationPrefix: tt.quotationPrefix || 'Q',
+          plan: tt.plan,
         };
       }
+      enabledModules = new Set((rows as { moduleKey: string }[]).map((r) => String(r.moduleKey)));
     }
 
-    let enabledModules = new Set<string>();
-    if (tenant) {
-      const rows = await TenantModule.find({ tenantId: tenant.id, enabled: true })
-        .select('moduleKey')
-        .lean();
-      enabledModules = new Set(rows.map((r: { moduleKey: string }) => String(r.moduleKey)));
-    }
-
-    const { resolveRole } = await import('@/lib/admin-auth');
     const role = superAdmin ? ('admin' as StaffRole) : resolveRole(user);
 
     return {
@@ -167,7 +173,7 @@ export function tenantFilter(tenantId: string, extra: Record<string, unknown> = 
   return { ...extra, tenantId: new mongoose.Types.ObjectId(tenantId) };
 }
 
-export async function writeAudit(
+export function writeAudit(
   tenantId: string | null,
   userId: string | null,
   actorEmail: string,
@@ -175,9 +181,11 @@ export async function writeAudit(
   entity: string,
   entityId = '',
   metadata: Record<string, unknown> = {},
-): Promise<void> {
+): void {
+  // Fire-and-forget: audit must never add latency to the request path.
+  // Callers may still `await` this (await on void is a no-op).
   try {
-    await AuditLog.create({
+    void AuditLog.create({
       tenantId: tenantId ? new mongoose.Types.ObjectId(tenantId) : null,
       userId: userId ? new mongoose.Types.ObjectId(userId) : null,
       actorEmail,
@@ -185,6 +193,8 @@ export async function writeAudit(
       entity,
       entityId,
       metadata,
+    }).catch(() => {
+      // Audit must never break the request.
     });
   } catch {
     // Audit must never break the request.

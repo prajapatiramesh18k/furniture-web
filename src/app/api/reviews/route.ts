@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Review from '@/lib/models/Review';
+import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
 // Short-lived in-memory cache so repeat homepage hits skip Mongo entirely.
 interface CacheEntry {
@@ -12,8 +13,14 @@ const CACHE_TTL = 60_000; // 60s
 const LIST_CACHE_KEY = 'reviews:approved';
 
 function clearListCache() {
-  cache.delete(LIST_CACHE_KEY);
+  // GET caches under `${LIST_CACHE_KEY}:${limit}` — wipe the whole prefix,
+  // otherwise newly approved reviews keep serving the old (empty) list.
+  for (const key of cache.keys()) {
+    if (key === LIST_CACHE_KEY || key.startsWith(`${LIST_CACHE_KEY}:`)) cache.delete(key);
+  }
 }
+
+export { clearListCache as clearReviewsListCache };
 
 export async function GET(request: NextRequest) {
   const limitParam = parseInt(new URL(request.url).searchParams.get('limit') || '50', 10);
@@ -29,16 +36,15 @@ export async function GET(request: NextRequest) {
 
   try {
     await dbConnect();
-    // Public wall shows the default storefront tenant's approved reviews.
-    let storefrontTenantId: string | null = null;
-    try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      storefrontTenantId = dt ? String(dt._id) : null;
-    } catch {}
+    // Public wall shows the default storefront tenant's approved reviews (cached id).
+    const storefrontTenantId = await getStorefrontTenantId();
     // lean() avoids Mongoose document hydration; indexed { approved, createdAt } sort; bounded limit
-    const reviews = await Review.find({ approved: true, ...(storefrontTenantId ? { tenantId: storefrontTenantId } : {}) })
+    // Include legacy reviews saved before multitenancy (tenantId: null) so old
+    // approved entries keep showing on the storefront instead of vanishing.
+    const tenantClause = storefrontTenantId
+      ? { tenantId: { $in: [storefrontTenantId, null] } }
+      : {};
+    const reviews = await Review.find({ approved: true, ...tenantClause })
       .select('name location rating text photo date propertyType services createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -57,13 +63,7 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
     delete body.tenantId;
-    let storefrontTenantId: string | null = null;
-    try {
-      const Tenant = (await import('@/lib/models/Tenant')).default;
-      const slug = process.env.DEFAULT_TENANT_SLUG || 'ananya-house-of-furniture';
-      const dt = (await Tenant.findOne({ slug }).select('_id').lean()) || (await Tenant.findOne({ status: 'active' }).sort({ createdAt: 1 }).select('_id').lean());
-      storefrontTenantId = dt ? String(dt._id) : null;
-    } catch {}
+    const storefrontTenantId = await getStorefrontTenantId();
     const review = new Review({
       tenantId: storefrontTenantId,
       name: body.name,

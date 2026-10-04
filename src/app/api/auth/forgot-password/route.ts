@@ -37,16 +37,21 @@ export async function POST(request: NextRequest) {
 
     const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
 
-    // Send email if RESEND_API_KEY is configured
+    // Fire-and-forget: send the email without blocking the response
+    // (Resend used to add seconds before json()).
     if (process.env.RESEND_API_KEY) {
-      try {
-        const { Resend } = await import('resend');
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const { data, error } = await resend.emails.send({
-          from: 'Ananya Furniture <onboarding@resend.dev>',
-          to: email,
-          subject: 'Reset Your Password - Ananya House of Furniture',
-          html: `
+      const apiKey = process.env.RESEND_API_KEY;
+      const recipient = email;
+      const userName = user.name || 'there';
+      void (async () => {
+        try {
+          const { Resend } = await import('resend');
+          const resend = new Resend(apiKey);
+          const { error } = await resend.emails.send({
+            from: 'Ananya Furniture <onboarding@resend.dev>',
+            to: recipient,
+            subject: 'Reset Your Password - Ananya House of Furniture',
+            html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #a27341; color: white; padding: 20px; text-align: center;">
                 <h1 style="margin: 0;">Ananya House of Furniture</h1>
@@ -54,7 +59,7 @@ export async function POST(request: NextRequest) {
               <div style="padding: 30px; background: #f9f9f9;">
                 <h2 style="color: #333;">Password Reset Request</h2>
                 <p style="color: #666; font-size: 16px;">
-                  Hello ${user.name || 'there'},
+                  Hello ${userName},
                 </p>
                 <p style="color: #666; font-size: 16px;">
                   You requested a password reset for your Ananya House of Furniture account.
@@ -76,14 +81,15 @@ export async function POST(request: NextRequest) {
               </div>
             </div>
           `,
-        });
+          });
 
-        if (error) {
-          console.error('Resend error:', error);
+          if (error) {
+            console.error('Resend error:', error);
+          }
+        } catch (emailError) {
+          console.error('Failed to send email:', emailError);
         }
-      } catch (emailError) {
-        console.error('Failed to send email:', emailError);
-      }
+      })();
     }
 
     return NextResponse.json({

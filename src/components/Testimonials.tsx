@@ -88,15 +88,19 @@ export default function Testimonials() {
 
   useEffect(() => {
     let cancelled = false;
-    import('@/lib/api-cache')
-      .then(({ cachedGetJSON }) => cachedGetJSON<Review[]>('/api/reviews?limit=50'))
-      .then(data => {
+    // Live wall: if the database has approved reviews, show only those.
+    // Dummy fallback shows only when the DB list is empty (or fetch fails),
+    // so e.g. a single approved review (Rajan) shows alone without defaults.
+    // no-store: never serve a stale cached empty list from the browser cache.
+    fetch('/api/reviews?limit=50', { cache: 'no-store' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`reviews fetch failed: ${res.status}`);
+        return res.json() as Promise<Review[]>;
+      })
+      .then((data) => {
         if (cancelled) return;
-        if (Array.isArray(data) && data.length > 0) {
-          setReviews(data);
-        } else {
-          setReviews(fallbackReviews);
-        }
+        const real = Array.isArray(data) ? data : [];
+        setReviews(real.length > 0 ? real : [...fallbackReviews]);
         setLoaded(true);
       })
       .catch(() => {
@@ -110,7 +114,7 @@ export default function Testimonials() {
   }, []);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || reviews.length <= 1) return;
 
     let swiperInstance: any = null;
 
@@ -122,12 +126,13 @@ export default function Testimonials() {
         modules: [Autoplay],
         autoplay: { delay: 5000, disableOnInteraction: false },
         grabCursor: true,
-        loop: reviews.length > 1,
+        loop: reviews.length > 3,
+        centeredSlides: reviews.length < 3,
         spaceBetween: 20,
         breakpoints: {
           0: { slidesPerView: 1 },
-          768: { slidesPerView: 2 },
-          991: { slidesPerView: 3 },
+          768: { slidesPerView: Math.min(2, reviews.length) },
+          991: { slidesPerView: Math.min(3, reviews.length) },
         },
       });
     };
@@ -154,6 +159,50 @@ export default function Testimonials() {
   };
 
   if (!loaded) return null;
+
+  // Single review: skip the slider and render one centered card (a 1-slide
+  // swiper sticks to the left because slidesPerView is 2-3 on desktop).
+  if (reviews.length === 1) {
+    const review = reviews[0];
+    return (
+      <section className="testimonials" id="testimonials">
+        <h2 className="heading">What Our <span>Clients Say</span></h2>
+        <div style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '50px' }}>
+          <div className="testimonial-card">
+            {review.photo && (
+              <img
+                src={review.photo}
+                alt={review.name}
+                className="testimonial-image"
+              loading="lazy" decoding="async" />
+            )}
+            <h3 className="testimonial-name">{review.name}</h3>
+            <p className="testimonial-location">
+              <i className="fas fa-map-marker-alt"></i> {review.location}
+            </p>
+            {review.propertyType && (
+              <div className="testimonial-project-info">
+                <span className="testimonial-property">{review.propertyType?.toUpperCase()}</span>
+                {review.services && review.services.length > 0 && (
+                  <span className="testimonial-services">
+                    {review.services.slice(0, 2).join(' • ')}
+                    {review.services.length > 2 && ` +${review.services.length - 2}`}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="testimonial-stars" style={{ color: '#ffc107' }}>
+              {renderStars(review.rating)}
+            </div>
+            <p className="testimonial-text">&ldquo;{review.text}&rdquo;</p>
+            {review.date && (
+              <p className="testimonial-date">{review.date}</p>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="testimonials" id="testimonials">

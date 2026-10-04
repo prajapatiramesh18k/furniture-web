@@ -7,6 +7,7 @@ import UIDropdown from '@/components/UIDropdown';
 import DateRangePicker from '@/components/DateRangePicker';
 import { ListPagination, usePagination } from '@/components/admin/ListPagination';
 import { ModuleShell, useAdminFetch } from '@/components/admin/ModuleBits';
+import ConfirmationModal from '@/components/admin/ConfirmationModal';
 
 interface Lead {
   _id: string;
@@ -78,6 +79,8 @@ export default function AdminLeads() {
   const [toDate, setToDate] = useState(todayKey);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
   const [newLead, setNewLead] = useState({
     name: '', phone: '', email: '', address: '', projectType: '',
     message: '', source: '', budget: '', followUpAt: '',
@@ -89,6 +92,19 @@ export default function AdminLeads() {
   const [emps, setEmps] = useState<Emp[]>([]);
   const [form, setForm] = useState({ status: 'new', assignedTo: '', followUpAt: '', source: '', budget: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    boldWord?: string;
+    afterBold?: string;
+    subtext?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
+  });
   const [schedulingVisit, setSchedulingVisit] = useState(false);
   const [visitForm, setVisitForm] = useState({ visitDate: '', requirements: '', notes: '' });
 
@@ -169,14 +185,57 @@ export default function AdminLeads() {
     setTimeout(() => setToast(''), 2600);
   };
 
+  const clearCreateFieldError = (field: string) => {
+    setCreateFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    setCreateError(null);
+  };
+
+  const openCreateModal = () => {
+    setCreateFieldErrors({});
+    setCreateError(null);
+    setCreateOpen(true);
+  };
+
   const createLead = async () => {
     const name = newLead.name.trim();
     const email = newLead.email.trim();
     const message = newLead.message.trim();
     const digits = newLead.phone.replace(/\D/g, '');
-    const cleanPhone = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits.length === 11 && digits.startsWith('0') ? digits.slice(1) : digits;
-    if (!name || !email || !message) return alert('Name, email and requirement are required');
-    if (cleanPhone.length !== 10) return alert('Phone must be exactly 10 digits');
+    const cleanPhone = digits.length > 10 && digits.startsWith('91') ? digits.slice(2) : digits.length === 11 && digits.startsWith('0') ? digits.slice(1) : digits.slice(0, 10);
+
+    // Inline validation — errors appear inside the Create Lead modal,
+    // right under each field (no window.alert popup).
+    const nextErrors: Record<string, string> = {};
+    if (!name) nextErrors.name = 'Please enter the name.';
+    if (!email) nextErrors.email = 'Please enter the email address.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = 'Please enter a valid email address.';
+    if (!newLead.phone.trim()) nextErrors.phone = 'Please enter the mobile number.';
+    else if (cleanPhone.length !== 10) nextErrors.phone = 'Mobile number must be exactly 10 digits.';
+    else if (!/^[6-9]\d{9}$/.test(cleanPhone)) nextErrors.phone = 'Please enter a valid 10-digit Indian mobile number.';
+    if (!message) nextErrors.message = 'Please enter the requirement.';
+
+    if (Object.keys(nextErrors).length > 0) {
+      setCreateFieldErrors(nextErrors);
+      const missing = [
+        nextErrors.name && 'Name',
+        nextErrors.phone && 'Phone',
+        nextErrors.email && 'Email',
+        nextErrors.message && 'Requirement',
+      ].filter(Boolean);
+      setCreateError(
+        missing.length > 0
+          ? `Please fill the required fields: ${missing.join(', ')}.`
+          : 'Please fix the highlighted fields.'
+      );
+      return;
+    }
+    setCreateFieldErrors({});
+    setCreateError(null);
     setCreating(true);
     try {
       const res = await fetch('/api/contacts', {
@@ -207,11 +266,13 @@ export default function AdminLeads() {
         }).catch(() => {});
       }
       setNewLead({ name: '', phone: '', email: '', address: '', projectType: '', message: '', source: '', budget: '', followUpAt: '' });
+      setCreateFieldErrors({});
+      setCreateError(null);
       setCreateOpen(false);
       refresh();
       flash(`Lead created — ${name}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create lead');
+      setCreateError(err instanceof Error ? err.message : 'Failed to create lead');
     } finally {
       setCreating(false);
     }
@@ -261,8 +322,33 @@ export default function AdminLeads() {
     }
   };
 
-  const scheduleSiteVisit = async (l: Lead) => {
-    if (!visitForm.visitDate) return alert('Visit date is required');
+  const deleteLead = (l: Lead) => {
+    // Shared confirmation modal — never window.confirm.
+    setConfirmModal({
+      isOpen: true,
+      message: 'Delete lead',
+      boldWord: `"${l.name}"?`,
+      subtext: 'This cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        setDeleting(true);
+        try {
+          const res = await fetch(`/api/contacts?id=${encodeURIComponent(l._id)}`, { method: 'DELETE' });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(d.error || 'Delete failed');
+          setOpenId(null);
+          refresh();
+          flash(`Lead deleted — ${l.name}`);
+        } catch (err) {
+          alert(err instanceof Error ? err.message : 'Delete failed');
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
+  };
+
+  const scheduleSiteVisit = async (l: Lead) => {    if (!visitForm.visitDate) return alert('Visit date is required');
     setSchedulingVisit(true);
     try {
       const res = await fetch('/api/site-visits', {
@@ -354,7 +440,7 @@ export default function AdminLeads() {
             />
             <button
               className="ahf-btn ahf-btn-primary ahf-btn-sm"
-              onClick={() => setCreateOpen(true)}
+              onClick={openCreateModal}
               style={{ marginLeft: 'auto' }}
             >
               <i className="fas fa-plus"></i> Create
@@ -419,7 +505,7 @@ export default function AdminLeads() {
 
       {createOpen && (
         <div
-          onClick={() => !creating && setCreateOpen(false)}
+          onClick={() => { if (!creating) { setCreateOpen(false); setCreateError(null); setCreateFieldErrors({}); } }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
         >
           <div
@@ -432,19 +518,28 @@ export default function AdminLeads() {
                 <div style={{ fontSize: 20, fontWeight: 800 }}>Create Lead</div>
                 <div style={{ fontSize: 12.5, opacity: 0.9 }}>Appears in the list — click its row to work it</div>
               </div>
-              <button onClick={() => !creating && setCreateOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}><i className="fas fa-times"></i></button>
+              <button onClick={() => { if (!creating) { setCreateOpen(false); setCreateError(null); setCreateFieldErrors({}); } }} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 24, cursor: 'pointer', lineHeight: 1 }}><i className="fas fa-times"></i></button>
             </div>
 
             <div style={{ padding: 22 }}>
+              {createError && (
+                <div role="alert" style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="fas fa-exclamation-circle" style={{ color: '#ef4444' }}></i>
+                  {createError}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>Name *
-                  <input className="ahf-input" value={newLead.name} onChange={(e) => setNewLead((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Rahul Mehta" />
+                  <input className="ahf-input" value={newLead.name} onChange={(e) => { setNewLead((f) => ({ ...f, name: e.target.value })); clearCreateFieldError('name'); }} placeholder="e.g. Rahul Mehta" aria-invalid={!!createFieldErrors.name} style={createFieldErrors.name ? { borderColor: '#ef4444', background: '#fef2f2' } : undefined} />
+                  {createFieldErrors.name && <span role="alert" style={{ color: '#b91c1c', fontSize: 12, fontWeight: 600 }}>{createFieldErrors.name}</span>}
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>Phone (10 digits) *
-                  <input className="ahf-input" value={newLead.phone} onChange={(e) => setNewLead((f) => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 12) }))} placeholder="98765 43210" inputMode="numeric" />
+                  <input className="ahf-input" value={newLead.phone} onChange={(e) => setNewLead((f) => { let d = e.target.value.replace(/\D/g, ''); if (d.length > 10 && d.startsWith('91')) d = d.slice(2); else if (d.length === 11 && d.startsWith('0')) d = d.slice(1); clearCreateFieldError('phone'); return { ...f, phone: d.slice(0, 10) }; })} placeholder="98765 43210" inputMode="numeric" maxLength={10} aria-invalid={!!createFieldErrors.phone} style={createFieldErrors.phone ? { borderColor: '#ef4444', background: '#fef2f2' } : undefined} />
+                  {createFieldErrors.phone && <span role="alert" style={{ color: '#b91c1c', fontSize: 12, fontWeight: 600 }}>{createFieldErrors.phone}</span>}
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>Email *
-                  <input className="ahf-input" type="email" value={newLead.email} onChange={(e) => setNewLead((f) => ({ ...f, email: e.target.value }))} placeholder="customer@email.com" />
+                  <input className="ahf-input" type="email" value={newLead.email} onChange={(e) => { setNewLead((f) => ({ ...f, email: e.target.value })); clearCreateFieldError('email'); }} placeholder="customer@email.com" aria-invalid={!!createFieldErrors.email} style={createFieldErrors.email ? { borderColor: '#ef4444', background: '#fef2f2' } : undefined} />
+                  {createFieldErrors.email && <span role="alert" style={{ color: '#b91c1c', fontSize: 12, fontWeight: 600 }}>{createFieldErrors.email}</span>}
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>Address
                   <input className="ahf-input" value={newLead.address} onChange={(e) => setNewLead((f) => ({ ...f, address: e.target.value }))} placeholder="Flat, road, area, city" />
@@ -463,10 +558,11 @@ export default function AdminLeads() {
                 </label>
               </div>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5, marginBottom: 16 }}>Requirement *
-                <textarea className="ahf-input" rows={3} value={newLead.message} onChange={(e) => setNewLead((f) => ({ ...f, message: e.target.value }))} placeholder="What does the customer need…" />
+                <textarea className="ahf-input" rows={3} value={newLead.message} onChange={(e) => { setNewLead((f) => ({ ...f, message: e.target.value })); clearCreateFieldError('message'); }} placeholder="What does the customer need…" aria-invalid={!!createFieldErrors.message} style={createFieldErrors.message ? { borderColor: '#ef4444', background: '#fef2f2', borderRadius: 12 } : { borderRadius: 12 }} />
+                {createFieldErrors.message && <span role="alert" style={{ color: '#b91c1c', fontSize: 12, fontWeight: 600 }}>{createFieldErrors.message}</span>}
               </label>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button className="ahf-btn ahf-btn-ghost" disabled={creating} onClick={() => setCreateOpen(false)}>
+                <button className="ahf-btn ahf-btn-ghost" disabled={creating} onClick={() => { setCreateOpen(false); setCreateError(null); setCreateFieldErrors({}); }}>
                   Cancel
                 </button>
                 <button className="ahf-btn ahf-btn-primary" disabled={creating} onClick={createLead}>
@@ -562,8 +658,16 @@ export default function AdminLeads() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-                  <button className="ahf-btn ahf-btn-primary" disabled={saving} onClick={() => save(l)}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', marginTop: 16 }}>
+                  <button
+                    className="ahf-btn ahf-btn-ghost"
+                    disabled={saving || deleting}
+                    onClick={() => deleteLead(l)}
+                    style={{ color: '#b3273a' }}
+                  >
+                    <i className="fas fa-trash"></i> Delete
+                  </button>
+                  <button className="ahf-btn ahf-btn-primary" disabled={saving || deleting} onClick={() => save(l)}>
                     <i className="fas fa-check"></i> {saving ? 'Saving…' : 'Save'}
                   </button>
                 </div>
@@ -572,6 +676,17 @@ export default function AdminLeads() {
           </div>
         );
       })()}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        boldWord={confirmModal.boldWord}
+        afterBold={confirmModal.afterBold}
+        subtext={confirmModal.subtext}
+        confirmText={deleting ? 'Deleting…' : 'Yes, Delete'}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </ModuleShell>
   );
 }

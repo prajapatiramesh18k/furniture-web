@@ -12560,6 +12560,54 @@ summary:focus-visible {
   color: #ef4444;
 }
 
+/* Inline per-field validation (replaces window.alert) */
+.cpf-field-error {
+  color: #b91c1c;
+  font-size: 1.25rem;
+  margin: 0.4rem 0 0 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+
+.cpf-field-hint {
+  color: #9a8b7d;
+  font-size: 1.2rem;
+  margin: 0.4rem 0 0 0.2rem;
+  font-weight: 400;
+}
+
+.cpf-input-error {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+}
+
+/* Fixed +91 prefix — phone stays exactly 10 digits, never 12 */
+.cpf-phone-wrap {
+  position: relative;
+}
+
+.cpf-phone-prefix {
+  position: absolute;
+  left: 1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #6b5e54;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cpf-phone-wrap .cpf-phone-input {
+  padding-left: 4.6rem !important;
+}
+
+.cpf-phone-wrap .cpf-phone-label {
+  left: 4.6rem !important;
+}
+
 @keyframes cpf-spin {
   to { transform: rotate(360deg); }
 }

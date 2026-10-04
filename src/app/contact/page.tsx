@@ -52,7 +52,8 @@ export default function ContactPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [focused, setFocused] = useState<string | null>(null);
   const formStarted = useRef(false);
 
@@ -87,10 +88,35 @@ export default function ContactPage() {
     trackContactFormStart({ source: 'contact_page', cta_position: 'contact_form' });
   };
 
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    // Clear the top-level message once the user starts fixing the form
+    setError(null);
+  };
+
+  // Phone rule: exactly 10 digits (Indian mobile). Accepts pasted
+  // "+91 ...", "0...", spaces/dashes — normalizes to 10 digits, never 12.
+  const sanitizePhoneInput = (raw: string) => {
+    let digits = raw.replace(/\D/g, '');
+    // Drop +91 / 91 prefix if user pastes it ("919348768901" -> "9348768901")
+    if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
+    // Drop trunk 0 prefix ("09876543210" -> "9876543210")
+    else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+    return digits.slice(0, 10);
+  };
+
+  const normalizePhone = (raw: string) => sanitizePhoneInput(raw);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(false);
+    setError(null);
+    setFieldErrors({});
 
     const formEl = e.target as HTMLFormElement;
     const honey = (formEl.elements.namedItem('company_url') as HTMLInputElement | null)?.value;
@@ -100,15 +126,55 @@ export default function ContactPage() {
       return;
     }
 
-    const phoneDigits = form.phone.replace(/\D/g, '');
-    if (!form.name.trim() || !form.email.trim() || !form.projectType || !form.location || !form.message.trim()) {
-      setError(true);
-      setSubmitting(false);
-      return;
+    // Field-by-field validation so the user sees exactly what is missing.
+    const nextFieldErrors: Record<string, string> = {};
+    const emailValue = form.email.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+    const phoneDigits = normalizePhone(form.phone);
+
+    if (!form.name.trim()) nextFieldErrors.name = 'Please enter your name.';
+    if (!form.phone.trim()) {
+      nextFieldErrors.phone = 'Please enter your mobile number.';
+    } else if (phoneDigits.length !== 10) {
+      nextFieldErrors.phone = 'Mobile number must be exactly 10 digits (without +91).';
+    } else if (!/^[6-9]\d{9}$/.test(phoneDigits)) {
+      nextFieldErrors.phone = 'Please enter a valid 10-digit Indian mobile number.';
     }
-    if (phoneDigits.length !== 10) {
-      alert('Please enter a valid 10-digit phone number');
+    if (!emailValue) {
+      nextFieldErrors.email = 'Please enter your email address.';
+    } else if (!emailValid) {
+      nextFieldErrors.email = 'Please enter a valid email address (e.g. name@example.com).';
+    }
+    if (!form.location) nextFieldErrors.location = 'Please select your location.';
+    if (!form.projectType) nextFieldErrors.projectType = 'Please select a service.';
+    if (!form.message.trim()) nextFieldErrors.message = 'Please tell us about your requirement.';
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      // Show the most actionable message at the top (email first if that is the problem).
+      const priority = ['email', 'phone', 'name', 'location', 'projectType', 'message'];
+      const firstKey = priority.find((k) => nextFieldErrors[k]) || Object.keys(nextFieldErrors)[0];
+      setError(nextFieldErrors[firstKey]);
       setSubmitting(false);
+      // Move focus to the first invalid field for quick correction.
+      requestAnimationFrame(() => {
+        const target = document.getElementById(
+          firstKey === 'projectType'
+            ? 'contact-service'
+            : firstKey === 'name'
+              ? 'contact-name'
+              : firstKey === 'phone'
+                ? 'contact-phone'
+                : firstKey === 'email'
+                  ? 'contact-email'
+                  : firstKey === 'message'
+                    ? 'contact-message'
+                    : firstKey === 'location'
+                      ? 'contact-location'
+                      : ''
+        );
+        target?.focus?.();
+      });
       return;
     }
 
@@ -136,7 +202,11 @@ export default function ContactPage() {
       });
 
       if (!response.ok) {
-        setError(true);
+        const data = await response.json().catch(() => null);
+        setError(
+          (data as { error?: string } | null)?.error ||
+            'Could not send your message. Please check the highlighted fields or WhatsApp / call us directly.'
+        );
         return;
       }
 
@@ -181,7 +251,7 @@ export default function ContactPage() {
       );
       setSubmitted(true);
     } catch {
-      setError(true);
+      setError('Something went wrong while sending. Please try again, or WhatsApp / call us directly.');
     } finally {
       setSubmitting(false);
     }
@@ -315,7 +385,7 @@ export default function ContactPage() {
                   <p>Tell us your service and location — we respond within 24 hours.</p>
                 </div>
 
-                <form className="contact-page-form" onSubmit={handleSubmit} onFocus={markFormStart}>
+                <form className="contact-page-form" onSubmit={handleSubmit} onFocus={markFormStart} noValidate>
                   <div className="hp-field" aria-hidden="true">
                     <label htmlFor="company_url">Company URL</label>
                     <input type="text" id="company_url" name="company_url" tabIndex={-1} autoComplete="off" defaultValue="" />
@@ -329,37 +399,44 @@ export default function ContactPage() {
                       <input
                         type="text"
                         id="contact-name"
-                        className="cpf-input"
+                        className={`cpf-input${fieldErrors.name ? ' cpf-input-error' : ''}`}
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) => { setForm({ ...form, name: e.target.value }); clearFieldError('name'); }}
                         onFocus={() => setFocused('name')}
                         onBlur={() => setFocused(null)}
                         autoComplete="name"
-                        required
+                        aria-invalid={!!fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? 'contact-name-error' : undefined}
                       />
-                      <label className="floating-label" htmlFor="contact-name">Your Name</label>
+                      <label className="floating-label" htmlFor="contact-name">Your Name *</label>
                     </div>
+                    {fieldErrors.name && <p id="contact-name-error" className="cpf-field-error" role="alert">{fieldErrors.name}</p>}
                   </div>
 
                   <div className="cpf-row">
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.22s' }}>
-                      <div className={`floating-field ${isActive('phone') ? 'active' : ''}`}>
+                      <div className={`floating-field cpf-phone-wrap ${isActive('phone') ? 'active' : ''}`}>
+                        <span className="cpf-phone-prefix" aria-hidden="true">+91</span>
                         <input
                           type="tel"
                           id="contact-phone"
-                          className="cpf-input"
+                          className={`cpf-input cpf-phone-input${fieldErrors.phone ? ' cpf-input-error' : ''}`}
                           value={form.phone}
-                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          onChange={(e) => { setForm({ ...form, phone: sanitizePhoneInput(e.target.value) }); clearFieldError('phone'); }}
                           onFocus={() => setFocused('phone')}
                           onBlur={() => setFocused(null)}
-                          pattern="[0-9]{10}"
                           maxLength={10}
                           inputMode="numeric"
                           autoComplete="tel"
-                          required
+                          placeholder=" "
+                          aria-invalid={!!fieldErrors.phone}
+                          aria-describedby={fieldErrors.phone ? 'contact-phone-error' : 'contact-phone-hint'}
                         />
-                        <label className="floating-label" htmlFor="contact-phone">Mobile Number</label>
+                        <label className="floating-label cpf-phone-label" htmlFor="contact-phone">Mobile Number *</label>
                       </div>
+                      {fieldErrors.phone
+                        ? <p id="contact-phone-error" className="cpf-field-error" role="alert">{fieldErrors.phone}</p>
+                        : <p id="contact-phone-hint" className="cpf-field-hint">10 digits, without +91 — e.g. 98765 43210</p>}
                     </div>
 
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.29s' }}>
@@ -367,16 +444,18 @@ export default function ContactPage() {
                         <input
                           type="email"
                           id="contact-email"
-                          className="cpf-input"
+                          className={`cpf-input${fieldErrors.email ? ' cpf-input-error' : ''}`}
                           value={form.email}
-                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          onChange={(e) => { setForm({ ...form, email: e.target.value }); clearFieldError('email'); }}
                           onFocus={() => setFocused('email')}
                           onBlur={() => setFocused(null)}
                           autoComplete="email"
-                          required
+                          aria-invalid={!!fieldErrors.email}
+                          aria-describedby={fieldErrors.email ? 'contact-email-error' : undefined}
                         />
-                        <label className="floating-label" htmlFor="contact-email">Email Address</label>
+                        <label className="floating-label" htmlFor="contact-email">Email Address *</label>
                       </div>
+                      {fieldErrors.email && <p id="contact-email-error" className="cpf-field-error" role="alert">{fieldErrors.email}</p>}
                     </div>
                   </div>
 
@@ -403,17 +482,18 @@ export default function ContactPage() {
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.43s' }}>
                       <div className={`floating-field ${isActive('location') ? 'active' : ''}`}>
                         <UIDropdown
-                          label="Your Location"
+                          label="Your Location *"
                           variant="cpf"
                           value={form.location}
                           placeholder=""
                           options={locations}
-                          onChange={(v) => setForm({ ...form, location: v })}
+                          onChange={(v) => { setForm({ ...form, location: v }); clearFieldError('location'); }}
                           onFocus={() => setFocused('location')}
                           onBlur={() => setFocused(null)}
                         />
-                        <label className="floating-label">Your Location</label>
+                        <label className="floating-label">Your Location *</label>
                       </div>
+                      {fieldErrors.location && <p className="cpf-field-error" role="alert">{fieldErrors.location}</p>}
                     </div>
 
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.46s' }}>
@@ -436,7 +516,7 @@ export default function ContactPage() {
                   <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.5s' }}>
                       <div className={`floating-field ${isActive('projectType') ? 'active' : ''}`}>
                         <UIDropdown
-                          label="Service Needed"
+                          label="Service Needed *"
                           variant="cpf"
                           value={projectTypes.some((t) => t.toLowerCase().replace(/[\s/]+/g, '-') === form.projectType) ? form.projectType : ''}
                           placeholder=""
@@ -444,12 +524,13 @@ export default function ContactPage() {
                             value: type.toLowerCase().replace(/[\s/]+/g, '-'),
                             label: type,
                           }))}
-                          onChange={(v) => setForm({ ...form, projectType: v })}
+                          onChange={(v) => { setForm({ ...form, projectType: v }); clearFieldError('projectType'); }}
                           onFocus={() => setFocused('projectType')}
                           onBlur={() => setFocused(null)}
                         />
-                      <label className="floating-label" htmlFor="contact-service">Service Needed</label>
+                      <label className="floating-label" htmlFor="contact-service">Service Needed *</label>
                     </div>
+                    {fieldErrors.projectType && <p className="cpf-field-error" role="alert">{fieldErrors.projectType}</p>}
                   </div>
 
                   <div className="cpf-section-label anim-fade-up" style={{ animationDelay: '0.54s' }}>
@@ -460,22 +541,24 @@ export default function ContactPage() {
                     <div className={`floating-field ${isActive('message') ? 'active' : ''}`}>
                       <textarea
                         id="contact-message"
-                        className="cpf-input cpf-textarea"
+                        className={`cpf-input cpf-textarea${fieldErrors.message ? ' cpf-input-error' : ''}`}
                         rows={4}
                         value={form.message}
-                        onChange={(e) => setForm({ ...form, message: e.target.value })}
+                        onChange={(e) => { setForm({ ...form, message: e.target.value }); clearFieldError('message'); }}
                         onFocus={() => setFocused('message')}
                         onBlur={() => setFocused(null)}
-                        required
+                        aria-invalid={!!fieldErrors.message}
+                        aria-describedby={fieldErrors.message ? 'contact-message-error' : undefined}
                       />
-                      <label className="floating-label floating-label-textarea" htmlFor="contact-message">Tell us about your requirements…</label>
+                      <label className="floating-label floating-label-textarea" htmlFor="contact-message">Tell us about your requirements… *</label>
                     </div>
+                    {fieldErrors.message && <p id="contact-message-error" className="cpf-field-error" role="alert">{fieldErrors.message}</p>}
                   </div>
 
                   {error && (
                     <div className="cpf-error anim-fade-up" role="alert">
                       <i className="fas fa-exclamation-circle"></i>
-                      Please fill all required fields, or try again. You can also WhatsApp / call us directly.
+                      {error}
                     </div>
                   )}
 

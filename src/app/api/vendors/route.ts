@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if ('error' in gate) return gate.error;
   try {
     await dbConnect();
-    const vendors = await Vendor.find(tenantFilter(gate.ctx.user.tenantId!)).sort({ company: 1 });
+    const vendors = await Vendor.find(tenantFilter(gate.ctx.user.tenantId!)).sort({ company: 1 }).limit(500).lean();
     return NextResponse.json({ success: true, vendors });
   } catch (err: unknown) {
     console.error('vendors GET error:', err);

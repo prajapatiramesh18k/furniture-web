@@ -23,8 +23,12 @@ export async function GET(request: NextRequest) {
   if ('error' in gate) return gate.error;
   try {
     await dbConnect();
+    const { searchParams } = new URL(request.url);
+    const limitParam = parseInt(searchParams.get('limit') || '200', 10);
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 500) : 200;
     const filter = gate.user.isSuperAdmin && !gate.user.tenantId ? {} : { tenantId: gate.user.tenantId };
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    // lean() + bounded limit (was: unbounded hydrated fetch).
+    const products = await Product.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
     return NextResponse.json({ products });
   } catch (error) {
     // Return fallback data if DB is not connected

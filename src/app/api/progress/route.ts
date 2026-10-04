@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ProgressUpdate from '@/lib/models/ProgressUpdate';
+import Project from '@/lib/models/Project';
 import { requireTenant, tenantFilter } from '@/lib/tenant';
 
 export async function GET(request: NextRequest) {
@@ -31,8 +32,7 @@ export async function POST(request: NextRequest) {
     if (!body.projectId || (!body.notes && !(body.photos || []).length)) {
       return NextResponse.json({ error: 'Project and a note or photo are required' }, { status: 400 });
     }
-    const Project = (await import('@/lib/models/Project')).default;
-    if (!(await Project.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: body.projectId })).select('_id'))) {
+    if (!(await Project.findOne(tenantFilter(gate.ctx.user.tenantId!, { _id: body.projectId })).select('_id').lean())) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
     const update = new ProgressUpdate({ ...body, tenantId: gate.ctx.user.tenantId, createdBy: gate.ctx.user.id });

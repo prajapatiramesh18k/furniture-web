@@ -80,23 +80,39 @@ export async function requireAdmin(
     return { error: NextResponse.json({ error: 'Access denied. Insufficient permissions.' }, { status: 403 }) };
   }
   // Enforce sold-module gating per tenant (super admin bypasses).
+  // Short-lived in-memory cache: module flags change rarely, and this saves
+  // 1 Mongo roundtrip on every authenticated admin request after the first.
   if (!user.isSuperAdmin && user.tenantId) {
     try {
       const { ADMIN_MODULE_TO_SALES_MODULE } = await import('@/lib/models/TenantModule');
       const salesKey = ADMIN_MODULE_TO_SALES_MODULE[module];
       if (salesKey) {
-        const TenantModule = (await import('@/lib/models/TenantModule')).default;
-        await dbConnect();
-        const row = await TenantModule.findOne({ tenantId: user.tenantId, moduleKey: salesKey })
-          .select('enabled')
-          .lean();
-        if (!row || row.enabled !== true) {
-          return {
-            error: NextResponse.json(
-              { error: `Module ${salesKey} is not enabled for your company.` },
-              { status: 403 },
-            ),
-          };
+        const cacheKey = `${user.tenantId}:${salesKey}`;
+        const hit = moduleGateCache.get(cacheKey);
+        if (hit && hit.expire > Date.now()) {
+          if (!hit.enabled) {
+            return {
+              error: NextResponse.json(
+                { error: `Module ${salesKey} is not enabled for your company.` },
+                { status: 403 },
+              ),
+            };
+          }
+        } else {
+          const TenantModule = (await import('@/lib/models/TenantModule')).default;
+          const row = await TenantModule.findOne({ tenantId: user.tenantId, moduleKey: salesKey })
+            .select('enabled')
+            .lean();
+          const enabled = !!row && (row as { enabled?: boolean }).enabled === true;
+          moduleGateCache.set(cacheKey, { enabled, expire: Date.now() + MODULE_GATE_TTL });
+          if (!enabled) {
+            return {
+              error: NextResponse.json(
+                { error: `Module ${salesKey} is not enabled for your company.` },
+                { status: 403 },
+              ),
+            };
+          }
         }
       }
     } catch {
@@ -106,3 +122,7 @@ export async function requireAdmin(
   }
   return { user };
 }
+
+// Cache sold-module flags per tenant (module purchases change rarely).
+const moduleGateCache = new Map<string, { enabled: boolean; expire: number }>();
+const MODULE_GATE_TTL = 60_000; // 60s

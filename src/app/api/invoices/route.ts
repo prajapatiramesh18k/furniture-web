@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Invoice from '@/lib/models/Invoice';
 import Counter from '@/lib/models/Counter';
+import Project from '@/lib/models/Project';
 import { requireTenant, tenantFilter, writeAudit } from '@/lib/tenant';
 
 const STATUSES = ['draft', 'sent', 'partial', 'paid', 'cancelled'];
 
-async function scopedProject(tenantId: string, projectId: string) {
-  const Project = (await import('@/lib/models/Project')).default;
-  return Project.findOne(tenantFilter(tenantId, { _id: projectId })).select('_id');
+function scopedProject(tenantId: string, projectId: string) {
+  return Project.findOne(tenantFilter(tenantId, { _id: projectId })).select('_id').lean();
 }
 
 async function nextInvoiceNo(tenantId: string): Promise<string> {
@@ -51,7 +51,13 @@ export async function POST(request: NextRequest) {
     if (!body.projectId || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: 'Project and at least one item are required' }, { status: 400 });
     }
-    if (!(await scopedProject(gate.ctx.user.tenantId!, body.projectId))) {
+    // Project existence check + invoice-number increment run in parallel
+    // (was: 2 sequential awaits).
+    const [project, invoiceNo] = await Promise.all([
+      scopedProject(gate.ctx.user.tenantId!, body.projectId),
+      nextInvoiceNo(gate.ctx.user.tenantId!),
+    ]);
+    if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
     const items = body.items.map((it: { name?: string; quantity?: number; rate?: number }) => {
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
     const invoice = new Invoice({
       projectId: body.projectId,
       quotationId: body.quotationId || null,
-      invoiceNo: await nextInvoiceNo(gate.ctx.user.tenantId!),
+      invoiceNo,
       items,
       subtotal,
       discount,
@@ -91,14 +97,12 @@ export async function POST(request: NextRequest) {
       createdBy: gate.ctx.user.id,
     });
     await invoice.save();
-    try {
-      if (gate.ctx.user.tenantId) {
-        await writeAudit(gate.ctx.user.tenantId, gate.ctx.user.id, gate.ctx.user.email, 'invoice.create', 'Invoice', String(invoice._id), {
-          invoiceNo: invoice.invoiceNo,
-          total,
-        });
-      }
-    } catch {}
+    if (gate.ctx.user.tenantId) {
+      writeAudit(gate.ctx.user.tenantId, gate.ctx.user.id, gate.ctx.user.email, 'invoice.create', 'Invoice', String(invoice._id), {
+        invoiceNo: invoice.invoiceNo,
+        total,
+      });
+    }
     return NextResponse.json({ success: true, invoice }, { status: 201 });
   } catch (err: unknown) {
     console.error('invoices POST error:', err);
