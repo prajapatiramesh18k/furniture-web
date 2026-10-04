@@ -30,7 +30,7 @@ export default function AnnouncementBar() {
         </span>
         <span className="announcement-bar-divider">|</span>
         <span className="announcement-bar-item">
-          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Thane &amp; Ahmedabad
+          <i className="fas fa-map-marker-alt"></i> Free site visit in Mumbai, Navi Mumbai, Thane &amp; Ahmedabad
         </span>
         <span className="announcement-bar-divider">|</span>
         <a
