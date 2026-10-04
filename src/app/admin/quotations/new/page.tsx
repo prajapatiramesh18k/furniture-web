@@ -48,7 +48,6 @@ function RequestList() {
   };
 
   useEffect(() => {
-    document.title = 'New Quotation | Requests';
     load();
   }, []);
 
@@ -214,10 +213,6 @@ function AdminNewInner() {
   const manual = params.get('manual');
 
   const inMaker = Boolean(edit || visit || manual);
-
-  useEffect(() => {
-    if (!inMaker) document.title = 'New Quotation | Requests';
-  }, [inMaker]);
 
   if (inMaker) {
     return (

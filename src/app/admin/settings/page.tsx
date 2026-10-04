@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ModuleShell } from '@/components/admin/ModuleBits';
@@ -117,7 +117,7 @@ export default function AdminSettings() {
     return (
       <ModuleShell title="Settings" sub="Account and business preferences">
         <div className="ahf-grid-2eq">
-          <React.Fragment>
+          <Fragment>
             <div className="ahf-panel">
               <div className="ahf-panel-body">
                 <div className="ahf-skel" style={{ height: 20 }} />
@@ -130,7 +130,7 @@ export default function AdminSettings() {
                 <div className="ahf-skel" style={{ height: 100 }} />
               </div>
             </div>
-          </React.Fragment>
+          </Fragment>
         </div>
       </ModuleShell>
     );

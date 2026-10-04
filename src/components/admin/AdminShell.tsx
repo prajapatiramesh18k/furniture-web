@@ -159,6 +159,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     return TITLES[base] || { title: 'Admin', trail: [{ label: 'Home', href: '/admin/dashboard' }, { label: 'Admin' }] };
   }, [pathname]);
 
+  // Browser tab shows the current menu name (Employee List, Live Attendance, …).
+  useEffect(() => {
+    document.title = meta.title;
+  }, [meta.title]);
+
   const notifications = useMemo(() => {
     const list: { icon: string; color: string; bg: string; title: string; sub: string }[] = [];
     if (counts.pendingOrders) list.push({ icon: 'fa-cart-shopping', color: '#9a6b0a', bg: '#fdf3dd', title: `${counts.pendingOrders} orders need attention`, sub: 'Pending / processing orders' });
