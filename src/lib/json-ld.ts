@@ -17,14 +17,23 @@ export function organizationJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
+    alternateName: 'AnanyaHouseOfFurniture',
     url: SITE_URL,
     logo: absoluteUrl('/images/companylogo-with-bg.png'),
+    image: absoluteUrl('/images/companylogo-with-bg.png'),
     email: EMAIL,
     telephone: PHONES.mumbaiPrimary.tel,
     sameAs: [
       'https://www.instagram.com/ananyahouseoffurniture',
       'https://www.facebook.com/share/18eDGjuM47/',
     ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: PHONES.mumbaiPrimary.tel,
+      contactType: 'sales',
+      areaServed: 'IN',
+      availableLanguage: ['en', 'hi'],
+    },
   };
 }
 
@@ -42,20 +51,26 @@ export function websiteJsonLd() {
   };
 }
 
-/** FurnitureStore / LocalBusiness — only verified address & phones. No fake ratings. */
+/** FurnitureStore / LocalBusiness — only verified address & phones. No fake ratings. Ratings come from Google Business Profile reviews. */
 export function localBusinessJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'FurnitureStore',
     name: SITE_NAME,
+    alternateName: 'AnanyaHouseOfFurniture',
     description:
-      'Custom furniture, modular kitchens and wardrobes for Mumbai, Navi Mumbai & Thane, with an Ahmedabad (Bopal) branch.',
+      'Custom furniture, modular kitchens and wardrobes for Mumbai, Navi Mumbai & Thane, with an Ahmedabad (Bopal) branch. Manufacturing base at Diva-Shil Road, Khardipada, Thane.',
     url: SITE_URL,
     telephone: PHONES.mumbaiPrimary.tel,
     email: EMAIL_CONTACT,
     foundingDate: String(ESTABLISHED_YEAR),
-    image: absoluteUrl('/og-image.jpg'),
+    image: absoluteUrl('/images/companylogo-with-bg.png'),
+    logo: absoluteUrl('/images/companylogo-with-bg.png'),
     priceRange: '₹₹',
+    sameAs: [
+      'https://www.instagram.com/ananyahouseoffurniture',
+      'https://www.facebook.com/share/18eDGjuM47/',
+    ],
     address: {
       '@type': 'PostalAddress',
       streetAddress: HEAD_OFFICE.streetAddress,

@@ -1115,6 +1115,36 @@ summary:focus-visible {
     font-weight: 800;
 }
 
+.city-call-now {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(201, 161, 95, 0.15);
+    border: 1px solid rgba(201, 161, 95, 0.5);
+    border-radius: 1.2rem;
+    padding: 1.2rem 1.6rem;
+    margin: 0 0 1.6rem;
+}
+
+.city-call-now a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #25d366;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.6rem;
+    padding: 0.9rem 1.8rem;
+    border-radius: 999px;
+    text-decoration: none;
+}
+
+.city-call-now span {
+    font-size: 1.3rem;
+    color: rgba(239, 227, 205, 0.85);
+}
+
 @media (max-width: 600px) {
     .city-hub {
         padding: 2rem 1.4rem 4rem;

@@ -25,10 +25,14 @@ export const metadata: Metadata = {
   description:
     "Custom furniture, modular kitchens & wardrobes in Mumbai, Navi Mumbai & Thane. Free site visit, 3D design consultation, in-house manufacturing and professional installation.",
   keywords:
-    "custom furniture Mumbai, modular kitchen Mumbai, wardrobe Navi Mumbai, furniture Thane, home interiors Mumbai, PVC furniture Ahmedabad",
+    "custom furniture Mumbai, modular kitchen Mumbai, wardrobe Navi Mumbai, furniture Thane, home interiors Mumbai, PVC furniture Ahmedabad, ananyahouseoffurniture",
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: SITE_URL,
+  },
+  icons: {
+    icon: "/images/companylogo-with-bg.png",
+    apple: "/images/companylogo-with-bg.png",
   },
   openGraph: {
     title:
@@ -41,7 +45,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/images/companylogo-with-bg.png",
         width: 1200,
         height: 630,
         alt: "Ananya House of Furniture — custom furniture Mumbai, Navi Mumbai & Thane",
@@ -53,7 +57,7 @@ export const metadata: Metadata = {
     title: "Ananya House of Furniture | Mumbai, Navi Mumbai & Thane",
     description:
       "Custom furniture, modular kitchens & wardrobes. Free site visit + 3D design consultation.",
-    images: ["/og-image.jpg"],
+    images: ["/images/companylogo-with-bg.png"],
   },
   robots: {
     index: true,

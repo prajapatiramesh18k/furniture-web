@@ -5,17 +5,18 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
 import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
-import { breadcrumbJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { HEAD_OFFICE, PHONES } from '@/lib/site-config';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Custom Furniture & Interiors in Mumbai | Modular Kitchen, Wardrobes',
   description:
-    'Custom furniture, modular kitchens, wardrobes & home interiors in Mumbai — Bandra, Andheri, Goregaon, Malad, Borivali, Mulund, Ghatkopar. Free site visit, 3D design, in-house manufacturing.',
+    'Custom furniture, modular kitchens, wardrobes & home interiors in Mumbai — South Mumbai, Bandra, Andheri, Juhu, Powai, Chembur, Goregaon, Malad, Borivali, Mulund, Mira Road. Free site visit, 3D design, in-house manufacturing. Call now.',
   alternates: { canonical: absoluteUrl('/mumbai') },
   openGraph: {
     title: 'Custom Furniture & Interiors in Mumbai | Ananya House of Furniture',
-    description: 'Free site visit + 3D design for modular kitchens, wardrobes & custom furniture across Mumbai.',
+    description: 'Free site visit + 3D design for modular kitchens, wardrobes & custom furniture across Mumbai. Call now.',
     url: absoluteUrl('/mumbai'),
   },
 };
@@ -37,7 +38,65 @@ const combos = [
   { label: 'Wardrobes in Mumbai', href: '/wardrobes-mumbai' },
 ];
 
-const areas = ['Bandra', 'Andheri', 'Goregaon', 'Malad', 'Borivali', 'Mulund', 'Ghatkopar'];
+const areas = [
+  'Colaba',
+  'Fort',
+  'Marine Lines',
+  'Dadar',
+  'Matunga',
+  'Sion',
+  'Chembur',
+  'Kurla',
+  'Ghatkopar',
+  'Vikhroli',
+  'Kanjurmarg',
+  'Bhandup',
+  'Mulund',
+  'Powai',
+  'Chandivali',
+  'Andheri',
+  'Versova',
+  'Juhu',
+  'Vile Parle',
+  'Santacruz',
+  'Bandra',
+  'Khar',
+  'Goregaon',
+  'Malad',
+  'Kandivali',
+  'Borivali',
+  'Dahisar',
+  'Mira Road',
+  'Bhayandar',
+];
+
+const faqs = [
+  {
+    question: 'Do you provide custom furniture across all of Mumbai?',
+    answer:
+      'Yes. We serve South Mumbai, Western Suburbs, Central and Eastern Suburbs including Bandra, Andheri, Juhu, Powai, Chembur, Goregaon, Malad, Borivali, Mulund, Mira Road and nearby areas. Mention your sector on call or WhatsApp and we confirm site-visit scheduling.',
+  },
+  {
+    question: 'How do I book a free site visit in Mumbai?',
+    answer:
+      'Call +91 93218 12823, WhatsApp us, or submit the contact form with your Mumbai location. We visit your flat, take exact measurements, then share a 3D design before manufacturing.',
+  },
+  {
+    question: 'Do you handle high-rise delivery and installation in Mumbai?',
+    answer:
+      'Yes. Lift size, parking, floor access and installation constraints are planned upfront during consultation so delivery day is smooth.',
+  },
+  {
+    question: 'What is the cost of a modular kitchen or wardrobe in Mumbai?',
+    answer:
+      'Cost depends on size, material grade, hardware and accessories. After a free site visit we share a clear quotation — we do not guess a one-size price without measuring.',
+  },
+  {
+    question: 'How long does custom furniture take in Mumbai?',
+    answer:
+      'Many single-room projects finish in about 15–30 days after design approval. We confirm a schedule during consultation.',
+  },
+];
 
 export const revalidate = 86400;
 
@@ -53,10 +112,11 @@ export default function MumbaiPage() {
           serviceJsonLd({
             name: 'Custom Furniture & Interiors in Mumbai',
             description:
-              'Custom furniture, modular kitchens, wardrobes and home interiors in Mumbai.',
+              'Custom furniture, modular kitchens, wardrobes and home interiors in Mumbai. Free site visit, 3D design, in-house manufacturing.',
             path: '/mumbai',
             areaServed: ['Mumbai'],
           }),
+          faqJsonLd(faqs),
         ]}
       />
       <NavbarWrapper />
@@ -66,8 +126,14 @@ export default function MumbaiPage() {
           <h1>Custom Furniture &amp; Interiors in Mumbai</h1>
           <p className="city-lead">
             Modular kitchens, wardrobes, TV units and complete home interiors — measured at your
-            Mumbai home, manufactured in-house, and installed by our own team. We serve Mumbai homes
-            from our manufacturing base at Diva-Shil Road, Khardipada.
+            Mumbai home, manufactured in-house, and installed by our own team. We serve South Mumbai,
+            Western, Central &amp; Eastern suburbs from our manufacturing base at Diva-Shil Road, Khardipada.
+          </p>
+          <p className="city-call-now">
+            <a href={`tel:${PHONES.mumbaiPrimary.tel}`}>
+              <i className="fas fa-phone" aria-hidden="true" /> Call Now: {PHONES.mumbaiPrimary.display}
+            </a>
+            <span>Mon–Sat 9am–7pm · Free site visit for qualifying projects</span>
           </p>
           <LeadCta
             location="Mumbai"
@@ -95,7 +161,8 @@ export default function MumbaiPage() {
             ))}
           </div>
           <p className="city-note">
-            Also serving nearby neighbourhoods on request — mention your area on call or WhatsApp.
+            South Mumbai, Western Suburbs, Central &amp; Eastern Suburbs + Mira-Bhayandar. Also serving nearby neighbourhoods on request — mention your area on call or WhatsApp. Also serving{' '}
+            <Link href="/navi-mumbai">Navi Mumbai</Link> and <Link href="/thane">Thane</Link>.
           </p>
         </section>
 
@@ -118,6 +185,18 @@ export default function MumbaiPage() {
         </section>
 
         <section className="city-section">
+          <h2>FAQs — Mumbai</h2>
+          <div className="mkt-faqs">
+            {faqs.map((f) => (
+              <details key={f.question} className="mkt-faq">
+                <summary>{f.question}</summary>
+                <p>{f.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="city-section">
           <h2>Why Mumbai customers choose Ananya</h2>
           <ul className="city-trust">
             <li>Free site visit + 3D design consultation before you pay anything</li>
@@ -125,6 +204,11 @@ export default function MumbaiPage() {
             <li>5-year warranty on manufacturing defects</li>
             <li>Professional installation across Mumbai, Navi Mumbai &amp; Thane</li>
           </ul>
+          <p className="city-note">
+            Workshop / head office: {HEAD_OFFICE.fullAddress} ·{' '}
+            <a href={`tel:${PHONES.mumbaiPrimary.tel}`}>{PHONES.mumbaiPrimary.display}</a> · Mon–Sat 9am–7pm ·{' '}
+            <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer">Get directions</a>
+          </p>
           <LeadCta
             compact
             location="Mumbai"

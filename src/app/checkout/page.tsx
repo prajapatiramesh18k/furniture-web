@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useCart } from '@/context/CartContext';
 import NavbarWrapper from '@/components/NavbarWrapper';
 import CloseButton from '@/components/CloseButton';
@@ -37,14 +38,6 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
   }, []);
 
   const subtotal = getCartTotal();
@@ -92,11 +85,18 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to create order');
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.error || 'Failed to create order');
+      }
       const { orderId } = await res.json();
+      if (!orderId) throw new Error('Failed to create order: empty order id');
 
       // Step 2: Open Razorpay Checkout
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXX';
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        throw new Error('Payment is not configured (missing public Razorpay key)');
+      }
 
       const options = {
         key: razorpayKey,
@@ -105,6 +105,42 @@ export default function CheckoutPage() {
         name: 'Ananya House of Furniture',
         description: `Order for ${cart.length} item(s)`,
         order_id: orderId,
+        // Google Pay / PhonePe / Paytm all work via UPI + wallets.
+        // Cards + NetBanking + EMI kept on for desktop users.
+        method: {
+          upi: true,
+          card: true,
+          wallet: true,
+          netbanking: true,
+          emi: true,
+          paylater: true,
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'UPI (Google Pay / PhonePe / Paytm)',
+                instruments: [{ method: 'upi' }],
+              },
+              wallets: {
+                name: 'Wallets (PhonePe / Amazon Pay / MobiKwik)',
+                instruments: [{ method: 'wallet' }],
+              },
+              cards: {
+                name: 'Cards',
+                instruments: [{ method: 'card' }],
+              },
+              netbanking: {
+                name: 'Net Banking',
+                instruments: [{ method: 'netbanking' }],
+              },
+            },
+            sequence: ['block.upi', 'block.wallets', 'block.cards', 'block.netbanking'],
+            preferences: { show_default_blocks: true },
+          },
+        },
+        theme: { color: '#d9a441' },
+        retry: { enabled: true, max_count: 3 },
         prefill: {
           name: customerInfo.name,
           email: customerInfo.email || undefined,
@@ -148,6 +184,9 @@ export default function CheckoutPage() {
         },
       };
 
+      if (typeof window === 'undefined' || !window.Razorpay) {
+        throw new Error('Payment SDK not loaded yet. Please wait a second and try again.');
+      }
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (response: any) => {
         setError(`Payment failed: ${response.error.description}`);
@@ -155,7 +194,7 @@ export default function CheckoutPage() {
       });
       rzp.open();
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
@@ -174,6 +213,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="checkout-page">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <NavbarWrapper />
       <CloseButton href="/cart" />
 
@@ -324,11 +364,13 @@ export default function CheckoutPage() {
           </button>
 
           <div className="cos-payment-icons">
-            <span>Secure payment via</span>
+            <span>Pay with UPI - Google Pay / PhonePe / Paytm accepted</span>
             <div className="cos-payment-methods">
-              <span><i className="fas fa-mobile-alt"></i> UPI</span>
+              <span><i className="fas fa-mobile-alt"></i> Google Pay</span>
+              <span><i className="fas fa-mobile-alt"></i> PhonePe</span>
+              <span><i className="fas fa-wallet"></i> Paytm</span>
+              <span><i className="fas fa-qrcode"></i> UPI QR</span>
               <span><i className="fas fa-credit-card"></i> Cards</span>
-              <span><i className="fas fa-wallet"></i> Wallets</span>
               <span><i className="fas fa-university"></i> Net Banking</span>
             </div>
           </div>

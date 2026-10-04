@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXX',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
-
 export async function POST(request: NextRequest) {
   try {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+      console.error('Razorpay order creation failed: missing RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET env');
+      return NextResponse.json(
+        { error: 'Payment is not configured (missing Razorpay keys on server)' },
+        { status: 500 }
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+
     const body = await request.json();
     const { amount, currency = 'INR', receipt } = body;
 
@@ -27,10 +38,13 @@ export async function POST(request: NextRequest) {
       currency: order.currency,
     });
   } catch (error: any) {
-    console.error('Razorpay order creation failed:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to create order' },
-      { status: 500 }
-    );
+    console.error('Razorpay order creation failed:', error?.error || error);
+    // Surface Razorpay's own message (e.g. auth failed) instead of a generic one
+    const message =
+      error?.error?.description ||
+      error?.message ||
+      'Failed to create order';
+    const status = error?.statusCode && Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

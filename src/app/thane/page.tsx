@@ -5,17 +5,18 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
 import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
-import { breadcrumbJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { HEAD_OFFICE, PHONES } from '@/lib/site-config';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Custom Furniture & Interiors in Thane | Modular Kitchen, Wardrobes',
   description:
-    'Custom furniture, modular kitchens, wardrobes & home interiors in Thane — Thane West/East, Mumbra, Diva, Kalwa, Shilphata. Free site visit, 3D design, in-house manufacturing nearby.',
+    'Custom furniture, modular kitchens, wardrobes & home interiors in Thane — Thane West/East, Ghodbunder Road, Manpada, Diva, Mumbra, Kalwa, Dombivli, Kalyan. Free site visit, workshop nearby. Call now.',
   alternates: { canonical: absoluteUrl('/thane') },
   openGraph: {
     title: 'Custom Furniture & Interiors in Thane | Ananya House of Furniture',
-    description: 'Workshop-nearby custom furniture in Thane with free site visit + 3D design.',
+    description: 'Workshop-nearby custom furniture in Thane with free site visit + 3D design. Call now.',
     url: absoluteUrl('/thane'),
   },
 };
@@ -37,7 +38,58 @@ const combos = [
   { label: 'Wardrobes in Thane', href: '/wardrobes-thane' },
 ];
 
-const areas = ['Thane West', 'Thane East', 'Mumbra', 'Diva', 'Kalwa', 'Shilphata'];
+const areas = [
+  'Thane West',
+  'Thane East',
+  'Naupada',
+  'Teen Hath Naka',
+  'Vartak Nagar',
+  'Kapurbawdi',
+  'Manpada',
+  'Patlipada',
+  'Ghodbunder Road',
+  'Hiranandani Estate',
+  'Waghbil',
+  'Mumbra',
+  'Diva',
+  'Khardipada',
+  'Kalwa',
+  'Shilphata',
+  'Dombivli East',
+  'Dombivli West',
+  'Kalyan West',
+  'Kalyan East',
+  'Ulhasnagar',
+  'Kasheli',
+];
+
+const faqs = [
+  {
+    question: 'Do you serve all of Thane including Ghodbunder Road and Dombivli?',
+    answer:
+      'Yes. Our workshop at Diva-Shil Road, Khardipada is minutes from Thane. We serve Thane West/East, Ghodbunder Road, Manpada, Diva, Mumbra, Kalwa, Dombivli, Kalyan and nearby areas with fast site visits.',
+  },
+  {
+    question: 'How do I book a free site visit in Thane?',
+    answer:
+      'Call +91 93218 12823, WhatsApp us, or submit the contact form with your Thane location. Because the workshop is nearby, scheduling is fast.',
+  },
+  {
+    question: 'Why choose a Thane-local manufacturer?',
+    answer:
+      'Factory-direct pricing, fewer handoffs, quick revisions, and our own installation team across Thane, Mumbai and Navi Mumbai — plus 5-year warranty on manufacturing defects.',
+  },
+  {
+    question: 'What is the cost in Thane?',
+    answer:
+      'Cost depends on size, material grade and hardware. After a free site visit we share a clear quotation — no one-size price guessing.',
+  },
+  {
+    question: 'How long does it take?',
+    answer:
+      'Many single-room projects finish in about 15–30 days after design approval. We confirm a schedule during consultation.',
+  },
+];
 
 export const revalidate = 86400;
 
@@ -53,10 +105,11 @@ export default function ThanePage() {
           serviceJsonLd({
             name: 'Custom Furniture & Interiors in Thane',
             description:
-              'Custom furniture, modular kitchens, wardrobes and home interiors in Thane.',
+              'Custom furniture, modular kitchens, wardrobes and home interiors in Thane. Free site visit, workshop nearby, in-house manufacturing.',
             path: '/thane',
             areaServed: ['Thane'],
           }),
+          faqJsonLd(faqs),
         ]}
       />
       <NavbarWrapper />
@@ -66,8 +119,14 @@ export default function ThanePage() {
           <h1>Custom Furniture &amp; Interiors in Thane</h1>
           <p className="city-lead">
             Our manufacturing base sits at Diva-Shil Road, Khardipada — minutes from Thane — so
-            site visits, measurements and installation across Thane are fast and factory-direct.
+            site visits, measurements and installation across Thane, Dombivli and Kalyan are fast and factory-direct.
             Modular kitchens, wardrobes, TV units and full home interiors, all made in-house.
+          </p>
+          <p className="city-call-now">
+            <a href={`tel:${PHONES.mumbaiPrimary.tel}`}>
+              <i className="fas fa-phone" aria-hidden="true" /> Call Now: {PHONES.mumbaiPrimary.display}
+            </a>
+            <span>Mon–Sat 9am–7pm · Workshop 10 mins away</span>
           </p>
           <LeadCta
             location="Thane"
@@ -94,7 +153,8 @@ export default function ThanePage() {
             ))}
           </div>
           <p className="city-note">
-            Also serving Dombivli and Kalyan on request — mention your area on call or WhatsApp.
+            Including Ghodbunder Road, Dombivli, Kalyan, Ulhasnagar on request — mention your area on call or WhatsApp. Also serving{' '}
+            <Link href="/mumbai">Mumbai</Link> and <Link href="/navi-mumbai">Navi Mumbai</Link>.
           </p>
         </section>
 
@@ -117,6 +177,18 @@ export default function ThanePage() {
         </section>
 
         <section className="city-section">
+          <h2>FAQs — Thane</h2>
+          <div className="mkt-faqs">
+            {faqs.map((f) => (
+              <details key={f.question} className="mkt-faq">
+                <summary>{f.question}</summary>
+                <p>{f.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="city-section">
           <h2>Why Thane customers choose Ananya</h2>
           <ul className="city-trust">
             <li>Manufacturing base at Diva-Shil Road — genuinely local to Thane</li>
@@ -124,6 +196,11 @@ export default function ThanePage() {
             <li>5-year warranty on manufacturing defects</li>
             <li>Own installation team across Thane, Mumbai &amp; Navi Mumbai</li>
           </ul>
+          <p className="city-note">
+            Workshop / head office: {HEAD_OFFICE.fullAddress} ·{' '}
+            <a href={`tel:${PHONES.mumbaiPrimary.tel}`}>{PHONES.mumbaiPrimary.display}</a> · Mon–Sat 9am–7pm ·{' '}
+            <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer">Get directions</a>
+          </p>
           <LeadCta
             compact
             location="Thane"
