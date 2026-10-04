@@ -423,9 +423,9 @@ export default function SuperAdminPage() {
             {brandOpen ? (
             <form onSubmit={saveBrand}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
-                <span className="ahf-avatar" style={{ width: 72, height: 72, fontSize: 22, overflow: 'hidden', padding: 0 }}>
+                <span className="ahf-avatar" style={{ width: 72, height: 72, fontSize: 22, overflow: 'hidden', padding: 4, background: '#fff' }}>
                   {brandForm.logo
-                    ? <img src={brandForm.logo} alt="logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <img src={brandForm.logo} alt="logo preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     : <i className="fas fa-building"></i>}
                 </span>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

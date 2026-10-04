@@ -19,8 +19,8 @@ export function organizationJsonLd() {
     name: SITE_NAME,
     alternateName: 'AnanyaHouseOfFurniture',
     url: SITE_URL,
-    logo: absoluteUrl('/images/companylogo-with-bg.png'),
-    image: absoluteUrl('/images/companylogo-with-bg.png'),
+    logo: absoluteUrl('/images/ananya-logo-og.png'),
+    image: absoluteUrl('/images/ananya-logo-og.png'),
     email: EMAIL,
     telephone: PHONES.mumbaiPrimary.tel,
     sameAs: [
@@ -64,8 +64,8 @@ export function localBusinessJsonLd() {
     telephone: PHONES.mumbaiPrimary.tel,
     email: EMAIL_CONTACT,
     foundingDate: String(ESTABLISHED_YEAR),
-    image: absoluteUrl('/images/companylogo-with-bg.png'),
-    logo: absoluteUrl('/images/companylogo-with-bg.png'),
+    image: absoluteUrl('/images/ananya-logo-og.png'),
+    logo: absoluteUrl('/images/ananya-logo-og.png'),
     priceRange: '₹₹',
     sameAs: [
       'https://www.instagram.com/ananyahouseoffurniture',

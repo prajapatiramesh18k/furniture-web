@@ -76,17 +76,15 @@ export default function Sidebar({
     <>
       <div className="ahf-brand">
         <img
-          src="/images/admin-logo.svg"
+          src="/images/ananya-logo-gold.png"
           alt="Anaya House of Furniture — Admin Portal"
           data-i="0"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             const fallbacks = [
+              '/images/ananya-logo-gold.png',
               '/images/admin-logo.svg',
-              '/images/companylogo-transparent.png',
-              '/images/companylogo-with-bg.png',
-              '/images/company-logo.png',
-              '/images/logo-circle.svg',
+              '/images/ananya-logo.svg',
             ];
             const i = Number(img.dataset.i || 0);
             if (i < fallbacks.length - 1) {

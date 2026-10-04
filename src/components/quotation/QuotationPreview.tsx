@@ -73,6 +73,11 @@ export default function QuotationPreview({
   fallbackTradeKey?: string;
 }) {
   const companyName = tenantBrand?.name || 'Ananya House of Furniture.';
+  // The default Ananya logo already contains the brand name, so skip the
+  // duplicate text line — but other tenants' logos may not, so keep it for them.
+  const isDefaultBrand =
+    companyName.trim().toLowerCase().replace(/\.\s*$/, '') === 'ananya house of furniture';
+  const showBrandTitle = !logoSrc || !isDefaultBrand;
   const companyAddress = tenantBrand?.address || branch.address;
   const companyEmail = tenantBrand?.email || branch.email;
   const companyWebsite = tenantBrand?.website || branch.website;
@@ -96,11 +101,10 @@ export default function QuotationPreview({
         <div className="qp-branch-left">
           <div className="qp-logo">
             <div className="qp-logo-img-wrap">
-              {logoSrc ? <img src={logoSrc} alt={companyName} /> : <div className="qp-logo-fallback">{initials}</div>}
+              {logoSrc ? <img src={logoSrc} alt={companyName} crossOrigin="anonymous" draggable={false} /> : <div className="qp-logo-fallback">{initials}</div>}
             </div>
-            <h2>{companyName}</h2>
           </div>
-          <h3 className="qp-branch-title">{companyName}</h3>
+          {showBrandTitle && <h3 className="qp-branch-title">{companyName}</h3>}
           {companyAddress && (
             <p className="qp-branch-address">
               <i className="fas fa-map-marker-alt"></i> {companyAddress}

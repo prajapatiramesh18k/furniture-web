@@ -224,6 +224,12 @@ input, textarea, select {
     padding-left: 10rem;
 }
 
+.header .logo .logo-img {
+    height: 4.6rem;
+    width: auto;
+    display: block;
+}
+
 .logo-text {
     display: flex;
     flex-direction: column;
@@ -18084,22 +18090,23 @@ input[type="number"] {
   align-items: center;
 }
 .qp-logo-img-wrap {
-  width: 70px;
-  height: 70px;
+  width: 210px;
+  height: 60px;
   flex-shrink: 0;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #e8d9c2;
-  background: #fff;
+  border-radius: 0;
+  overflow: visible;
+  border: none;
+  background: transparent;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 .qp-logo-img-wrap img,
 .qp-logo-img-wrap .qp-logo-svg {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: left center;
   display: block;
 }
 .qp-logo-fallback {
@@ -18250,7 +18257,7 @@ input[type="number"] {
   -webkit-font-smoothing: antialiased;
 }
 .qp-compact .qp-letterhead { margin-bottom: 0.5rem !important; gap: 0.8rem !important; }
-.qp-compact .qp-logo-img-wrap { width: 60px !important; height: 60px !important; }
+.qp-compact .qp-logo-img-wrap { width: 180px !important; height: 50px !important; border: none !important; background: transparent !important; overflow: visible !important; }
 .qp-compact .qp-logo h2 { font-size: 1.3rem !important; margin: 0 !important; color: #000000 !important; font-weight: 800 !important; }
 .qp-compact .qp-logo p { font-size: 0.9rem !important; line-height: 1.35 !important; color: #1a1a1a !important; font-weight: 600 !important; }
 .qp-compact .qp-meta h1 { font-size: 1.7rem !important; margin: 0 !important; color: #6b3f12 !important; font-weight: 900 !important; }
@@ -18262,8 +18269,8 @@ input[type="number"] {
 .qp-compact .qp-branch-card p { font-size: 0.95rem !important; line-height: 1.5 !important; margin: 0.1rem 0 !important; color: #000000 !important; font-weight: 600 !important; }
 .qp-compact .qp-branch-card p i { font-size: 0.95rem !important; color: #6b3f12 !important; }
 .qp-compact .qp-branch-card .qp-logo { gap: 0.6rem !important; margin: 0 0 0.25rem !important; align-items: center !important; }
-.qp-compact .qp-branch-card .qp-logo .qp-logo-img-wrap { width: 56px !important; height: 56px !important; min-width: 56px !important; min-height: 56px !important; max-width: 56px !important; max-height: 56px !important; padding: 2px !important; background: #ffffff !important; border: 1.5px solid #a27341 !important; border-radius: 6px !important; overflow: hidden !important; flex-shrink: 0 !important; }
-.qp-compact .qp-branch-card .qp-logo .qp-logo-img-wrap img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; display: block !important; image-rendering: -webkit-optimize-contrast !important; }
+.qp-compact .qp-branch-card .qp-logo .qp-logo-img-wrap { width: 150px !important; height: 44px !important; min-width: 150px !important; min-height: 44px !important; max-width: 220px !important; max-height: 60px !important; padding: 0 !important; background: transparent !important; border: none !important; border-radius: 0 !important; overflow: visible !important; flex-shrink: 0 !important; }
+.qp-compact .qp-branch-card .qp-logo .qp-logo-img-wrap img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; object-position: left center !important; display: block !important; image-rendering: -webkit-optimize-contrast !important; }
 .qp-compact .qp-branch-card .qp-logo h2 { font-size: 1.1rem !important; color: #000000 !important; font-weight: 800 !important; }
 .qp-compact .qp-branch-card .qp-branch-quote-title { font-size: 1.4rem !important; margin: 0 0 0.25rem !important; color: #6b3f12 !important; font-weight: 900 !important; }
 .qp-compact .qp-branch-card .qp-branch-right .qp-meta-row { font-size: 0.85rem !important; padding: 0.1rem 0 !important; color: #000000 !important; font-weight: 600 !important; }
@@ -18447,9 +18454,12 @@ input[type="number"] {
   margin: 0 0 0.4rem;
 }
 .qp-branch-card .qp-logo .qp-logo-img-wrap {
-  width: 42px;
-  height: 42px;
+  width: 170px;
+  height: 46px;
   flex-shrink: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
 }
 .qp-branch-card .qp-logo h2 {
   font-family: 'Playfair Display', Georgia, serif;
@@ -18763,8 +18773,8 @@ input[type="number"] {
   }
   .qp-branch-card p i { font-size: 0.95rem !important; color: #6b3f12 !important; }
   .qp-branch-card .qp-logo { gap: 0.6rem !important; margin: 0 0 0.25rem !important; align-items: center !important; }
-  .qp-branch-card .qp-logo .qp-logo-img-wrap { width: 56px !important; height: 56px !important; min-width: 56px !important; min-height: 56px !important; max-width: 56px !important; max-height: 56px !important; padding: 2px !important; background: #ffffff !important; border: 1.5px solid #a27341 !important; border-radius: 6px !important; overflow: hidden !important; flex-shrink: 0 !important; }
-  .qp-branch-card .qp-logo .qp-logo-img-wrap img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; display: block !important; image-rendering: -webkit-optimize-contrast !important; }
+  .qp-branch-card .qp-logo .qp-logo-img-wrap { width: 150px !important; height: 44px !important; min-width: 150px !important; min-height: 44px !important; max-width: 220px !important; max-height: 60px !important; padding: 0 !important; background: transparent !important; border: none !important; border-radius: 0 !important; overflow: visible !important; flex-shrink: 0 !important; }
+  .qp-branch-card .qp-logo .qp-logo-img-wrap img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; object-position: left center !important; display: block !important; image-rendering: -webkit-optimize-contrast !important; }
   .qp-branch-card .qp-logo h2 { color: #000000 !important; font-weight: 800 !important; }
   .qp-branch-card .qp-logo p { color: #1a1a1a !important; font-weight: 600 !important; }
   .qp-branch-quote-title { color: #6b3f12 !important; font-weight: 900 !important; font-size: 1.7rem !important; letter-spacing: 0.05em !important; }

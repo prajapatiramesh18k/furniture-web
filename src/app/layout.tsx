@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: "/images/companylogo-with-bg.png",
-    apple: "/images/companylogo-with-bg.png",
+    icon: "/images/ananya-icon.png",
+    apple: "/images/ananya-icon.png",
   },
   openGraph: {
     title:
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/images/companylogo-with-bg.png",
+        url: "/images/ananya-logo-og.png",
         width: 1200,
         height: 630,
         alt: "Ananya House of Furniture — custom furniture Mumbai, Navi Mumbai & Thane",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     title: "Ananya House of Furniture | Mumbai, Navi Mumbai & Thane",
     description:
       "Custom furniture, modular kitchens & wardrobes. Free site visit + 3D design consultation.",
-    images: ["/images/companylogo-with-bg.png"],
+    images: ["/images/ananya-logo-og.png"],
   },
   robots: {
     index: true,

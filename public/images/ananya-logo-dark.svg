@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" role="img" aria-label="Ananya House of Furniture logo">
+  <defs>
+    <linearGradient id="bronze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6B4226"/>
+      <stop offset="0.55" stop-color="#4A2C1A"/>
+      <stop offset="1" stop-color="#241309"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Emblem: serif "A" -->
+  <g fill="url(#bronze)">
+    <!-- left leg -->
+    <polygon points="55,300 95,300 165,70 145,70"/>
+    <!-- right leg -->
+    <polygon points="145,70 165,70 235,300 195,300"/>
+    <!-- serif feet -->
+    <rect x="45" y="288" width="60" height="12"/>
+    <rect x="195" y="288" width="60" height="12"/>
+    <!-- crossbar -->
+    <rect x="113" y="207" width="71" height="16"/>
+  </g>
+
+  <!-- swoosh / roof arch sweeping through the A -->
+  <path d="M12,268 C85,195 150,160 268,160 L268,174 C150,174 90,208 22,278 Z" fill="url(#bronze)"/>
+
+  <!-- 4-pane window inside the A (knocked out to background: use white panes with bronze frame) -->
+  <g>
+    <rect x="128" y="238" width="40" height="44" fill="url(#bronze)"/>
+    <rect x="132" y="242" width="14" height="16" fill="#FFFFFF"/>
+    <rect x="150" y="242" width="14" height="16" fill="#FFFFFF"/>
+    <rect x="132" y="262" width="14" height="16" fill="#FFFFFF"/>
+    <rect x="150" y="262" width="14" height="16" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="300" y="210" font-family="Georgia, 'Times New Roman', serif" font-size="140" fill="url(#bronze)" textLength="620" lengthAdjust="spacingAndGlyphs">ANANYA</text>
+  <text x="304" y="278" font-family="Georgia, 'Times New Roman', serif" font-size="47" fill="url(#bronze)" textLength="612" lengthAdjust="spacingAndGlyphs">HOUSE OF FURNITURE</text>
+</svg>

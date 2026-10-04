@@ -159,17 +159,19 @@ export default function Navbar() {
   return (
     <>
       <header className="header">
-        <Link href="/" className="logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="28" height="28" rx="5" fill="#a27341"/>
-            <path d="M7 21V11.5L14 8.5L21 11.5V21" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
-            <path d="M10 21V15.5H18V21" stroke="white" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
-            <path d="M7 11.5H21" stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
-          </svg>
-          <span className="logo-text">
-            <span className="logo-main">ANANYA</span>
-            <span className="logo-sub">House of Furniture Pvt Ltd.</span>
-          </span>
+        <Link href="/" className="logo" aria-label="Ananya House of Furniture — home">
+          <img
+            src="/images/ananya-logo-dark.svg"
+            alt="Ananya House of Furniture"
+            className="logo-img"
+            width={220}
+            height={78}
+            fetchPriority="high"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.src.endsWith('ananya-logo-header.png')) img.src = '/images/ananya-logo-header.png';
+            }}
+          />
         </Link>
         <nav className={`navbar ${menuOpen ? 'active' : ''}`} id="navbar" aria-label="Primary">
           {navigation.map((item) => {

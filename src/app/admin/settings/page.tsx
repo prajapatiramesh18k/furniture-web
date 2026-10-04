@@ -199,9 +199,9 @@ export default function AdminSettings() {
           </div>
           <div className="ahf-panel-body" style={{ fontSize: 13.5, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span className="ahf-avatar" style={{ width: 56, height: 56, overflow: 'hidden', padding: 0 }}>
+              <span className="ahf-avatar" style={{ width: 56, height: 56, overflow: 'hidden', padding: 4, background: '#fff' }}>
                 {tenant?.logo || form.logo
-                  ? <img src={form.logo || tenant?.logo} alt="Company logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ? <img src={form.logo || tenant?.logo} alt="Company logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   : <i className="fas fa-building"></i>}
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

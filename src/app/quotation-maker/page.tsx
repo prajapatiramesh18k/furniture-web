@@ -205,7 +205,7 @@ export default function QuotationMakerPage() {
         }
       }
     };
-    tryLoad('/images/companylogo-with-bg.png', '/images/company-logo.png');
+    tryLoad('/images/ananya-logo-header.png', '/images/ananya-logo-dark.svg');
     return () => {
       cancelled = true;
     };
@@ -588,6 +588,18 @@ export default function QuotationMakerPage() {
   };
 
   const addCategory = (tradeKey: string) => {
+    // If an empty section of the same trade already exists (e.g. the pill was
+    // clicked twice), jump to it instead of spawning a numbered duplicate
+    // like "Furniture 2" — those duplicates show up as extra headers in preview/PDF.
+    const emptyReuse = categories.find(
+      (c) => c.trade === tradeKey && !items.some((it) => (it.trade || activeCatKey) === c.key),
+    );
+    if (emptyReuse) {
+      setActiveCatKey(emptyReuse.key);
+      setEditingId(null);
+      setDraft(makeEmptyItem(configOfTrade(emptyReuse.trade)));
+      return;
+    }
     const taken = categories.map((c) => c.label);
     const cat = newCategoryFor(tradeKey, taken, categories.length);
     setCategories((list) => [...list, cat]);
