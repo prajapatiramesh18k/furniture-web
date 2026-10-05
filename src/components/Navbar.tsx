@@ -38,6 +38,7 @@ const navigation = [
   { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },
   { label: 'Contact', href: '/contact' },
+  { label: 'Careers', href: '/careers' },
 ];
 
 interface SearchProduct {
