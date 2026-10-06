@@ -199,6 +199,7 @@ export default function CareersPage() {
           address: form.currentLocation.trim(),
           projectType: 'job-application',
           branch: 'mumbai',
+          source: 'careers-page',
           message: `[JOB APPLICATION — ${postLabel}]\nExperience: ${form.experience.trim() || '—'}\nCurrent location: ${form.currentLocation.trim() || '—'}\nExpected salary: ${form.expectedSalary.trim() || '—'}\nNote: ${form.message.trim() || '—'}`,
         }),
       });
@@ -207,8 +208,12 @@ export default function CareersPage() {
         throw new Error((data as { error?: string } | null)?.error || 'Submit nahi ho paya.');
       }
       // Also open WhatsApp so the owner gets the application instantly
+      const expValue = form.experience.trim() || '—';
+      const locValue = form.currentLocation.trim() || '—';
+      const salValue = form.expectedSalary.trim() ? `₹${form.expectedSalary.trim()}` : '—';
+      const skillValue = form.message.trim() || '—';
       const text = encodeURIComponent(
-        `Namaste! Job ke liye apply karna hai.\nNaam: ${form.name.trim()}\nPost: ${postLabel}\nMobile: ${phoneDigits}\nExperience: ${form.experience.trim() || '—'}\nRehne ki jagah: ${form.currentLocation.trim() || '—'}\nExpected salary: ${form.expectedSalary.trim() || '—'}\n${form.message.trim() ? `Note: ${form.message.trim()}` : ''}`
+        `Hello Sir/Madam,\nMujhe aapki company me ${postLabel} ki job me interest hai. Main ${postLabel} hoon aur mujhe ${expValue} ka experience hai.\nMain filhaal ${locValue} me rehta hoon aur meri expected salary ${salValue} hai.\n\nMeri details neeche hain:\nName: ${form.name.trim()}\nMobile Number: ${phoneDigits}\nPost: ${postLabel}\nExperience: ${expValue}\nExpected Salary: ${salValue}\nCurrent Location: ${locValue}\nWork Experience/Skills: ${skillValue}\n\nAgar aapki company me ${postLabel} ki suitable vacancy available hai, to please mujhe job ke regarding further details batayein. Main required process aur interview ke liye available hoon.\nDhanyavaad!`
       );
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
       setSubmitted(true);
@@ -346,6 +351,8 @@ export default function CareersPage() {
         .faq-item { background: #fff; border: 1px solid #eee0cb; border-radius: 12px; overflow: hidden; }
         .faq-q { width: 100%; background: none; border: none; text-align: left; font-size: 1.55rem; font-weight: 600; padding: 1.5rem 1.8rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; text-transform: none; color: #222; }
         .faq-a { padding: 0 1.8rem 1.6rem; color: #555; font-size: 1.4rem; text-transform: none; }
+        .job-wa-btn { display: flex; align-items: center; justify-content: center; gap: .7rem; margin-top: .9rem; background: #e7f7ee; color: #146c43; border: 2px solid #25d366; border-radius: 12px; padding: 1.1rem; font-size: 1.5rem; font-weight: 700; text-decoration: none; }
+        .job-wa-btn:hover { background: #d6f2e2; }
         .bottom-cta { background: linear-gradient(135deg, #1f232a, #4a3618); border-radius: 20px; color: #fff; text-align: center; padding: 3.5rem 2rem; }
         .bottom-cta h2 { font-size: clamp(2rem, 4vw, 3rem); margin: 0 0 .8rem; text-transform: none; }
         .bottom-cta h2 span { color: #e9b949; }
@@ -360,7 +367,7 @@ export default function CareersPage() {
           <p className="sub">Ananya House of Furniture — Thane / Mumbai. Regular kaam, time par payment, overtime ke saath. Aaj hi apply karo, kal se kaam shuru karo.</p>
           <div className="hero-cta-row">
             <a className="btn-call" href={`tel:${CALL_NUMBER}`}><i className="fas fa-phone" /> Call Karo</a>
-            <a className="btn-wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Job ke liye apply karna hai. (Senior Carpenter / Carpenter / Junior Carpenter / Carpenter Helper)')}`} target="_blank" rel="noopener noreferrer"><i className="fab fa-whatsapp" /> WhatsApp Par Apply</a>
+            <a className="btn-wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Maine aapki carpenter ki job dekhi hai (Senior / Carpenter / Junior / Helper). Mujhe apply karna hai, niche meri details de di hai.\nNaam: \nMobile: \nExperience: ')}`} target="_blank" rel="noopener noreferrer"><i className="fab fa-whatsapp" /> WhatsApp Par Apply</a>
             <button className="btn-apply" onClick={scrollToForm} type="button">Form Bharo</button>
           </div>
           <div className="hero-meta">
@@ -402,6 +409,14 @@ export default function CareersPage() {
                 <button type="button" className={`job-apply-btn ${job.id === 'junior-carpenter' || job.id === 'helper' ? 'helper-btn' : ''}`} onClick={() => handleJobApply(job.id)}>
                   {job.title} Ke Liye Apply Karo <i className="fas fa-arrow-right" />
                 </button>
+                <a
+                  className="job-wa-btn"
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Namaste! Maine ${job.title} ki job ke liye apply kiya hai. Niche maine apni details daal di hai, aap check karke mujhe batayie.\nNaam: \nMobile: \nExperience: `)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fab fa-whatsapp" /> WhatsApp Par Seedha Apply
+                </a>
               </div>
             </article>
           ))}
@@ -454,7 +469,7 @@ export default function CareersPage() {
                 <i className="fas fa-phone" />
                 <span>{PHONES.mumbaiPrimary.display}<small>Tap karke call karo • subah 9 – raat 9</small></span>
               </a>
-              <a className="wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Job ke liye apply karna hai.')}`} target="_blank" rel="noopener noreferrer">
+              <a className="wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Maine aapki carpenter ki job dekhi hai. Mujhe apply karna hai.\nNaam: \nPost (Senior / Carpenter / Junior / Helper): \nMobile: \nExperience: ')}`} target="_blank" rel="noopener noreferrer">
                 <i className="fab fa-whatsapp" />
                 <span>WhatsApp karo<small>Naam + post likh kar bhejo</small></span>
               </a>
@@ -570,7 +585,7 @@ export default function CareersPage() {
           <p>Der mat karo — post limited hain. Aaj apply karo, is hafte joining pakki karo.</p>
           <div className="hero-cta-row">
             <a className="btn-call" href={`tel:${CALL_NUMBER}`}><i className="fas fa-phone" /> {PHONES.mumbaiPrimary.display}</a>
-            <a className="btn-wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Job ke liye apply karna hai. (Senior Carpenter / Carpenter / Junior Carpenter / Carpenter Helper)')}`} target="_blank" rel="noopener noreferrer"><i className="fab fa-whatsapp" /> WhatsApp Karo</a>
+            <a className="btn-wa" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Namaste! Maine aapki carpenter ki job dekhi hai (Senior / Carpenter / Junior / Helper). Mujhe apply karna hai, niche meri details de di hai.\nNaam: \nMobile: \nExperience: ')}`} target="_blank" rel="noopener noreferrer"><i className="fab fa-whatsapp" /> WhatsApp Karo</a>
           </div>
         </div>
       </section>

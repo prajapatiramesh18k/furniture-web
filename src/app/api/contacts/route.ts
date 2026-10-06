@@ -30,14 +30,21 @@ type QuotePayload = {
 };
 
 function buildQuoteEmailHtml(payload: QuotePayload) {
+  const isJob = (payload.projectType || '').toLowerCase().includes('job');
+  const digits = String(payload.phone || '').replace(/\D/g, '').slice(-10);
+  const waLink = digits ? `https://wa.me/91${digits}` : '';
+  const heading = isJob ? 'New Job Application' : 'New Get Quote Submission';
+  const intro = isJob
+    ? 'Someone applied for a job on the website. Call back fast — good mistris get hired quickly.'
+    : 'A customer submitted the Get Quote / contact form on the website.';
   return `
     <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px;">
       <div style="background: #a27341; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 22px;">New Get Quote Submission</h1>
+        <h1 style="margin: 0; font-size: 22px;">${heading}</h1>
       </div>
       <div style="padding: 24px; background: #f9f9f9; border: 1px solid #eee;">
         <p style="margin: 0 0 16px; color: #333; font-size: 15px;">
-          A customer submitted the Get Quote / contact form on the website.
+          ${intro}
         </p>
         <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #333;">
           <tr>
@@ -47,7 +54,7 @@ function buildQuoteEmailHtml(payload: QuotePayload) {
           <tr>
             <td style="padding: 8px 0; border-bottom: 1px solid #e8e0d2;"><strong>Phone</strong></td>
             <td style="padding: 8px 0; border-bottom: 1px solid #e8e0d2;">
-              <a href="tel:${escapeHtml(payload.phone)}">${escapeHtml(payload.phone)}</a>
+              <a href="tel:${escapeHtml(payload.phone)}">${escapeHtml(payload.phone)}</a>${waLink ? ` · <a href="${waLink}">WhatsApp</a>` : ''}
             </td>
           </tr>
           <tr>
@@ -92,11 +99,15 @@ async function sendViaGmail(payload: QuotePayload) {
     auth: { user, pass: pass.replace(/\s/g, '') },
   });
 
+  const isJob = (payload.projectType || '').toLowerCase().includes('job');
+  const subject = isJob
+    ? `Job Application — ${payload.name} (${payload.projectType})`
+    : `New Quote Request — ${payload.name}${payload.projectType ? ` (${payload.projectType})` : ''}`;
   const info = await transporter.sendMail({
     from: `"Ananya House of Furniture" <${user}>`,
     to: QUOTE_NOTIFY_EMAIL,
     replyTo: payload.email,
-    subject: `New Quote Request — ${payload.name}${payload.projectType ? ` (${payload.projectType})` : ''}`,
+    subject,
     html: buildQuoteEmailHtml(payload),
   });
 
@@ -115,7 +126,9 @@ async function sendViaResend(payload: QuotePayload) {
     from,
     to: QUOTE_NOTIFY_EMAIL,
     replyTo: payload.email,
-    subject: `New Quote Request — ${payload.name}${payload.projectType ? ` (${payload.projectType})` : ''}`,
+    subject: (payload.projectType || '').toLowerCase().includes('job')
+      ? `Job Application — ${payload.name} (${payload.projectType})`
+      : `New Quote Request — ${payload.name}${payload.projectType ? ` (${payload.projectType})` : ''}`,
     html: buildQuoteEmailHtml(payload),
   });
 
@@ -157,7 +170,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const { name, phone, email, address, projectType, message, branch } = body;
+    const { name, phone, email, address, projectType, message, branch, source } = body;
 
     if (!name || !phone || !email || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -195,24 +208,36 @@ export async function POST(req: NextRequest) {
       address: address || '',
       projectType: projectType || 'not specified',
       message: messageWithBranch,
+      source: String(source || '').slice(0, 120),
     });
 
-    // Fire-and-forget: notify the owner by email without blocking the
-    // response (SMTP + Resend used to add seconds before json()).
-    void sendQuoteEmail({
-      name,
-      phone: cleanPhone,
-      email,
-      address: address || '',
-      branch: branch || '',
-      projectType: projectType || 'not specified',
-      message,
-    }).catch((emailErr) => console.error('Failed to send quote notification email:', emailErr));
+    // Notify the owner by email (awaited briefly so failures are visible).
+    // Job applications get a distinct subject so they stand out in the inbox.
+    const isJobLead = String(projectType || '').toLowerCase().includes('job');
+    let emailStatus: { sent: boolean; reason?: string } = { sent: false, reason: 'pending' };
+    try {
+      const result = await sendQuoteEmail({
+        name,
+        phone: cleanPhone,
+        email,
+        address: address || '',
+        branch: branch || '',
+        projectType: projectType || 'not specified',
+        message: isJobLead ? `[JOB — ${String(source || 'careers-page')}] ${message}` : message,
+      });
+      emailStatus = result && 'sent' in result && result.sent
+        ? { sent: true }
+        : { sent: false, reason: (result as { reason?: string } | null)?.reason || 'send_failed' };
+    } catch (emailErr) {
+      console.error('Failed to send quote notification email:', emailErr);
+      emailStatus = { sent: false, reason: 'send_error' };
+    }
 
     return NextResponse.json({
       success: true,
       id: contact._id,
-      emailSent: true,
+      emailSent: emailStatus.sent,
+      emailReason: emailStatus.reason || undefined,
     });
   } catch (err) {
     console.error('Contact API error:', err);

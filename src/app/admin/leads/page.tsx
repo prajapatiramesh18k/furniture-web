@@ -140,21 +140,8 @@ export default function AdminLeads() {
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [leads]);
 
-  const inDateRange = (iso: string) => {
-    if (!fromDate && !toDate) return true;
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return false;
-    if (fromDate) {
-      const from = new Date(`${fromDate}T00:00:00`);
-      if (d < from) return false;
-    }
-    if (toDate) {
-      const to = new Date(`${toDate}T23:59:59`);
-      if (d > to) return false;
-    }
-    return true;
-  };
-
+  // NOTE: date selection above is display-only for now — it does NOT
+  // filter rows. Real date filtering will be added in future.
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
     return leads.filter((l) => {
@@ -163,7 +150,6 @@ export default function AdminLeads() {
         const key = cur === 'converted' ? 'won' : cur;
         if (key !== filter) return false;
       }
-      if (!inDateRange(l.createdAt)) return false;
       if (sourceFilter !== 'all') {
         const src = String(l.source || '').trim();
         if (sourceFilter === '__none__' ? src !== '' : src !== sourceFilter) return false;
@@ -173,12 +159,11 @@ export default function AdminLeads() {
         if (assigneeFilter === '__none__' ? aid !== '' : aid !== assigneeFilter) return false;
       }
       if (!s) return true;
-      return `${l.name} ${l.phone} ${l.email} ${l.projectType || ''} ${l.source || ''}`.toLowerCase().includes(s);
+      return `${l.name} ${l.phone} ${l.email} ${l.projectType || ''} ${l.source || ''} ${l.message || ''}`.toLowerCase().includes(s);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leads, q, filter, fromDate, toDate, sourceFilter, assigneeFilter]);
+  }, [leads, q, filter, sourceFilter, assigneeFilter]);
 
-  const { page, totalPages, paged, setPage, pageSize } = usePagination(rows, 10, [q, filter, fromDate, toDate, sourceFilter, assigneeFilter]);
+  const { page, totalPages, paged, setPage, pageSize } = usePagination(rows, 10, [q, filter, sourceFilter, assigneeFilter]);
 
   const flash = (m: string) => {
     setToast(m);
@@ -455,7 +440,12 @@ export default function AdminLeads() {
             {
               key: 'l', header: 'Lead', render: (l) => (
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>{l.name}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>
+                    {l.name}{' '}
+                    {String(l.projectType || '').toLowerCase().includes('job') && (
+                      <span style={{ fontSize: 10.5, fontWeight: 800, background: '#0c2b16', color: '#25d366', borderRadius: 999, padding: '2px 8px', verticalAlign: 'middle' }}>JOB</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 11.5, color: '#8a7a66' }}>{l.projectType || '—'}{l.source ? ` · via ${l.source}` : ''}</div>
                 </div>
               ),
