@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardCard from '@/components/admin/DashboardCard';
 import { PHONES } from '@/lib/site-config';
@@ -11,17 +11,19 @@ export default function CustomerAccountPage() {
   const [userName, setUserName] = useState('there');
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<Panel>('profile');
+  const [today, setToday] = useState('');
 
-  const today = useMemo(
-    () =>
+  // Format date on client only — server locale/timezone differs and causes hydration mismatch.
+  useEffect(() => {
+    setToday(
       new Date().toLocaleDateString('en-IN', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }),
-    []
-  );
+      })
+    );
+  }, []);
 
   useEffect(() => {
     (async () => {

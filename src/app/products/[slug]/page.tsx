@@ -6,6 +6,8 @@ import Link from 'next/link';
 import CloseButton from '@/components/CloseButton';
 import { useCart } from '@/context/CartContext';
 import { openWhatsAppChat } from '@/lib/quote-whatsapp';
+import { JsonLd } from '@/components/JsonLd';
+import { absoluteUrl } from '@/lib/site-config';
 
 interface Product {
   id: string | number;
@@ -133,6 +135,38 @@ export default function ProductDetailPage() {
 
   return (
     <div className="product-detail-page">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          image: galleryImages,
+          description: product.description,
+          sku: product.slug,
+          brand: {
+            '@type': 'Brand',
+            name: 'Ananya House of Furniture',
+          },
+          offers: {
+            '@type': 'Offer',
+            url: absoluteUrl(`/products/${product.slug || product.id}`),
+            priceCurrency: 'INR',
+            price: product.price,
+            availability: 'https://schema.org/InStock',
+            seller: {
+              '@type': 'Organization',
+              name: 'Ananya House of Furniture',
+            },
+          },
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: displayRating.toFixed(1),
+            reviewCount: Math.floor(product.rating * 10) || 1,
+            bestRating: '5',
+            worstRating: '1',
+          },
+        }}
+      />
       <CloseButton href="/products" />
 
       <div className="product-detail-hero">
@@ -211,7 +245,7 @@ export default function ProductDetailPage() {
 
           <div className="product-detail-actions">
             <button
-              className="btn"
+              className="btn btn-add-cart"
               onClick={handleAddToCart}
             >
               {added ? (
@@ -224,12 +258,16 @@ export default function ProductDetailPage() {
                 </>
               )}
             </button>
+            {added && (
+              <Link href="/cart" className="btn btn-view-cart">
+                <i className="fas fa-arrow-right"></i> View Cart & Checkout
+              </Link>
+            )}
             <button
-              className="btn"
-              style={{ background: 'transparent', border: '0.2rem solid #a27341', color: '#a27341' }}
+              className="btn btn-primary-enquire"
               onClick={() =>
                 openWhatsAppChat(
-                  `Hi, I want to enquire about ${product?.name || 'this product'}. Please share price and details.`,
+                  `Hi, I want to enquire about ${product?.name || 'this product'} and customize it for my space. Please share price and details.`,
                   {
                     branch: 'mumbai',
                     cta: 'product_enquire',
@@ -239,7 +277,7 @@ export default function ProductDetailPage() {
                 )
               }
             >
-              <i className="fas fa-phone"></i> Enquire Now
+              <i className="fab fa-whatsapp" /> Enquire & Customize
             </button>
           </div>
 

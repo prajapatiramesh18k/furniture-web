@@ -58,6 +58,11 @@ export default function AdminSettings() {
     }
   };
   const [saving, setSaving] = useState(false);
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
   const [savedMsg, setSavedMsg] = useState('');
 
   useEffect(() => {
@@ -218,8 +223,8 @@ export default function AdminSettings() {
             {tenant?.slug && (
               <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span><i className="fas fa-fingerprint" style={{ color: 'var(--ahf-gold)', marginRight: 8 }}></i>Worker punch link:</span>
-                <code style={{ fontSize: 12, background: 'var(--ahf-cream)', border: '1px solid var(--ahf-line)', borderRadius: 8, padding: '2px 8px', wordBreak: 'break-all' }}>
-                  {typeof window !== 'undefined' ? `${window.location.origin}/punch?tenant=${tenant.slug}` : `/punch?tenant=${tenant.slug}`}
+                <code style={{ fontSize: 12, background: 'var(--ahf-cream)', border: '1px solid var(--ahf-line)', borderRadius: 8, padding: '2px 8px', wordBreak: 'break-all' }} suppressHydrationWarning>
+                  {origin ? `${origin}/punch?tenant=${tenant.slug}` : `/punch?tenant=${tenant.slug}`}
                 </code>
                 <button
                   type="button"

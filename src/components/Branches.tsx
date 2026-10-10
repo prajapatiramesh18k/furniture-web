@@ -111,6 +111,15 @@ export default function Branches() {
           </div>
         ))}
       </div>
+      <div style={{ textAlign: 'center', margin: '2rem 0 0.5rem' }}>
+        <a
+          href="/visit-us"
+          className="branch-action-btn primary"
+          style={{ display: 'inline-flex', fontSize: '1.4rem', padding: '1.2rem 2.8rem' }}
+        >
+          <i className="fas fa-store"></i> Visit Our Showroom & Book Free Consultation
+        </a>
+      </div>
       <div className="service-areas">
         <h3>Areas we serve</h3>
         <p>

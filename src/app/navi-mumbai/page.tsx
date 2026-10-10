@@ -5,7 +5,7 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
 import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
-import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd, localBusinessJsonLd } from '@/lib/json-ld';
 import { HEAD_OFFICE, PHONES } from '@/lib/site-config';
 import type { Metadata } from 'next';
 
@@ -183,6 +183,54 @@ export default function NaviMumbaiPage() {
                 <p>{f.answer}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        <section className="city-section">
+          <h2>Recent Projects in Navi Mumbai</h2>
+          <p className="city-note">A few examples of new flats we've transformed across Navi Mumbai nodes.</p>
+          <div className="city-gallery">
+            <Link href="/gallery?category=modular-kitchen" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800" alt="Modular kitchen in Kharghar" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Kharghar · Modular Kitchen</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=wardrobes" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800" alt="Custom wardrobes in Panvel" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Panvel · Custom Wardrobes</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=living-room" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" alt="Living room in Vashi" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Vashi · Living Room</span>
+              </div>
+            </Link>
+          </div>
+          <p className="city-note" style={{marginTop: '1rem'}}>
+            <Link href="/gallery" style={{fontWeight: 600}}>View all Navi Mumbai projects →</Link>
+          </p>
+        </section>
+
+        <section className="city-section">
+          <h2>Visit Our Workshop (Short Drive from Navi Mumbai)</h2>
+          <p>
+            Our manufacturing base at Diva-Shil Road, Khardipada is a short drive from Vashi, Nerul, and Kharghar.
+            Visit to explore materials, see live production, and get a free 3D design consultation.
+          </p>
+          <div className="city-visit-card">
+            <div className="city-visit-info">
+              <h3><i className="fas fa-map-marker-alt" style={{marginRight: '0.5rem', color: '#a27341'}} /> Diva-Shil Road, Khardipada, Thane (Workshop & HQ)</h3>
+              <p>Mon–Sat · 9:00 AM – 7:00 PM · <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer">Get Directions</a></p>
+            </div>
+            <LeadCta
+              compact
+              location="Navi Mumbai"
+              whatsappMessage="Hi, I'd like to book a workshop visit from Navi Mumbai. My preferred date/time:"
+              ctaPosition="navimumbai_workshop_visit"
+            />
           </div>
         </section>
 

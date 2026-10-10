@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { handleTrackedPhoneClick } from '@/lib/analytics';
 
@@ -11,6 +12,7 @@ const quickLinks = [
   { label: 'Custom Furniture', href: '/custom-furniture' },
   { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },
+  { label: 'Visit Showroom', href: '/visit-us' },
   { label: 'Contact', href: '/contact' },
   { label: 'Careers (We Are Hiring)', href: '/careers' },
 ];
@@ -32,199 +34,19 @@ const socials = [
 ];
 
 export default function Footer() {
+  const [year, setYear] = useState<number | null>(null);
+
+  // Client-only year — avoids server/client date mismatch during hydration.
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="ahf-footer">
-      <style>{`
-        .ahf-footer {
-          background: linear-gradient(180deg, #141210 0%, #0c0b0a 100%);
-          color: #e8e2d8;
-          margin-top: 0;
-          font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-        }
-        .ahf-footer-top {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 3.5rem 1.5rem 2rem;
-          display: grid;
-          grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
-          gap: 2.5rem;
-        }
-        .ahf-brand {
-          display: flex;
-          align-items: center;
-          gap: 0.9rem;
-          margin-bottom: 1rem;
-        }
-        .ahf-brand-name {
-          font-size: 1.7rem;
-          font-weight: 800;
-          letter-spacing: 3px;
-          color: #d9a441;
-          line-height: 1;
-        }
-        .ahf-brand-sub {
-          font-size: 0.95rem;
-          letter-spacing: 2px;
-          color: #a89f91;
-          text-transform: uppercase;
-          margin-top: 4px;
-        }
-        .ahf-desc {
-          font-size: 1.25rem;
-          line-height: 1.65;
-          color: #b8b0a2;
-          margin: 0 0 1.4rem;
-          max-width: 32rem;
-        }
-        .ahf-social-row {
-          display: flex;
-          gap: 0.7rem;
-        }
-        .ahf-social-btn {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(217, 164, 65, 0.12);
-          border: 1px solid rgba(217, 164, 65, 0.35);
-          color: #d9a441;
-          font-size: 1.4rem;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-        .ahf-social-btn:hover {
-          background: #d9a441;
-          color: #141210;
-          transform: translateY(-2px);
-        }
-        .ahf-col h4 {
-          font-size: 1.25rem;
-          font-weight: 800;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          color: #f5efe4;
-          margin: 0 0 1.1rem;
-          padding-bottom: 0.6rem;
-          border-bottom: 2px solid rgba(217, 164, 65, 0.4);
-          display: inline-block;
-        }
-        .ahf-link-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          gap: 0.15rem;
-        }
-        .ahf-link-list a {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.55rem;
-          color: #c9c1b2;
-          text-decoration: none;
-          font-size: 1.3rem;
-          padding: 0.32rem 0;
-          transition: color 0.2s ease, transform 0.2s ease;
-        }
-        .ahf-link-list a i {
-          font-size: 1rem;
-          color: #d9a441;
-        }
-        .ahf-link-list a:hover {
-          color: #f5efe4;
-          transform: translateX(3px);
-        }
-        .ahf-contact-item {
-          display: flex;
-          gap: 0.8rem;
-          align-items: flex-start;
-          padding: 0.45rem 0;
-          font-size: 1.3rem;
-          color: #c9c1b2;
-          text-decoration: none;
-          line-height: 1.5;
-        }
-        a.ahf-contact-item:hover {
-          color: #f5efe4;
-        }
-        .ahf-contact-item i {
-          color: #d9a441;
-          margin-top: 3px;
-          width: 16px;
-          text-align: center;
-        }
-        .ahf-review-card {
-          background: rgba(217, 164, 65, 0.08);
-          border: 1px solid rgba(217, 164, 65, 0.25);
-          border-radius: 12px;
-          padding: 1.3rem 1.2rem;
-        }
-        .ahf-review-card p {
-          font-size: 1.25rem;
-          color: #d8d0bf;
-          line-height: 1.55;
-          margin: 0 0 1rem;
-        }
-        .ahf-review-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: #d9a441;
-          color: #141210;
-          font-weight: 800;
-          font-size: 1.3rem;
-          padding: 0.75rem 1.4rem;
-          border-radius: 8px;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-        .ahf-review-btn:hover {
-          background: #e8b95a;
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(217, 164, 65, 0.35);
-        }
-        .ahf-bottom {
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .ahf-bottom-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 1.2rem 1.5rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-          font-size: 1.2rem;
-          color: #8d8677;
-        }
-        .ahf-bottom-inner strong {
-          color: #d9a441;
-        }
-        @media (max-width: 900px) {
-          .ahf-footer-top {
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            padding: 2.5rem 1.2rem 1.5rem;
-          }
-        }
-        @media (max-width: 560px) {
-          .ahf-footer-top {
-            grid-template-columns: 1fr;
-            gap: 1.8rem;
-          }
-          .ahf-bottom-inner {
-            justify-content: center;
-            text-align: center;
-          }
-        }
-      `}</style>
-
       <div className="ahf-footer-top">
         <div className="ahf-col">
           <div className="ahf-brand">
-            <svg width="42" height="42" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <svg width="42" height="42" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <rect width="28" height="28" rx="6" fill="#d9a441" />
               <path d="M7 21V11.5L14 8.5L21 11.5V21" stroke="#141210" strokeWidth="1.8" strokeLinejoin="round" fill="none" />
               <path d="M10 21V15.5H18V21" stroke="#141210" strokeWidth="1.8" strokeLinejoin="round" fill="none" />
@@ -287,10 +109,10 @@ export default function Footer() {
               <span>{phone.display}</span>
             </a>
           ))}
-<a href={`mailto:${contactInfo.email}`} className="ahf-contact-item">
-  <i className="fas fa-envelope"></i>
-  <span style={{ textTransform: 'lowercase' }}>{contactInfo.email}</span>
-</a>
+          <a href={`mailto:${contactInfo.email}`} className="ahf-contact-item">
+            <i className="fas fa-envelope"></i>
+            <span style={{ textTransform: 'lowercase' }}>{contactInfo.email}</span>
+          </a>
           <a href={contactInfo.addressLink} target="_blank" rel="noopener noreferrer" className="ahf-contact-item">
             <i className="fas fa-map-marker-alt"></i>
             <span>{contactInfo.address}</span>
@@ -310,8 +132,8 @@ export default function Footer() {
 
       <div className="ahf-bottom">
         <div className="ahf-bottom-inner">
-          <span>
-            © {new Date().getFullYear()} <strong>Ananya House of Furniture</strong> | All rights reserved
+          <span suppressHydrationWarning>
+            © {year ?? ''} <strong>Ananya House of Furniture</strong> | All rights reserved
           </span>
           <span>Crafted with care in Mumbai & Thane</span>
         </div>

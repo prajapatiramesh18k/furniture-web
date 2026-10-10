@@ -5,7 +5,7 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
 import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
-import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd, localBusinessJsonLd } from '@/lib/json-ld';
 import { HEAD_OFFICE, PHONES } from '@/lib/site-config';
 import type { Metadata } from 'next';
 
@@ -193,6 +193,54 @@ export default function MumbaiPage() {
                 <p>{f.answer}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        <section className="city-section">
+          <h2>Recent Projects in Mumbai</h2>
+          <p className="city-note">A few examples of homes we've transformed across Mumbai neighbourhoods.</p>
+          <div className="city-gallery">
+            <Link href="/gallery?category=living-room" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" alt="Luxury living room in Bandra" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Bandra · 3BHK Living Room</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=modular-kitchen" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800" alt="Modular kitchen in Andheri" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Andheri · Modular Kitchen</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=wardrobes" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800" alt="Custom wardrobes in Powai" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Powai · Custom Wardrobes</span>
+              </div>
+            </Link>
+          </div>
+          <p className="city-note" style={{marginTop: '1rem'}}>
+            <Link href="/gallery" style={{fontWeight: 600}}>View all Mumbai projects →</Link>
+          </p>
+        </section>
+
+        <section className="city-section">
+          <h2>Visit Our Showroom & Workshop</h2>
+          <p>
+            Experience materials, finishes, and craftsmanship in person at our Mumbai headquarters.
+            Our design consultants will walk you through samples, show 3D visualizations, and help plan your project.
+          </p>
+          <div className="city-visit-card">
+            <div className="city-visit-info">
+              <h3><i className="fas fa-map-marker-alt" style={{marginRight: '0.5rem', color: '#a27341'}} /> Diva-Shil Road, Khardipada, Thane (Mumbai HQ)</h3>
+              <p>Mon–Sat · 9:00 AM – 7:00 PM · <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer">Get Directions</a></p>
+            </div>
+            <LeadCta
+              compact
+              location="Mumbai"
+              whatsappMessage="Hi, I'd like to book a showroom visit at the Mumbai HQ. My preferred date/time:"
+              ctaPosition="mumbai_showroom_visit"
+            />
           </div>
         </section>
 

@@ -5,7 +5,7 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import LeadCta from '@/components/LeadCta';
 import { JsonLd } from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/site-config';
-import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd } from '@/lib/json-ld';
+import { breadcrumbJsonLd, faqJsonLd, serviceJsonLd, localBusinessJsonLd } from '@/lib/json-ld';
 import { HEAD_OFFICE, PHONES } from '@/lib/site-config';
 import type { Metadata } from 'next';
 
@@ -185,6 +185,54 @@ export default function ThanePage() {
                 <p>{f.answer}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        <section className="city-section">
+          <h2>Recent Projects in Thane</h2>
+          <p className="city-note">A few examples of homes we've transformed across Thane neighbourhoods.</p>
+          <div className="city-gallery">
+            <Link href="/gallery?category=modular-kitchen" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800" alt="Modular kitchen in Ghodbunder Road" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Ghodbunder Road · Modular Kitchen</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=wardrobes" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800" alt="Custom wardrobes in Hiranandani Estate" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Hiranandani Estate · Custom Wardrobes</span>
+              </div>
+            </Link>
+            <Link href="/gallery?category=living-room" className="city-gallery-item">
+              <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" alt="Living room in Thane West" loading="lazy" decoding="async" />
+              <div className="city-gallery-overlay">
+                <span>Thane West · Living Room</span>
+              </div>
+            </Link>
+          </div>
+          <p className="city-note" style={{marginTop: '1rem'}}>
+            <Link href="/gallery" style={{fontWeight: 600}}>View all Thane projects →</Link>
+          </p>
+        </section>
+
+        <section className="city-section">
+          <h2>Visit Our Workshop & Showroom</h2>
+          <p>
+            Our manufacturing base is right here in Thane at Diva-Shil Road, Khardipada — walk through our
+            material library, see live production, and consult with our designers in person.
+          </p>
+          <div className="city-visit-card">
+            <div className="city-visit-info">
+              <h3><i className="fas fa-map-marker-alt" style={{marginRight: '0.5rem', color: '#a27341'}} /> Diva-Shil Road, Khardipada, Thane (Workshop & HQ)</h3>
+              <p>Mon–Sat · 9:00 AM – 7:00 PM · <a href="https://maps.app.goo.gl/3wAw79stEiGNyeWa9" target="_blank" rel="noopener noreferrer">Get Directions</a></p>
+            </div>
+            <LeadCta
+              compact
+              location="Thane"
+              whatsappMessage="Hi, I'd like to book a workshop visit at the Thane HQ. My preferred date/time:"
+              ctaPosition="thane_workshop_visit"
+            />
           </div>
         </section>
 

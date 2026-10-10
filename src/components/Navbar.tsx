@@ -59,8 +59,8 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [userLoggedIn, setUserLoggedIn] = useState(() => getSessionAuth() !== null);
-  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean; role?: string } | null>(() => getSessionAuth());
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [authUser, setAuthUser] = useState<{ name: string; email: string; isAdmin: boolean; role?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -76,6 +76,12 @@ export default function Navbar() {
     setMounted(true);
     setCartCount(getCartCount());
     setWishlistCount(getWishlistCount());
+    // Restore auth after mount so server HTML matches first client render.
+    const sessionUser = getSessionAuth();
+    if (sessionUser) {
+      setUserLoggedIn(true);
+      setAuthUser(sessionUser);
+    }
   }, [getCartCount, getWishlistCount]);
 
   // Listen for auth changes (login/logout) — auth state is already initialized from sessionStorage

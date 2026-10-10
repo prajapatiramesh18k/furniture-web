@@ -22,25 +22,34 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 function loadInitialCart(): CartItem[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const saved = localStorage.getItem('ananya_cart');
-    return saved ? (JSON.parse(saved) as CartItem[]) : [];
-  } catch {
-    return [];
-  }
+  // Always start empty on server AND first client render to match SSR HTML.
+  // localStorage is read in an effect after mount (see CartProvider).
+  return [];
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>(loadInitialCart);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate from localStorage after mount — avoids SSR/client mismatch.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('ananya_cart');
+      if (saved) setCart(JSON.parse(saved) as CartItem[]);
+    } catch {
+      // corrupted storage — ignore
+    }
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem('ananya_cart', JSON.stringify(cart));
     } catch {
       // storage full / unavailable — ignore
     }
-  }, [cart]);
+  }, [cart, hydrated]);
 
   const addToCart = useCallback((item: CartItem) => {
     setCart(prev => {

@@ -21,25 +21,32 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 function loadInitialWishlist(): WishlistItem[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const saved = localStorage.getItem('ananya_wishlist');
-    return saved ? (JSON.parse(saved) as WishlistItem[]) : [];
-  } catch {
-    return [];
-  }
+  // Always start empty to match SSR HTML; hydrate after mount.
+  return [];
 }
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<WishlistItem[]>(loadInitialWishlist);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('ananya_wishlist');
+      if (saved) setWishlist(JSON.parse(saved) as WishlistItem[]);
+    } catch {
+      // corrupted storage — ignore
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem('ananya_wishlist', JSON.stringify(wishlist));
     } catch {
       // storage full / unavailable — ignore
     }
-  }, [wishlist]);
+  }, [wishlist, hydrated]);
 
   const addToWishlist = useCallback((item: WishlistItem) => {
     setWishlist(prev => {

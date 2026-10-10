@@ -9,17 +9,17 @@ import { PHONES } from '@/lib/site-config';
 const sliders = [
   {
     id: 1,
-    image: '/images/home-slide1.jpg',
-    heading: 'Complete Home Interior Solutions — 1BHK to 4BHK',
-    tagline: 'Custom Furniture for Your Dream Home',
-    subtext: 'Modular Kitchens • Wardrobes • TV Units • Beds • Pooja Units & More',
-  },
-  {
-    id: 2,
     image: '/images/home-slide5.jpg',
     heading: 'Free Site Visit & 3D Design Consultation',
     tagline: 'See Your Home Before We Build It',
     subtext: 'Book a free consultation • No commitment required',
+  },
+  {
+    id: 2,
+    image: '/images/home-slide1.jpg',
+    heading: 'Complete Home Interior Solutions — 1BHK to 4BHK',
+    tagline: 'Custom Furniture for Your Dream Home',
+    subtext: 'Modular Kitchens • Wardrobes • TV Units • Beds • Pooja Units & More',
   },
   {
     id: 3,
@@ -120,59 +120,53 @@ export default function Hero() {
               }}
             >
               <div className="hero-overlay" />
-              <div className="hero-content-wrapper">
-                <div className="hero-badge">
-                  <span className="hero-badge-icon">🏆</span>
-                  <span>Handcrafted Furniture Experts • Since 2012</span>
+<div className="hero-content-wrapper">
+                  <div className="hero-badge">
+                    <span className="hero-badge-icon">🏆</span>
+                    <span>Handcrafted Furniture Experts • Since 2012</span>
+                  </div>
+                  {index === 0 ? (
+                    <h1 className="hero-heading">{slide.heading}</h1>
+                  ) : (
+                    <h3 className="hero-heading">{slide.heading}</h3>
+                  )}
+                  <div className="hero-tagline">
+                    <span className="hero-tagline-text">{slide.tagline}</span>
+                  </div>
+                  <p className="hero-subtext">{slide.subtext}</p>
+                  
+                  <div className="hero-trust-row" aria-label="Trust indicators">
+                    <span>Since 2012</span>
+                    <span>14+ Years Experience</span>
+                    <span>25+ Skilled Craftsmen</span>
+                    <span>5-Year Warranty</span>
+                    <span>Free Site Visit</span>
+                  </div>
+                  
+                  <div className="hero-cta-group">
+                    <Link
+                      href="/contact?type=Custom%20Furniture"
+                      className="hero-cta-primary"
+                      onClick={() =>
+                        trackEvent('3d_design_request', {
+                          cta_position: 'homepage_hero',
+                          source: 'homepage_hero',
+                        })
+                      }
+                    >
+                      <span>Get Free 3D Design & Site Visit</span>
+                      <i className="fas fa-cube" />
+                    </Link>
+                    <button
+                      type="button"
+                      className="hero-cta-secondary hero-cta-wa"
+                      onClick={onWhatsApp}
+                    >
+                      <span>WhatsApp Us</span>
+                      <i className="fab fa-whatsapp" />
+                    </button>
+                  </div>
                 </div>
-                {index === 0 ? (
-                  <h1 className="hero-heading">{slide.heading}</h1>
-                ) : (
-                  <h3 className="hero-heading">{slide.heading}</h3>
-                )}
-                <div className="hero-tagline">
-                  <span className="hero-tagline-text">{slide.tagline}</span>
-                </div>
-                <p className="hero-subtext">{slide.subtext}</p>
-                <div className="hero-cta-group">
-                  <Link
-                    href="/contact?type=Custom%20Furniture"
-                    className="hero-cta-primary"
-                    onClick={() =>
-                      trackEvent('3d_design_request', {
-                        cta_position: 'homepage_hero',
-                        source: 'homepage_hero',
-                      })
-                    }
-                  >
-                    <span>Get Free 3D Design</span>
-                    <i className="fas fa-cube" />
-                  </Link>
-                  <button
-                    type="button"
-                    className="hero-cta-secondary hero-cta-wa"
-                    onClick={onWhatsApp}
-                  >
-                    <span>WhatsApp Us</span>
-                    <i className="fab fa-whatsapp" />
-                  </button>
-                  <a
-                    href={`tel:${PHONES.mumbaiPrimary.tel}`}
-                    className="hero-cta-secondary"
-                    onClick={() =>
-                      handleTrackedPhoneClick({
-                        branch: 'mumbai',
-                        cta: 'hero_call',
-                        cta_position: 'homepage_hero',
-                        source: 'homepage_hero',
-                      })
-                    }
-                  >
-                    <span>Call Now</span>
-                    <i className="fas fa-phone" />
-                  </a>
-                </div>
-              </div>
             </div>
           ))}
         </div>

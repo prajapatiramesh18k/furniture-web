@@ -3,11 +3,24 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useWishlist } from '@/context/WishlistContext';
 import { cachedGetJSON } from '@/lib/api-cache';
+import { openWhatsAppChat, getServiceWhatsAppMessage } from '@/lib/quote-whatsapp';
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const handleEnquire = (product: any) => {
+    const service = product.category || 'custom-furniture';
+    const message = getServiceWhatsAppMessage(service) + ` Interested in: ${product.name}`;
+    openWhatsAppChat(message, {
+      branch: 'mumbai',
+      cta: 'product_enquire',
+      cta_position: 'featured_products',
+      source: 'featured_products',
+      projectType: product.name,
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -107,6 +120,14 @@ export default function FeaturedProducts() {
                   <span className="fp-original">Rs.{Number(product.originalPrice).toLocaleString()}</span>
                 )}
               </div>
+              <button
+                type="button"
+                className="fp-enquire-btn"
+                onClick={() => handleEnquire(product)}
+                aria-label={`Enquire about ${product.name}`}
+              >
+                <i className="fab fa-whatsapp" aria-hidden="true" /> Enquire & Customize
+              </button>
             </div>
           </div>
           );

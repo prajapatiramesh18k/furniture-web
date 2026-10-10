@@ -10,7 +10,7 @@ import {
   trackSiteVisitRequest,
   track3dDesignRequest,
 } from '@/lib/analytics';
-import { openQuoteWhatsApp } from '@/lib/quote-whatsapp';
+import { openQuoteWhatsApp, buildQuoteWhatsAppMessage } from '@/lib/quote-whatsapp';
 import { trackMetaContact, trackMetaLead } from '@/components/MetaPixel';
 
 const projectTypes = [
@@ -55,6 +55,13 @@ export default function ContactPage() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [focused, setFocused] = useState<string | null>(null);
+  const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    message: string;
+    phone: string;
+    submittedData: any;
+    projectTypeLabel: string;
+  } | null>(null);
   const formStarted = useRef(false);
 
   useEffect(() => {
@@ -112,16 +119,84 @@ export default function ContactPage() {
 
   const normalizePhone = (raw: string) => sanitizePhoneInput(raw);
 
+  const doActualSubmit = async (submittedData: any, projectTypeLabel: string, location: string) => {
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submittedData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setError(
+          (data as { error?: string } | null)?.error ||
+            'Could not send your message. Please check the highlighted fields or WhatsApp / call us directly.'
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      trackContactFormSubmit({
+        source: 'contact_page',
+        cta_position: 'contact_form',
+        service: form.projectType,
+        location: location,
+        project_type: projectTypeLabel,
+      });
+      trackQuoteRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: location,
+      });
+      trackSiteVisitRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: location,
+      });
+      track3dDesignRequest({
+        source: 'contact_page',
+        service: form.projectType,
+        location: location,
+      });
+      trackMetaLead();
+      trackMetaContact();
+
+      openQuoteWhatsApp(
+        {
+          ...submittedData,
+          projectType: projectTypeLabel,
+          location: location,
+        },
+        {
+          source: 'contact_page',
+          cta: 'contact_page_whatsapp',
+          cta_position: 'contact_form',
+          service: form.projectType,
+          location: location,
+        }
+      );
+      setSubmitted(true);
+      setShowWhatsAppPreview(false);
+      setPreviewData(null);
+    } catch {
+      setError('Something went wrong while sending. Please try again, or WhatsApp / call us directly.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
     setFieldErrors({});
 
     const formEl = e.target as HTMLFormElement;
     const honey = (formEl.elements.namedItem('company_url') as HTMLInputElement | null)?.value;
     if (honey) {
-      setSubmitting(false);
       setSubmitted(true);
       return;
     }
@@ -151,12 +226,9 @@ export default function ContactPage() {
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
-      // Show the most actionable message at the top (email first if that is the problem).
       const priority = ['email', 'phone', 'name', 'location', 'projectType', 'message'];
       const firstKey = priority.find((k) => nextFieldErrors[k]) || Object.keys(nextFieldErrors)[0];
       setError(nextFieldErrors[firstKey]);
-      setSubmitting(false);
-      // Move focus to the first invalid field for quick correction.
       requestAnimationFrame(() => {
         const target = document.getElementById(
           firstKey === 'projectType'
@@ -194,72 +266,38 @@ export default function ContactPage() {
       message: `[Location: ${form.location}] ${form.message.trim()}`,
     };
 
-    try {
-      const response = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submittedData),
-      });
+    // Build WhatsApp message for preview
+    const whatsappMessage = buildQuoteWhatsAppMessage({
+      ...submittedData,
+      projectType: projectTypeLabel,
+      location: form.location,
+    });
+    const whatsappPhone = '919321812823';
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        setError(
-          (data as { error?: string } | null)?.error ||
-            'Could not send your message. Please check the highlighted fields or WhatsApp / call us directly.'
-        );
-        return;
-      }
+    setPreviewData({
+      message: whatsappMessage,
+      phone: whatsappPhone,
+      submittedData,
+      projectTypeLabel,
+    });
+    setShowWhatsAppPreview(true);
+  };
 
-      trackContactFormSubmit({
-        source: 'contact_page',
-        cta_position: 'contact_form',
-        service: form.projectType,
-        location: form.location,
-        project_type: projectTypeLabel,
-      });
-      trackQuoteRequest({
-        source: 'contact_page',
-        service: form.projectType,
-        location: form.location,
-      });
-      trackSiteVisitRequest({
-        source: 'contact_page',
-        service: form.projectType,
-        location: form.location,
-      });
-      track3dDesignRequest({
-        source: 'contact_page',
-        service: form.projectType,
-        location: form.location,
-      });
-      trackMetaLead();
-      trackMetaContact();
-
-      openQuoteWhatsApp(
-        {
-          ...submittedData,
-          projectType: projectTypeLabel,
-          location: form.location,
-        },
-        {
-          source: 'contact_page',
-          cta: 'contact_page_whatsapp',
-          cta_position: 'contact_form',
-          service: form.projectType,
-          location: form.location,
-        }
-      );
-      setSubmitted(true);
-    } catch {
-      setError('Something went wrong while sending. Please try again, or WhatsApp / call us directly.');
-    } finally {
-      setSubmitting(false);
+  const handleWhatsAppPreviewConfirm = () => {
+    if (previewData) {
+      doActualSubmit(previewData.submittedData, previewData.projectTypeLabel, form.location);
     }
+  };
+
+  const handleWhatsAppPreviewCancel = () => {
+    setShowWhatsAppPreview(false);
+    setPreviewData(null);
   };
 
   const isActive = (field: string) => focused === field || form[field as keyof typeof form];
 
   return (
+    <>
     <div className="contact-page">
       <div className="contact-page-hero">
         <CloseButton href="/" />
@@ -586,9 +624,52 @@ export default function ContactPage() {
                 </form>
               </>
             )}
+</div>
+      </div>
+    </div>
+  </div>
+
+    {showWhatsAppPreview && previewData && (
+      <div className="whatsapp-preview-overlay" onClick={handleWhatsAppPreviewCancel} role="dialog" aria-modal="true" aria-labelledby="whatsapp-preview-title">
+        <div className="whatsapp-preview-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="whatsapp-preview-header">
+            <h3 id="whatsapp-preview-title">Review Your WhatsApp Message</h3>
+            <button type="button" className="whatsapp-preview-close" onClick={handleWhatsAppPreviewCancel} aria-label="Close preview">
+              <i className="fas fa-times" />
+            </button>
+          </div>
+          <div className="whatsapp-preview-content">
+            <div className="whatsapp-preview-phone">
+              <i className="fab fa-whatsapp" /> Sending to: +91 93218 12823
+            </div>
+            <div className="whatsapp-preview-message">
+              {previewData.message.split('\n').map((line, i) => (
+                <div key={i} className="whatsapp-preview-line">{line || <br />}</div>
+              ))}
+            </div>
+            <p className="whatsapp-preview-note">You can edit this message in WhatsApp before sending.</p>
+          </div>
+          <div className="whatsapp-preview-actions">
+            <button type="button" className="btn btn-secondary" onClick={handleWhatsAppPreviewCancel}>
+              <i className="fas fa-edit" /> Edit Form
+            </button>
+            <button type="button" className="btn btn-primary" onClick={handleWhatsAppPreviewConfirm} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <span className="cpf-spinner" style={{ marginRight: '0.5rem' }} />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <i className="fab fa-whatsapp" style={{ marginRight: '0.5rem' }} />
+                  Confirm & Open WhatsApp
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    )}
+    </>
   );
 }
