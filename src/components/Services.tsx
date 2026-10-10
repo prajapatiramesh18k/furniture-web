@@ -9,10 +9,10 @@ export default function Services() {
         our <span> services</span>
       </h2>
       <p className="services-subtitle" style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.5rem' }}>
-        Modular kitchens, wardrobes, TV units &amp; custom furniture for Mumbai, Thane &amp; Ahmedabad — free site visit &amp; 3D design
+        Manufacturing, modular work, repair, polishing, upholstery &amp; more for Mumbai, Thane &amp; Ahmedabad — free site visit &amp; consultation
       </p>
       <div className="box-container">
-        {marketingServices.map((service) => (
+        {marketingServices.slice(0, 8).map((service) => (
           <div key={service.slug} className="box">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={service.image} alt={`${service.name} — Ananya House of Furniture`} loading="lazy" decoding="async" />

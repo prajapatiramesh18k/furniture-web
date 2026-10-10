@@ -3,7 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import GalleryImage from '@/lib/models/GalleryImage';
 import { getStorefrontTenantId } from '@/lib/storefront-tenant';
 
-const IMAGES_PER_PAGE = 12;
+const IMAGES_PER_PAGE = 15;
 
 // Room → subcategory IDs mapping (matches gallery/page.tsx subCategories)
 const roomSubMap: Record<string, string[]> = {

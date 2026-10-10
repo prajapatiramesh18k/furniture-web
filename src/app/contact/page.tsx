@@ -14,14 +14,16 @@ import { openQuoteWhatsApp, buildQuoteWhatsAppMessage } from '@/lib/quote-whatsa
 import { trackMetaContact, trackMetaLead } from '@/components/MetaPixel';
 
 const projectTypes = [
-  'Modular Kitchen',
-  'Wardrobe',
-  'Custom Furniture',
-  'PVC Furniture',
-  'TV Unit',
-  'Bedroom Furniture',
-  'Office Furniture',
-  'Complete Home Interior',
+  'Custom Furniture Manufacturing',
+  'Modular Furniture & Interior Work',
+  'Furniture Repair & Restoration',
+  'Finishing & Polishing',
+  'Upholstery Work',
+  'Delivery & Installation',
+  'Furniture Design & Consultation',
+  'Furniture Sales & Product Collection',
+  'Product Customization',
+  'Commercial Furniture',
   'Other',
 ];
 
@@ -301,6 +303,7 @@ export default function ContactPage() {
     <div className="contact-page">
       <div className="contact-page-hero">
         <CloseButton href="/" />
+        <p className="contact-hero-eyebrow">Get In Touch</p>
         <h1>Contact <span>Us</span></h1>
         <p>Ready to create your dream space? Send us a message and let’s bring your vision to life.</p>
       </div>
@@ -419,7 +422,7 @@ export default function ContactPage() {
             ) : (
               <>
                 <div className="contact-form-header anim-fade-up" style={{ animationDelay: '0.05s' }}>
-                  <h2>Get Free 3D Design &amp; Site Visit</h2>
+                  <h2>Get Free 3D Design &amp; <span>Site Visit</span></h2>
                   <p>Tell us your service and location — we respond within 24 hours.</p>
                 </div>
 
@@ -468,13 +471,11 @@ export default function ContactPage() {
                           autoComplete="tel"
                           placeholder=" "
                           aria-invalid={!!fieldErrors.phone}
-                          aria-describedby={fieldErrors.phone ? 'contact-phone-error' : 'contact-phone-hint'}
+                          aria-describedby={fieldErrors.phone ? 'contact-phone-error' : undefined}
                         />
                         <label className="floating-label cpf-phone-label" htmlFor="contact-phone">Mobile Number *</label>
                       </div>
-                      {fieldErrors.phone
-                        ? <p id="contact-phone-error" className="cpf-field-error" role="alert">{fieldErrors.phone}</p>
-                        : <p id="contact-phone-hint" className="cpf-field-hint">10 digits, without +91 — e.g. 98765 43210</p>}
+                      {fieldErrors.phone && <p id="contact-phone-error" className="cpf-field-error" role="alert">{fieldErrors.phone}</p>}
                     </div>
 
                     <div className="cpf-field anim-fade-up" style={{ animationDelay: '0.29s' }}>

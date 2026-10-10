@@ -106,6 +106,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close cart/wishlist/review panels on navigation so they never
+  // linger over the next page (e.g. opening /wardrobes with cart open).
+  useEffect(() => {
+    setCartOpen(false);
+    setWishlistOpen(false);
+    setReviewOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -315,6 +324,9 @@ function CartSidebar({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="cart-items-container active sidebar-panel" id="cart-items-container">
+      <button type="button" className="cart-sidebar-close" aria-label="Close cart" onClick={onClose}>
+        &times;
+      </button>
       {cart.length === 0 ? (
         <div className="cart-empty">
           <i className="fas fa-shopping-cart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>
@@ -375,6 +387,9 @@ function WishlistSidebar({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="cart-items-container active sidebar-panel" id="wishlist-sidebar">
+      <button type="button" className="cart-sidebar-close" aria-label="Close wishlist" onClick={onClose}>
+        &times;
+      </button>
       {wishlist.length === 0 ? (
         <div className="cart-empty">
           <i className="fas fa-heart" style={{ fontSize: '5rem', color: '#ccc', marginBottom: '1rem' }}></i>

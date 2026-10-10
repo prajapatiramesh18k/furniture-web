@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import LeadCta from '@/components/LeadCta';
+import CloseButton from '@/components/CloseButton';
 import { JsonLd } from '@/components/JsonLd';
 import type { LocationPageDef } from '@/lib/location-pages';
 import { getMarketingService } from '@/lib/marketing-services';
@@ -45,6 +46,7 @@ export default function LocationMarketingPage({ page }: { page: LocationPageDef 
 
   return (
     <article className="mkt-page">
+      <CloseButton href="/" />
       {schemas.map((data, i) => (
         <JsonLd key={i} data={data} />
       ))}

@@ -86,13 +86,15 @@ export default function TeamSection({ standalone = false }: TeamSectionProps) {
           {teamData.map((member) => (
             <div key={member.id} className="team-full-card">
               <div className="team-full-image">
-                <img src={member.image} alt={member.name} />
+                <img src={member.image} alt={member.name} loading="lazy" decoding="async" />
+                {Object.values(member.social).some((link) => link !== '#') && (
                 <div className="team-full-social">
                   <a href={member.social.facebook} target="_blank" rel="noopener noreferrer"><i className="fab fa-facebook-f"></i></a>
                   <a href={member.social.twitter} target="_blank" rel="noopener noreferrer"><i className="fab fa-twitter"></i></a>
                   <a href={member.social.instagram} target="_blank" rel="noopener noreferrer"><i className="fab fa-instagram"></i></a>
                   <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer"><i className="fab fa-linkedin"></i></a>
                 </div>
+                )}
               </div>
               <div className="team-full-info">
                 <h3>{member.name}</h3>

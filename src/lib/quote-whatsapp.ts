@@ -90,22 +90,26 @@ export function buildQuoteWhatsAppMessage(data: QuoteWhatsAppData) {
 
 /** Contextual WhatsApp messages by service slug */
 export const SERVICE_WHATSAPP_MESSAGES: Record<string, string> = {
-  'modular-kitchen':
-    'Hi, I am interested in a modular kitchen. I would like a free 3D design and site visit.',
-  wardrobes:
-    'Hi, I am interested in a custom wardrobe. I would like a free consultation.',
-  'custom-furniture':
-    'Hi, I am interested in custom furniture. Please contact me for a free consultation.',
-  'pvc-furniture':
-    'Hi, I am interested in PVC furniture. Please contact me for a free consultation.',
-  'tv-units':
-    'Hi, I am interested in a custom TV unit. I would like a free consultation.',
-  'bedroom-furniture':
-    'Hi, I am interested in bedroom furniture. Please contact me for a free consultation.',
-  'office-furniture':
-    'Hi, I am interested in office furniture. Please contact me for a free consultation.',
-  'home-interiors':
-    'Hi, I am interested in home interiors. I would like a free 3D design and site visit.',
+  'custom-furniture-manufacturing':
+    'Hi, I am interested in custom furniture manufacturing. Please contact me for a free consultation.',
+  'modular-furniture-interior-work':
+    'Hi, I am interested in modular furniture and interior work. I would like a free 3D design and site visit.',
+  'furniture-repair-restoration':
+    'Hi, I need furniture repair / restoration. Please contact me for a free assessment.',
+  'finishing-polishing':
+    'Hi, I am interested in furniture finishing and polishing. Please contact me for a free consultation.',
+  'upholstery-work':
+    'Hi, I am interested in upholstery work for my sofa / chairs. Please contact me for a free consultation.',
+  'delivery-installation':
+    'Hi, I need furniture delivery and installation. Please contact me with a quotation.',
+  'furniture-design-consultation':
+    'Hi, I would like a free design consultation and site visit for my space.',
+  'furniture-sales-collection':
+    'Hi, I want to know about your ready furniture collection. Please share details.',
+  'product-customization':
+    'Hi, I like one of your products and want it customized. Please contact me.',
+  'commercial-furniture':
+    'Hi, I need commercial furniture for my office / shop. Please contact me with a quotation.',
 };
 
 export function getServiceWhatsAppMessage(service?: string) {

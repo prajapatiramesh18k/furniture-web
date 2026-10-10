@@ -1,12 +1,14 @@
 export type MarketingServiceSlug =
-  | 'custom-furniture'
-  | 'modular-kitchen'
-  | 'wardrobes'
-  | 'pvc-furniture'
-  | 'tv-units'
-  | 'bedroom-furniture'
-  | 'office-furniture'
-  | 'home-interiors';
+  | 'custom-furniture-manufacturing'
+  | 'modular-furniture-interior-work'
+  | 'furniture-repair-restoration'
+  | 'finishing-polishing'
+  | 'upholstery-work'
+  | 'delivery-installation'
+  | 'furniture-design-consultation'
+  | 'furniture-sales-collection'
+  | 'product-customization'
+  | 'commercial-furniture';
 
 export type MarketingService = {
   slug: MarketingServiceSlug;
@@ -30,14 +32,14 @@ export type MarketingService = {
 
 export const marketingServices: MarketingService[] = [
   {
-    slug: 'custom-furniture',
-    name: 'Custom Furniture',
-    shortName: 'Custom Furniture',
-    h1: 'Custom Furniture in Mumbai, Navi Mumbai & Thane',
+    slug: 'custom-furniture-manufacturing',
+    name: 'Custom Furniture Manufacturing',
+    shortName: 'Custom Manufacturing',
+    h1: 'Custom Furniture Manufacturing in Mumbai, Navi Mumbai & Thane',
     title:
-      'Custom Furniture in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Custom Furniture Manufacturing in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Custom-made furniture for Mumbai, Navi Mumbai & Thane homes. Free site visit, 3D design consultation, in-house manufacturing and professional installation.',
+      'Made-to-measure furniture manufactured in our own workshop for Mumbai, Navi Mumbai & Thane homes. Free site visit, 3D design consultation and professional installation.',
     image: '/images/service-1.png',
     intro:
       'Ananya House of Furniture designs and manufactures made-to-measure furniture for apartments, houses and commercial spaces across Mumbai, Navi Mumbai and Thane — with service also available in Ahmedabad (Bopal). Every piece is planned around your room size, storage needs and daily use, then built in our own workshop.',
@@ -87,405 +89,557 @@ export const marketingServices: MarketingService[] = [
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in custom furniture. Please contact me for a free consultation.',
-    relatedSlugs: ['modular-kitchen', 'wardrobes', 'home-interiors'],
+      'Hi, I am interested in custom furniture manufacturing. Please contact me for a free consultation.',
+    relatedSlugs: ['modular-furniture-interior-work', 'product-customization', 'furniture-design-consultation'],
   },
   {
-    slug: 'modular-kitchen',
-    name: 'Modular Kitchen',
-    shortName: 'Modular Kitchen',
-    h1: 'Modular Kitchens in Mumbai, Navi Mumbai & Thane',
+    slug: 'modular-furniture-interior-work',
+    name: 'Modular Furniture & Interior Work',
+    shortName: 'Modular & Interiors',
+    h1: 'Modular Furniture & Interior Work in Mumbai, Navi Mumbai & Thane',
     title:
-      'Modular Kitchen in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Modular Furniture & Interior Work in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Modular kitchen design and installation for Mumbai, Navi Mumbai & Thane. Free site visit, 3D layout, durable materials and professional fitting.',
+      'Modular kitchens, wardrobes, TV units and complete interior carpentry for Mumbai, Navi Mumbai & Thane. Free site visit, 3D layout and professional fitting.',
     image: '/images/kitchen.jpeg',
     intro:
-      'We plan modular kitchens around how you cook and store — not just how the showroom looks. From compact 1BHK L-shapes to larger U-shaped and parallel kitchens, we design for Mumbai and Navi Mumbai apartment constraints and Thane home layouts.',
+      'We plan modular furniture and interior work around how you live — from compact 1BHK kitchens and wardrobes to full-home interiors. Designed for Mumbai and Navi Mumbai apartment constraints and Thane home layouts, manufactured in our own workshop.',
     benefits: [
-      'Layouts planned for your wall lengths and plumbing',
-      'Soft-close shutters and organised storage',
-      'Countertop and finish options explained clearly',
+      'Room-wise layouts planned for your exact floor plan',
+      'Modular kitchens, wardrobes, TV units and storage walls',
+      'Soft-close hardware and organised storage systems',
       '3D preview before manufacturing',
       'Installed by our team with cleanup',
     ],
     materials: [
       'Moisture-resistant plywood / BWP options where needed',
-      'Laminate, acrylic and membrane shutters',
-      'Granite / quartz countertop coordination',
-      'Basket systems, tandem boxes and bottle pull-outs',
+      'Laminate, acrylic and membrane finishes',
+      'Granite / quartz countertop coordination for kitchens',
+      'Basket systems, tandem boxes and pull-outs',
     ],
     designProcess: [
-      'Site measure: walls, windows, chimney and plumbing points',
-      'Workflow planning (cooking, washing, storage)',
-      '3D design and quotation',
-      'Final finish selection',
+      'Site visit with measurements and requirement discussion',
+      'Room-wise 3D layouts for your approval',
+      'Finishes, colours and hardware selections locked',
+      'Manufacturing schedule confirmed in writing',
     ],
     manufacturingProcess: [
-      'Carcass and shutter production in-house',
-      'Hardware fitting and alignment checks',
-      'On-site installation of base and wall units',
+      'Precision cutting and edge banding in our workshop',
+      'Pre-assembly quality checks before dispatch',
+      'Packed room-wise for organised installation',
     ],
     installation:
-      'We coordinate chimney, sink and appliance clearances during design so installation day is smoother. Final alignment and soft-close checks are done on site.',
+      'Our team installs room by room — kitchen, wardrobes, TV units and storage — checking alignment, shutters and finishes before handover. Packaging waste is cleared after the job.',
     warranty:
-      'Carcass and manufacturing defects are covered under our 5-year warranty policy. Hardware warranty follows manufacturer terms where applicable.',
+      'Manufacturing and installation defects are covered under our 5-year warranty. Misuse and water damage are excluded — coverage is explained before you confirm.',
     faqs: [
       {
-        question: 'What is the cost of a modular kitchen in Mumbai?',
+        question: 'How long does a full modular project take?',
         answer:
-          'Cost depends on size, material grade, hardware and accessories. After a site visit we share a clear quotation — we do not publish a one-size price because every kitchen footprint differs.',
+          'A single kitchen or wardrobe wall typically takes 15–25 days after approval. Full-home interior work is scheduled room-wise — we confirm timelines during consultation.',
       },
       {
-        question: 'Can you work in small Mumbai apartments?',
+        question: 'Can you match new work with my existing furniture?',
         answer:
-          'Yes. Many of our kitchens are for compact flats. We focus on storage, chimney placement and circulation so the kitchen stays usable.',
+          'Yes. We carry finish and laminate samples to the site visit so new shutters and panels blend with what you already own.',
       },
       {
-        question: 'Do you provide a free 3D design?',
+        question: 'Do you handle small single-room jobs?',
         answer:
-          'Yes — free site visit and 3D design consultation for modular kitchen projects in our service areas.',
+          'Yes. Many clients start with one kitchen or one wardrobe wall. You do not need a full-home package to enquire.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in a modular kitchen. I would like a free 3D design and site visit.',
-    relatedSlugs: ['custom-furniture', 'wardrobes', 'home-interiors'],
+      'Hi, I am interested in modular furniture and interior work. I would like a free 3D design and site visit.',
+    relatedSlugs: ['custom-furniture-manufacturing', 'product-customization', 'furniture-design-consultation'],
   },
   {
-    slug: 'wardrobes',
-    name: 'Wardrobes',
-    shortName: 'Wardrobes',
-    h1: 'Custom Wardrobes in Mumbai, Navi Mumbai & Thane',
+    slug: 'furniture-repair-restoration',
+    name: 'Furniture Repair & Restoration',
+    shortName: 'Repair & Restoration',
+    h1: 'Furniture Repair & Restoration in Mumbai, Navi Mumbai & Thane',
     title:
-      'Custom Wardrobes in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Furniture Repair & Restoration in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Sliding and hinged wardrobes for Mumbai, Navi Mumbai & Thane homes. Space-efficient interiors, free site visit and 3D design consultation.',
-    image: '/images/wardrobe.jpeg',
-    intro:
-      'Custom wardrobes help Mumbai and Thane bedrooms use every inch — loft storage, sliding shutters for tight clearances, and internal layouts for clothes, bags and linen. We design hinged or sliding systems based on your room.',
-    benefits: [
-      'Internal layout planned for your clothing volume',
-      'Sliding options for rooms with limited door swing',
-      'Loft and full-height options where ceiling allows',
-      'Mirror, laminate and acrylic finish choices',
-      'Free consultation and site measure',
-    ],
-    materials: [
-      'Plywood / engineered board carcass',
-      'Laminate and acrylic shutters',
-      'Soft-close hinges / quality sliding channels',
-      'Accessories: drawers, tie racks, pull-out trays',
-    ],
-    designProcess: [
-      'Bedroom measure and door swing check',
-      'Internal zoning (hang, fold, drawers)',
-      '3D elevation for approval',
-      'Colour and handle selection',
-    ],
-    manufacturingProcess: [
-      'Panel cutting and edge finishing',
-      'Carcass assembly and shutter fabrication',
-      'On-site fixing, leveling and accessory fitment',
-    ],
-    installation:
-      'Wardrobes are leveled and fixed securely. Sliding tracks and soft-close mechanisms are adjusted on site for smooth daily use.',
-    warranty:
-      'Manufacturing defects covered under our 5-year warranty. Sliding channel and hardware follow applicable manufacturer coverage.',
-    faqs: [
-      {
-        question: 'Sliding or hinged — which is better?',
-        answer:
-          'Hinged wardrobes often give fuller access; sliding suits narrow rooms. We recommend after measuring your bedroom clearances.',
-      },
-      {
-        question: 'Can you do wardrobes for small bedrooms?',
-        answer:
-          'Yes. We regularly design for compact 1BHK and 2BHK bedrooms in Mumbai, Navi Mumbai and Thane.',
-      },
-      {
-        question: 'Do you include loft storage?',
-        answer:
-          'Where ceiling height and structure allow, loft storage is a common request — we confirm during site visit.',
-      },
-    ],
-    whatsappMessage:
-      'Hi, I am interested in a custom wardrobe. I would like a free consultation.',
-    relatedSlugs: ['bedroom-furniture', 'modular-kitchen', 'custom-furniture'],
-  },
-  {
-    slug: 'pvc-furniture',
-    name: 'PVC Furniture',
-    shortName: 'PVC Furniture',
-    h1: 'PVC Furniture for Homes & Commercial Spaces',
-    title:
-      'PVC Furniture in Mumbai & Ahmedabad | Ananya House of Furniture',
-    description:
-      'PVC furniture and cabinetry for moisture-prone areas. Available for Mumbai region projects and our Ahmedabad (Bopal) branch — free consultation.',
+      'Furniture repair and restoration for Mumbai, Navi Mumbai & Thane — loose joints, broken shutters, damaged panels and wobbly structures fixed by skilled craftsmen.',
     image: '/images/service-2.png',
     intro:
-      'PVC furniture is useful where moisture resistance and easy cleaning matter — kitchens, wash areas and certain commercial interiors. Our Ahmedabad (Bopal) branch particularly focuses on PVC work suited to Gujarat climate needs, while Mumbai-region customers can enquire for project suitability.',
+      'Good furniture deserves a second life. Our craftsmen repair loose joints, broken hinges, sagging shutters, damaged panels and worn structures across Mumbai, Navi Mumbai and Thane — at your home or in our workshop for bigger jobs.',
     benefits: [
-      'Better resistance to moisture vs standard untreated boards',
-      'Smooth finishes that are easy to wipe clean',
-      'Useful for select kitchen and storage applications',
-      'Custom sizes based on site measure',
-      'Guidance on when PVC vs plywood is the better choice',
+      'Repairs for beds, wardrobes, tables, chairs and storage',
+      'Hinge, channel, lock and handle replacements',
+      'Structural strengthening for wobbly or sagging pieces',
+      'Home visits for assessment and minor on-site repairs',
+      'Honest advice — we tell you when replacement costs less',
     ],
     materials: [
-      'PVC foam board / WPC options as per application',
-      'Compatible hardware and edge treatments',
-      'Finish choices suited to wet-area use cases',
+      'Matching plywood / blockboard for panel replacement',
+      'Branded hinges, channels, locks and handles',
+      'Wood fillers and adhesives for joint repair',
+      'Touch-up finishes matched to existing colour',
     ],
     designProcess: [
-      'Discuss room use and humidity conditions',
-      'Site measure and application check',
-      'Material recommendation (PVC vs plywood)',
-      'Design approval and quotation',
+      'Share photos of the damage on WhatsApp or book a visit',
+      'We assess repairability and share a clear quotation',
+      'You approve the scope — repair or part replacement',
+      'Work is scheduled at your home or our workshop',
     ],
     manufacturingProcess: [
-      'Cutting and fabrication to drawing',
-      'Assembly and finish checks',
-      'Delivery and installation',
+      'Damaged parts opened and joints re-glued or replaced',
+      'Replacement panels cut and fitted to size',
+      'Hardware refitted and movement tested before handover',
     ],
     installation:
-      'We install PVC units with attention to leveling and fixing points suitable for the substrate on site.',
+      'On-site repairs are finished the same visit wherever possible. Workshop jobs are delivered back and reinstalled by our team.',
     warranty:
-      'Warranty terms depend on the specific PVC system used. We share coverage before you confirm the order.',
+      'Repair workmanship is covered for 6 months. Damage from misuse or overloading after repair is excluded — we explain load limits before handover.',
     faqs: [
       {
-        question: 'Is PVC better than plywood for wardrobes?',
+        question: 'Can you repair a broken wardrobe shutter?',
         answer:
-          'It depends on climate, budget and design. We explain trade-offs during consultation rather than pushing one material for every job.',
+          'Yes — hinge replacement, shutter realignment and full shutter rebuilding are routine jobs. Share a photo and we will quote before visiting.',
       },
       {
-        question: 'Do you offer PVC work in Ahmedabad?',
+        question: 'Is repair worth it for old furniture?',
         answer:
-          'Yes. Our Ahmedabad branch at TRP Mall, Bopal specialises in PVC furniture and related interiors.',
+          'For solid wood and good plywood pieces, usually yes. We assess honestly and tell you upfront if a new piece would cost nearly the same.',
+      },
+      {
+        question: 'Do you offer repair visits at home?',
+        answer:
+          'Yes, across Mumbai, Navi Mumbai and Thane. Minor repairs finish on the spot; bigger jobs go to our workshop and return fitted.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in PVC furniture. Please advise if it suits my project and share a free consultation.',
-    relatedSlugs: ['modular-kitchen', 'wardrobes', 'custom-furniture'],
+      'Hi, I need furniture repair / restoration. Please contact me for a free assessment.',
+    relatedSlugs: ['finishing-polishing', 'upholstery-work', 'custom-furniture-manufacturing'],
   },
   {
-    slug: 'tv-units',
-    name: 'TV Units',
-    shortName: 'TV Units',
-    h1: 'Custom TV Units in Mumbai, Navi Mumbai & Thane',
+    slug: 'finishing-polishing',
+    name: 'Finishing & Polishing',
+    shortName: 'Finishing & Polish',
+    h1: 'Furniture Finishing & Polishing in Mumbai, Navi Mumbai & Thane',
     title:
-      'Custom TV Units in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Furniture Finishing & Polishing in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Wall TV units and entertainment walls for Mumbai, Navi Mumbai & Thane. Cable management, storage and finishes matched to your living room.',
-    image: '/images/tv-unit.jpeg',
+      'Melamine, PU, polyester and traditional wood polishing for furniture and interiors in Mumbai, Navi Mumbai & Thane. Factory-grade finish at your home or our workshop.',
+    image: '/images/service-3.png',
     intro:
-      'A well-planned TV unit handles screen size, set-top boxes, speakers and storage without clutter. We design floating, floor-standing and full-feature walls for living rooms across Mumbai, Navi Mumbai and Thane.',
+      'The finish is what you see and touch every day. We offer melamine, PU, polyester and traditional polish for new and old furniture across Mumbai, Navi Mumbai and Thane — colour-matched and applied by experienced polishers.',
     benefits: [
-      'Sized for your TV and wall width',
-      'Hidden cable paths where possible',
-      'Closed storage for remotes and devices',
-      'Finish matched to living-room furniture',
-      'Free site visit for built-in units',
+      'Melamine, PU, polyester and traditional polish options',
+      'Colour matching for repairs and extensions',
+      'Scratch and dullness removal with re-coating',
+      'Dust-controlled application for a clean finish',
+      'Matte to high-gloss levels as per your taste',
     ],
     materials: [
-      'Engineered wood / plywood carcass',
-      'Laminate, veneer or acrylic faces',
-      'LED-ready niches on request',
+      'Branded melamine and PU polish systems',
+      'Sealers, fillers and stains for grain work',
+      'Fine abrasives for multi-stage rubbing',
+      'Eco-friendly finish options on request',
     ],
     designProcess: [
-      'Measure wall, niches and electrical points',
-      'Plan open vs closed storage',
-      '3D concept for living-room view',
-      'Confirm finish and hardware',
+      'Share photos or book a visit for finish inspection',
+      'We suggest the right polish type and gloss level',
+      'Colour sample approved before full application',
+      'Work scheduled with dust protection for your home',
     ],
     manufacturingProcess: [
-      'Panel production and edge finish',
-      'Assembly and dry fit checks',
-      'On-site fixing and cable routing support',
+      'Surface sanded and dents filled stage by stage',
+      'Sealer, colour and top coats applied evenly',
+      'Final rubbing and inspection in daylight before handover',
     ],
     installation:
-      'Units are leveled and fixed securely. We coordinate mounting height with your TV size during design.',
+      'On-site polishing includes masking and dust sheets for your room. Workshop polishing returns fully cured and ready to use.',
     warranty:
-      'Manufacturing defects covered under our 5-year warranty policy.',
+      'Polish application defects (peeling, patchiness) are covered for 6 months. Scratches from daily use and water exposure are excluded.',
     faqs: [
       {
-        question: 'Can you make a full TV feature wall?',
+        question: 'PU or melamine — which should I choose?',
         answer:
-          'Yes. Many clients combine TV storage with display niches and panels. We design based on wall strength and electrical points.',
+          'PU gives a richer, more durable finish and costs more; melamine is economical for large areas. We suggest after seeing your furniture and usage.',
       },
       {
-        question: 'Do you install the TV as well?',
+        question: 'Can you repolish only one damaged patch?',
         answer:
-          'We install the furniture unit. TV wall-mounting can be coordinated — confirm during consultation.',
+          'Yes, with careful colour matching — though a full-panel coat usually blends better. We show you both options with pricing.',
+      },
+      {
+        question: 'How long does polishing take?',
+        answer:
+          'A dining set typically takes 3–5 days including drying. Full-room or multi-piece jobs are scheduled piece by piece.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in a custom TV unit. I would like a free consultation and site visit.',
-    relatedSlugs: ['custom-furniture', 'home-interiors', 'bedroom-furniture'],
+      'Hi, I am interested in furniture finishing and polishing. Please contact me for a free consultation.',
+    relatedSlugs: ['furniture-repair-restoration', 'upholstery-work', 'product-customization'],
   },
   {
-    slug: 'bedroom-furniture',
-    name: 'Bedroom Furniture',
-    shortName: 'Bedroom Furniture',
-    h1: 'Bedroom Furniture in Mumbai, Navi Mumbai & Thane',
+    slug: 'upholstery-work',
+    name: 'Upholstery Work',
+    shortName: 'Upholstery',
+    h1: 'Sofa & Furniture Upholstery in Mumbai, Navi Mumbai & Thane',
     title:
-      'Bedroom Furniture in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Sofa & Furniture Upholstery in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Custom beds, wardrobes, side tables and bedroom sets for Mumbai, Navi Mumbai & Thane. Free site visit and 3D design consultation.',
-    image: '/images/kids-bedroom.jpeg',
+      'Sofa, chair, headboard and cushion upholstery with fabric, leatherette and foam replacement across Mumbai, Navi Mumbai & Thane.',
+    image: '/images/sofa.jpg',
     intro:
-      'Bedroom furniture should fit mattress size, wardrobe depth and circulation — especially in Mumbai apartments. We design beds, wardrobes, dressers and coordinated sets that work as one layout.',
+      'Sagging seats and faded fabric make good frames look tired. We re-upholster sofas, chairs, headboards, dining seats and office seating across Mumbai, Navi Mumbai and Thane — with fabric catalogues brought to your home.',
     benefits: [
-      'Coordinated wardrobe + bed planning',
-      'Storage beds and space-saving options',
-      'Finish consistency across the room',
-      'Kids bedroom layouts available',
-      'Free measure and design consult',
+      'Fabric, leatherette and leather options to every budget',
+      'Foam and spring replacement for sagging seats',
+      'Stitching styles — plain, tufted, piped and panelled',
+      'Cushion, backrest and armrest reshaping',
+      'Pickup, workshop finishing and re-delivery',
     ],
     materials: [
-      'Plywood / engineered wood structures',
-      'Upholstered headboards on request',
-      'Laminate and veneer finishes',
+      'Upholstery fabrics in cotton, polyester and blends',
+      'Leatherette and genuine leather options',
+      'High-density foam in multiple grades',
+      'Zippers, piping cords and webbing tapes',
     ],
     designProcess: [
-      'Room measure and furniture zoning',
-      'Storage needs discussion',
-      '3D layout for approval',
-      'Material lock-in',
+      'Share photos or book a visit with fabric catalogues',
+      'Foam and fabric selected against your budget',
+      'Stitching pattern and piping details confirmed',
+      'Pickup scheduled for workshop finishing',
     ],
     manufacturingProcess: [
-      'Workshop fabrication',
-      'Quality checks before dispatch',
-      'Delivery and installation',
+      'Old covers stripped and frames inspected',
+      'Foam rebuilt and new covers stitched to size',
+      'Fitted, stapled and finished with piping detail',
     ],
     installation:
-      'Beds and wardrobes are assembled and positioned. We check drawers, shutters and alignments before handover.',
+      'Finished pieces are delivered back, positioned and checked for comfort and stitching before handover.',
     warranty:
-      'Manufacturing defects covered under our 5-year warranty.',
+      'Stitching and fitting defects are covered for 6 months. Fabric wear, stains and pet damage are excluded.',
     faqs: [
       {
-        question: 'Do you make complete bedroom sets?',
+        question: 'My sofa sags — do I need a new one?',
         answer:
-          'Yes — wardrobes, beds, side tables and storage can be planned together for a consistent finish.',
+          'Usually not. If the frame is solid, new foam and fabric make it feel new at a fraction of replacement cost. We check the frame free during assessment.',
       },
       {
-        question: 'Can you design for small 1BHK bedrooms?',
+        question: 'Can I choose my own fabric?',
         answer:
-          'Yes. Compact layouts and sliding wardrobes are common requests in Mumbai and Navi Mumbai flats.',
+          'Yes — use our catalogues or supply your own fabric. Labour-only pricing applies if you provide material.',
+      },
+      {
+        question: 'How long does sofa upholstery take?',
+        answer:
+          'A standard 3-seater typically takes 5–7 days including foam curing and stitching. Sets are scheduled together.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in bedroom furniture. Please contact me for a free consultation.',
-    relatedSlugs: ['wardrobes', 'custom-furniture', 'home-interiors'],
+      'Hi, I am interested in upholstery work for my sofa / chairs. Please contact me for a free consultation.',
+    relatedSlugs: ['furniture-repair-restoration', 'finishing-polishing', 'furniture-sales-collection'],
   },
   {
-    slug: 'office-furniture',
-    name: 'Office Furniture',
-    shortName: 'Office Furniture',
-    h1: 'Office & Commercial Furniture',
+    slug: 'delivery-installation',
+    name: 'Delivery & Installation',
+    shortName: 'Delivery & Fitting',
+    h1: 'Furniture Delivery & Installation in Mumbai, Navi Mumbai & Thane',
     title:
-      'Office Furniture in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Furniture Delivery & Installation in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Custom office desks, workstations, storage and commercial fit-outs for Mumbai, Navi Mumbai, Thane and Ahmedabad. Free consultation.',
-    image: '/images/service-2.png',
+      'Safe furniture transport, assembly and installation across Mumbai, Navi Mumbai & Thane — including high-rise delivery and old-furniture shifting.',
+    image: '/images/service-4.jpg',
     intro:
-      'We build office and shop furniture for workstations, cabins, reception counters and storage — tailored to floor plates in Mumbai, Navi Mumbai, Thane and our Ahmedabad presence.',
+      'Heavy wardrobes, dining sets and modular units need careful handling — especially in high-rises. Our team delivers, carries, assembles and installs furniture across Mumbai, Navi Mumbai and Thane, and clears the packaging after.',
     benefits: [
-      'Workstations planned for staff count',
-      'Cabin and storage solutions',
-      'Reception and display counters',
-      'Durable finishes for daily commercial use',
-      'Site measure and quotation',
+      'Safe packing and transport for bulky furniture',
+      'High-rise delivery with lift and staircase planning',
+      'Expert assembly — beds, wardrobes, dining and storage',
+      'Wall-mounting for shelves, TV units and crockery units',
+      'Packaging waste cleared after installation',
     ],
     materials: [
-      'Commercial-grade boards and laminates',
-      'Cable management options',
-      'Hardware suited to high-use drawers',
+      'Protective packing — bubble, foam and corner guards',
+      'Assembly hardware, wall plugs and brackets',
+      'Touch-up kits for transit marks',
+      'Floor protectors during carrying and fitting',
     ],
     designProcess: [
-      'Understand staff layout and workflow',
-      'Measure and propose zoning',
-      'Share drawings / 3D where needed',
-      'Confirm materials and timeline',
+      'Share your delivery address, floor and lift details',
+      'We plan vehicle size, manpower and access route',
+      'Delivery slot confirmed a day in advance',
+      'Team arrives with packing protection and tools',
     ],
     manufacturingProcess: [
-      'Batch production for multi-station orders',
-      'Finish and hardware QC',
-      'Phased installation to reduce downtime',
+      'Pieces checked against order before loading',
+      'Loaded and strapped to prevent transit damage',
+      'Unpacked room-wise on arrival for organised fitting',
     ],
     installation:
-      'We can phase installation around your working hours where practical. Confirm constraints during planning.',
+      'Furniture is assembled, levelled and wall-anchored where needed. We test every shutter and drawer before handover and take the packaging away.',
     warranty:
-      'Manufacturing defects covered under our 5-year warranty for applicable pieces.',
+      'Installation defects (alignment, anchoring) are covered for 6 months. Transit damage claims must be reported at delivery time.',
     faqs: [
       {
-        question: 'Do you do complete office interiors?',
+        question: 'Do you deliver to high floors without a lift?',
         answer:
-          'We handle custom furniture and related interior carpentry. Scope is confirmed per project after site visit.',
+          'Yes — we plan manpower and disassembly for staircase carries. Access constraints are confirmed before the delivery date.',
       },
       {
-        question: 'Can you furnish a small shop or clinic?',
+        question: 'Can you shift my old furniture to another room or home?',
         answer:
-          'Yes — counters, storage and display units are common commercial requests.',
+          'Yes. We handle internal shifting and inter-home moves for furniture, including disassembly and reassembly.',
+      },
+      {
+        question: 'Is installation included in delivery?',
+        answer:
+          'For our own manufactured pieces, yes. For standalone delivery jobs, assembly and wall-mounting are quoted clearly upfront.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in office / commercial furniture. Please contact me for a free consultation.',
-    relatedSlugs: ['custom-furniture', 'home-interiors', 'tv-units'],
+      'Hi, I need furniture delivery and installation. Please contact me with a quotation.',
+    relatedSlugs: ['custom-furniture-manufacturing', 'modular-furniture-interior-work', 'product-customization'],
   },
   {
-    slug: 'home-interiors',
-    name: 'Home Interiors',
-    shortName: 'Home Interiors',
-    h1: 'Home Interior Solutions for 1BHK to 4BHK',
+    slug: 'furniture-design-consultation',
+    name: 'Furniture Design & Consultation',
+    shortName: 'Design Consultation',
+    h1: 'Furniture Design & Consultation in Mumbai, Navi Mumbai & Thane',
     title:
-      'Home Interiors in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+      'Furniture Design & Consultation in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
     description:
-      'Complete home interior carpentry — kitchens, wardrobes, TV units and more — for Mumbai, Navi Mumbai & Thane. Free site visit and 3D design.',
-    image: '/images/home-slide1.jpg',
+      'Free site visit and 3D design consultation for furniture and interiors in Mumbai, Navi Mumbai & Thane. See your plan before manufacturing.',
+    image: '/images/service-5.jpg',
     intro:
-      'For full-home projects we coordinate modular kitchen, wardrobes, TV units, pooja units and other carpentry so finishes and timelines stay consistent across rooms.',
+      'Not sure what fits your space? Our designers visit your home, measure, understand your usage and show you 3D concepts — free for serious project enquiries across Mumbai, Navi Mumbai and Thane, plus Ahmedabad (Bopal).',
     benefits: [
-      'Single team for multi-room carpentry',
-      'Coordinated finishes across spaces',
-      '3D design for key areas',
-      'Clearer project sequencing',
-      'Free site visit for qualifying projects',
+      'Free site visit with measurements',
+      '3D design concepts before you commit',
+      'Material, colour and budget guidance',
+      'Room-wise planning for phased budgets',
+      'No-pressure advice — designs are yours to review',
     ],
     materials: [
-      'Material grades selected room-by-room',
-      'Consistent laminate / acrylic language',
-      'Hardware standards agreed upfront',
+      '3D views in realistic colours and finishes',
+      'Material and laminate sample references',
+      'Hardware options with price differences',
+      'Written scope and estimate after approval',
     ],
     designProcess: [
-      'Walkthrough of all rooms',
-      'Priority list (kitchen, bedrooms, living)',
-      'Design packages and quotation',
-      'Phased manufacturing plan',
+      'Book a visit on WhatsApp, call or the contact form',
+      'We measure your rooms and discuss needs and budget',
+      'You receive 3D concepts for review and changes',
+      'Final design locked with a clear written quotation',
     ],
     manufacturingProcess: [
-      'Room-wise production batches',
-      'QC before each dispatch',
-      'Sequenced installation',
+      'Approved designs converted to workshop drawings',
+      'Cutting lists and hardware schedules prepared',
+      'Production slot reserved on your confirmation',
     ],
     installation:
-      'Installation is sequenced to reduce disruption — typically kitchen and wet areas coordinated carefully with other trades when needed.',
+      'Consultation covers installation planning too — access, sequencing and timelines are part of the approved proposal.',
     warranty:
-      'Applicable manufactured pieces carry our 5-year manufacturing defect warranty.',
+      'Designs follow standard ergonomic dimensions. Execution warranty applies when we manufacture and install the approved design.',
     faqs: [
       {
-        question: 'Do you handle painting and false ceiling too?',
+        question: 'Is the consultation really free?',
         answer:
-          'Our core strength is custom furniture and interior carpentry. For other trades we can advise — confirm scope during consultation.',
+          'Yes — site visit and 3D concepts are free for genuine project enquiries. If you only need drawings without execution, a nominal design fee applies.',
       },
       {
-        question: 'Can you do only two rooms in a flat?',
+        question: 'Which areas do you visit?',
         answer:
-          'Yes. Many clients start with kitchen + wardrobes. You do not need a full-home package to enquire.',
+          'Mumbai, Navi Mumbai and Thane, plus Ahmedabad (Bopal). Nearby areas are confirmed honestly at booking time.',
+      },
+      {
+        question: 'Can I get designs for one room only?',
+        answer:
+          'Absolutely. Single-room consultations — one kitchen, one bedroom, one office cabin — are very common.',
       },
     ],
     whatsappMessage:
-      'Hi, I am interested in home interiors. I would like a free 3D design and site visit.',
-    relatedSlugs: ['modular-kitchen', 'wardrobes', 'custom-furniture'],
+      'Hi, I would like a free design consultation and site visit for my space.',
+    relatedSlugs: ['custom-furniture-manufacturing', 'modular-furniture-interior-work', 'product-customization'],
+  },
+  {
+    slug: 'furniture-sales-collection',
+    name: 'Furniture Sales & Product Collection',
+    shortName: 'Sales & Collection',
+    h1: 'Furniture Sales & Ready Collection in Mumbai, Navi Mumbai & Thane',
+    title:
+      'Furniture Sales & Ready Collection in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+    description:
+      'Ready and semi-ready furniture — beds, tables, chairs, storage and more — with showroom viewing in Thane and Bopal. Factory-direct prices.',
+    image: '/images/service-6.jpg',
+    intro:
+      'Prefer to see before you buy? Browse our ready and semi-ready collection — beds, side tables, dining sets, chairs, shoe racks, TV units and storage — at our Thane showroom and Ahmedabad (Bopal) branch, at factory-direct prices.',
+    benefits: [
+      'See and try products before buying',
+      'Factory-direct pricing without middlemen',
+      'Quick delivery on ready stock',
+      'Minor size and finish tweaks available',
+      '5-year warranty on manufactured pieces',
+    ],
+    materials: [
+      'Solid wood, plywood and engineered options',
+      'Laminate, veneer and polished finishes',
+      'Upholstered options in fabric and leatherette',
+      'Branded hardware on storage pieces',
+    ],
+    designProcess: [
+      'Visit the showroom or browse products online',
+      'Shortlist pieces with our team’s guidance',
+      'Confirm sizes against your room measurements',
+      'Delivery slot booked at billing time',
+    ],
+    manufacturingProcess: [
+      'Ready pieces quality-checked before dispatch',
+      'Made-to-tweak orders finished in our workshop',
+      'Packed with transit protection for delivery',
+    ],
+    installation:
+      'Delivery includes assembly and positioning. Packaging waste is cleared after installation.',
+    warranty:
+      'Manufactured pieces carry our 5-year warranty against manufacturing defects. Wear-and-tear and misuse are excluded.',
+    faqs: [
+      {
+        question: 'Where can I see the collection?',
+        answer:
+          'At our Thane showroom (Diva-Shil Road, Khardipada) and our Ahmedabad branch at TRP Mall, Bopal. The products page also shows live stock.',
+      },
+      {
+        question: 'Can ready products be customised slightly?',
+        answer:
+          'Often yes — size, colour and fabric tweaks are possible on many pieces. Ask before billing and we will confirm feasibility.',
+      },
+      {
+        question: 'How fast is delivery on ready stock?',
+        answer:
+          'Usually within a few days in Mumbai, Navi Mumbai and Thane, subject to slot availability. Outstation delivery is quoted separately.',
+      },
+    ],
+    whatsappMessage:
+      'Hi, I want to know about your ready furniture collection. Please share details.',
+    relatedSlugs: ['product-customization', 'delivery-installation', 'furniture-design-consultation'],
+  },
+  {
+    slug: 'product-customization',
+    name: 'Product Customization',
+    shortName: 'Customization',
+    h1: 'Furniture Product Customization in Mumbai, Navi Mumbai & Thane',
+    title:
+      'Furniture Product Customization in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+    description:
+      'Customise size, finish, fabric and storage on our furniture designs across Mumbai, Navi Mumbai & Thane. Your dimensions, our craftsmanship.',
+    image: '/images/dining-table.jpeg',
+    intro:
+      'Love a design but need it wider, shorter, darker or softer? We customise our product designs — beds, tables, seating, storage and more — to your dimensions, finishes and fabrics across Mumbai, Navi Mumbai and Thane.',
+    benefits: [
+      'Size adjustments to fit your exact space',
+      'Finish and colour changes on any design',
+      'Fabric and upholstery swaps on seating',
+      'Storage additions — drawers, shelves, lofts',
+      'Preview and quotation before we start',
+    ],
+    materials: [
+      'Same-grade materials as the base design',
+      'Full laminate, veneer and polish shade cards',
+      'Fabric and leatherette catalogues',
+      'Matching hardware for added storage',
+    ],
+    designProcess: [
+      'Pick a base product from our collection',
+      'Tell us the changes — size, colour, fabric, storage',
+      'We confirm feasibility with adjusted pricing',
+      'Custom piece scheduled in our workshop queue',
+    ],
+    manufacturingProcess: [
+      'Base design redrawn to your dimensions',
+      'Cut, assembled and finished as a custom order',
+      'Checked against the approved specification',
+    ],
+    installation:
+      'Delivered, assembled and positioned like any custom order, with packaging cleared after installation.',
+    warranty:
+      'Customised pieces carry our 5-year warranty against manufacturing defects, same as full-custom furniture.',
+    faqs: [
+      {
+        question: 'How much extra does customization cost?',
+        answer:
+          'Small tweaks like colour or fabric changes cost little; size changes are quoted by material and labour. You approve pricing before we start.',
+      },
+      {
+        question: 'How long does a customised product take?',
+        answer:
+          'Usually 10–20 days depending on the change. Timelines are confirmed with your quotation.',
+      },
+      {
+        question: 'Can I combine features of two products?',
+        answer:
+          'Often yes — for example, one table’s top with another’s legs. Share both references and we will confirm feasibility.',
+      },
+    ],
+    whatsappMessage:
+      'Hi, I like one of your products and want it customized. Please contact me.',
+    relatedSlugs: ['custom-furniture-manufacturing', 'furniture-sales-collection', 'furniture-design-consultation'],
+  },
+  {
+    slug: 'commercial-furniture',
+    name: 'Commercial Furniture',
+    shortName: 'Commercial',
+    h1: 'Commercial Furniture in Mumbai, Navi Mumbai & Thane',
+    title:
+      'Commercial Furniture in Mumbai, Navi Mumbai & Thane | Ananya House of Furniture',
+    description:
+      'Office, retail, restaurant and showroom furniture across Mumbai, Navi Mumbai & Thane. Workstations, counters, display units and full fit-outs.',
+    image: '/images/reception-table.png',
+    intro:
+      'Offices, shops, restaurants and showrooms need furniture that works as hard as you do. We manufacture workstations, counters, display units, dining setups and complete commercial fit-outs across Mumbai, Navi Mumbai and Thane — built for daily heavy use.',
+    benefits: [
+      'Office workstations, cabins and meeting tables',
+      'Retail counters, display racks and trial rooms',
+      'Restaurant dining, bar counters and service stations',
+      'Showroom displays, podiums and consultation areas',
+      'Sturdy commercial-grade construction throughout',
+    ],
+    materials: [
+      'Heavy-duty plywood and blockboard carcass',
+      'Scratch-resistant laminate and acrylic finishes',
+      'Metal framing for workstations and racks',
+      'Commercial-grade hardware and locks',
+    ],
+    designProcess: [
+      'Site visit with measurements and footfall discussion',
+      'Layout plan for staff flow and customer movement',
+      'Material and finish selections for heavy use',
+      'Phased schedule to minimise business downtime',
+    ],
+    manufacturingProcess: [
+      'Bulk cutting and edge banding in our workshop',
+      'Trial assembly of counters and display units',
+      'Packed and labelled zone-wise for fast fitting',
+    ],
+    installation:
+      'Installed floor by floor or zone by zone — including overnight slots where daytime work would disturb business. Packaging cleared after handover.',
+    warranty:
+      'Manufacturing defects are covered under our 5-year warranty. Commercial wear-and-tear beyond normal use is assessed case by case.',
+    faqs: [
+      {
+        question: 'Can you fit out my office without stopping work?',
+        answer:
+          'Yes — we schedule zone-wise and overnight work so your team keeps running. Phasing is agreed in writing before we start.',
+      },
+      {
+        question: 'Do you handle restaurants and shops too?',
+        answer:
+          'Yes. Dining seating, bar counters, billing desks, display racks and storage — plus the installation to match your opening date.',
+      },
+      {
+        question: 'Is commercial furniture more expensive?',
+        answer:
+          'It uses heavier materials and hardware, but factory-direct manufacturing keeps pricing fair. You approve a written quotation before production.',
+      },
+    ],
+    whatsappMessage:
+      'Hi, I need commercial furniture for my office / shop. Please contact me with a quotation.',
+    relatedSlugs: ['custom-furniture-manufacturing', 'modular-furniture-interior-work', 'delivery-installation'],
   },
 ];
 

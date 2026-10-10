@@ -84,20 +84,20 @@ const locationMeta: Record<
 
 /** Primary + secondary location × service combinations (no doorway spam). */
 const combos: { service: MarketingServiceSlug; location: LocationKey }[] = [
-  { service: 'custom-furniture', location: 'mumbai' },
-  { service: 'custom-furniture', location: 'navi-mumbai' },
-  { service: 'custom-furniture', location: 'thane' },
-  { service: 'custom-furniture', location: 'ahmedabad' },
-  { service: 'modular-kitchen', location: 'mumbai' },
-  { service: 'modular-kitchen', location: 'navi-mumbai' },
-  { service: 'modular-kitchen', location: 'thane' },
-  { service: 'modular-kitchen', location: 'ahmedabad' },
-  { service: 'wardrobes', location: 'mumbai' },
-  { service: 'wardrobes', location: 'navi-mumbai' },
-  { service: 'wardrobes', location: 'thane' },
-  { service: 'wardrobes', location: 'ahmedabad' },
-  { service: 'modular-kitchen', location: 'bopal' },
-  { service: 'custom-furniture', location: 'bopal' },
+  { service: 'custom-furniture-manufacturing', location: 'mumbai' },
+  { service: 'custom-furniture-manufacturing', location: 'navi-mumbai' },
+  { service: 'custom-furniture-manufacturing', location: 'thane' },
+  { service: 'custom-furniture-manufacturing', location: 'ahmedabad' },
+  { service: 'modular-furniture-interior-work', location: 'mumbai' },
+  { service: 'modular-furniture-interior-work', location: 'navi-mumbai' },
+  { service: 'modular-furniture-interior-work', location: 'thane' },
+  { service: 'modular-furniture-interior-work', location: 'ahmedabad' },
+  { service: 'furniture-repair-restoration', location: 'mumbai' },
+  { service: 'furniture-repair-restoration', location: 'navi-mumbai' },
+  { service: 'furniture-repair-restoration', location: 'thane' },
+  { service: 'furniture-repair-restoration', location: 'ahmedabad' },
+  { service: 'modular-furniture-interior-work', location: 'bopal' },
+  { service: 'custom-furniture-manufacturing', location: 'bopal' },
 ];
 
 function buildLocalIntro(serviceName: string, locationName: string, locationKey: LocationKey) {
@@ -105,7 +105,7 @@ function buildLocalIntro(serviceName: string, locationName: string, locationKey:
     return `Looking for ${serviceName.toLowerCase()} in ${locationName}? Ananya House of Furniture manufactures in-house at Khardipada and installs across Thane. You get a free site visit and 3D design consultation so you can approve the plan before production.`;
   }
   if (locationKey === 'ahmedabad' || locationKey === 'bopal') {
-    return `Looking for ${serviceName.toLowerCase()} in ${locationName}? Visit or contact our Ahmedabad branch at TRP Mall, Bopal. We help with custom furniture, modular kitchens and wardrobes — including PVC options where they suit the project.`;
+    return `Looking for ${serviceName.toLowerCase()} in ${locationName}? Visit or contact our Ahmedabad branch at TRP Mall, Bopal. We help with custom furniture, modular work and repairs — including polishing and upholstery where they suit the project.`;
   }
   return `Looking for ${serviceName.toLowerCase()} in ${locationName}? Ananya House of Furniture offers free site visits and 3D design consultations for ${locationName} projects, with manufacturing at our Thane workshop and professional installation at your home.`;
 }
@@ -117,16 +117,16 @@ function buildLocalPoints(serviceSlug: MarketingServiceSlug, locationName: strin
     'In-house manufacturing with installation support',
     'Clear quotation after measure — no one-size price guessing',
   ];
-  if (serviceSlug === 'modular-kitchen') {
+  if (serviceSlug === 'modular-furniture-interior-work') {
     return [
       ...base,
-      `Kitchen layouts planned for typical ${locationName} apartment footprints`,
+      `Room layouts planned for typical ${locationName} apartment footprints`,
     ];
   }
-  if (serviceSlug === 'wardrobes') {
+  if (serviceSlug === 'furniture-repair-restoration') {
     return [
       ...base,
-      `Sliding or hinged wardrobes chosen based on your ${locationName} bedroom clearances`,
+      `On-site repair assessment available across ${locationName}`,
     ];
   }
   return base;

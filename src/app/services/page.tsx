@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import CloseButton from '@/components/CloseButton';
+import { Suspense } from 'react';
+import ServicesPageClient from '@/components/ServicesPageClient';
 import { JsonLd } from '@/components/JsonLd';
 import { marketingServices } from '@/lib/marketing-services';
 import { absoluteUrl } from '@/lib/site-config';
@@ -21,9 +20,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
-
-const CARD_SIZES = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 380px';
+export const revalidate = 60;
 
 export default function ServicesPage() {
   const schemas = [
@@ -45,62 +42,35 @@ export default function ServicesPage() {
   ];
 
   return (
-    <div className="services-page">
+    <>
       {schemas.map((data, i) => (
         <JsonLd key={i} data={data} />
       ))}
-
-      <div className="services-page-hero">
-        <CloseButton href="/" />
-        <h1>
-          Our <span>Services</span>
-        </h1>
-        <p>
-          Custom furniture, modular kitchens, wardrobes and interiors for Mumbai, Navi Mumbai &amp;
-          Thane — plus Ahmedabad (Bopal). Free site visit and 3D design consultation.
-        </p>
-      </div>
-
-      <div className="services-page-grid">
-        {marketingServices.map((service, idx) => (
-          <Link
-            key={service.slug}
-            href={`/${service.slug}`}
-            className="services-page-card"
-            aria-label={`Learn more about ${service.name}`}
-          >
-            <div className="services-page-card-img">
-              <Image
-                src={service.image}
-                alt={`${service.name} in Mumbai, Navi Mumbai & Thane`}
-                width={640}
-                height={440}
-                sizes={CARD_SIZES}
-                loading={idx < 2 ? 'eager' : 'lazy'}
-                decoding="async"
-                fetchPriority={idx === 0 ? 'high' : 'auto'}
-              />
+      <Suspense
+        fallback={
+          <div className="gallery-redesign services-redesign">
+            <div className="gal-body gal-body-top">
+              <div className="gallery-page-grid">
+                {marketingServices.slice(0, 4).map((service) => (
+                  <div key={service.slug} className="gal-card">
+                    <div className="gal-card-media">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={service.image} alt={service.name} loading="lazy" width={640} height={440} />
+                    </div>
+                    <div className="gal-card-foot">
+                      <div>
+                        <h3>{service.name}</h3>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="services-page-card-body">
-              <h2>{service.name}</h2>
-              <p>{service.description}</p>
-              <span className="btn" aria-hidden="true">
-                Learn more
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="services-cta">
-        <div className="services-cta-text">
-          <h2>Need Help Choosing the Right Service?</h2>
-          <p>Get a free 3D design consultation and site visit — WhatsApp or call us today.</p>
-          <Link href="/contact" className="btn">
-            Get Free 3D Design
-          </Link>
-        </div>
-      </div>
-    </div>
+          </div>
+        }
+      >
+        <ServicesPageClient services={marketingServices} />
+      </Suspense>
+    </>
   );
 }

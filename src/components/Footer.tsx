@@ -7,9 +7,9 @@ import { handleTrackedPhoneClick } from '@/lib/analytics';
 const quickLinks = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
-  { label: 'Modular Kitchen', href: '/modular-kitchen' },
-  { label: 'Wardrobes', href: '/wardrobes' },
-  { label: 'Custom Furniture', href: '/custom-furniture' },
+  { label: 'Custom Furniture', href: '/custom-furniture-manufacturing' },
+  { label: 'Modular Furniture & Interiors', href: '/modular-furniture-interior-work' },
+  { label: 'Repair & Restoration', href: '/furniture-repair-restoration' },
   { label: 'Products', href: '/products' },
   { label: 'Design Gallery', href: '/gallery' },
   { label: 'Visit Showroom', href: '/visit-us' },

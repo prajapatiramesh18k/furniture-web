@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import LeadCta from '@/components/LeadCta';
+import CloseButton from '@/components/CloseButton';
 import { JsonLd } from '@/components/JsonLd';
 import type { MarketingService } from '@/lib/marketing-services';
 import { getMarketingService } from '@/lib/marketing-services';
@@ -33,6 +34,7 @@ export default function ServiceMarketingPage({ service }: { service: MarketingSe
 
   return (
     <article className="mkt-page">
+      <CloseButton href="/services" />
       {schemas.map((data, i) => (
         <JsonLd key={i} data={data} />
       ))}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import NavbarWrapper from '@/components/NavbarWrapper';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import ProjectTypes from '@/components/ProjectTypes';
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export default function ProjectsPage() {
   return (
@@ -35,14 +36,27 @@ export default function ProjectsPage() {
         ])}
       />
       <NavbarWrapper />
-      <div className="projects-page-hero">
-        <CloseButton href="/" />
-        <h1>Our <span>Packages</span></h1>
-        <p>Transparent pricing for every space — from compact 1BHKs to luxury villas and full office fit-outs.</p>
+      <div className="gallery-redesign packages-redesign" suppressHydrationWarning>
+        <div className="projects-page-hero">
+          <CloseButton href="/" />
+          <h1>Our <span>Packages</span></h1>
+          <p>Transparent pricing for every space — from compact 1BHKs to luxury villas and full office fit-outs.</p>
+        </div>
+        <div className="pkg-body">
+          <ProjectTypes />
+          <HowItWorks />
+          <ProjectPricing />
+          {/* ===== FOOTER BAR ===== */}
+          <div className="gal-footer-bar">
+            <Link href="/contact" className="gal-btn gal-btn-gold gal-footer-cta">
+              <i className="fab fa-whatsapp" /> Book Free Consultation
+            </Link>
+            <Link href="/visit-us" className="gal-btn gal-btn-dark gal-footer-cta">
+              <i className="fas fa-store" /> Visit Showroom
+            </Link>
+          </div>
+        </div>
       </div>
-      <ProjectTypes />
-      <HowItWorks />
-      <ProjectPricing />
       <Footer />
       <WhatsAppFloat />
     </>
