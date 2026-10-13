@@ -73,7 +73,8 @@ async function getProductsForPage() {
       ),
     ]);
 
-    return [...staticProducts, ...dbFormatted];
+    // DB products first (newest first) so admin additions surface on page 1.
+    return [...dbFormatted, ...staticProducts];
   } catch {
     return staticProducts;
   }

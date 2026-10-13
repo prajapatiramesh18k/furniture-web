@@ -81,7 +81,6 @@ export default function QuotationPreview({
   const companyAddress = tenantBrand?.address || branch.address;
   const companyEmail = tenantBrand?.email || branch.email;
   const companyWebsite = tenantBrand?.website || branch.website;
-  const useTenantContacts = !!(tenantBrand?.phone || tenantBrand?.email);
   const initials = companyName.split(' ').map((w) => w[0]).join('').slice(0, 3).toUpperCase() || 'AHF';
 
   const formatDate = (iso: string) => {
@@ -110,8 +109,15 @@ export default function QuotationPreview({
               <i className="fas fa-map-marker-alt"></i> {companyAddress}
             </p>
           )}
-          {useTenantContacts ? (
-            <>
+<>
+              <div className="qp-branch-contact">
+                {branch.contacts.map((c, i) => (
+                  <p key={`${c.name}-${i}`} style={{ margin: '2px 0' }}>
+                    <i className="fas fa-user"></i> {c.name}
+                    <span className="qp-branch-phone"> · {c.phone}</span>
+                  </p>
+                ))}
+              </div>
               {tenantBrand?.phone && (
                 <p className="qp-branch-contact" style={{ margin: '2px 0' }}>
                   <i className="fas fa-phone"></i> {tenantBrand.phone}
@@ -128,24 +134,6 @@ export default function QuotationPreview({
                 </p>
               )}
             </>
-          ) : (
-            <>
-              <div className="qp-branch-contact">
-                {branch.contacts.map((c, i) => (
-                  <p key={`${c.name}-${i}`} style={{ margin: '2px 0' }}>
-                    <i className="fas fa-user"></i> {c.name}
-                    <span className="qp-branch-phone"> · {c.phone}</span>
-                  </p>
-                ))}
-              </div>
-              <p className="qp-branch-email">
-                <i className="fas fa-envelope"></i> <span className="qp-lowercase">{companyEmail}</span>
-              </p>
-              <p className="qp-branch-website">
-                <i className="fas fa-globe"></i> <span className="qp-lowercase">{companyWebsite}</span>
-              </p>
-            </>
-          )}
           {tenantBrand?.gstNumber ? (
             <p className="qp-branch-est">GST: {tenantBrand.gstNumber}</p>
           ) : (

@@ -1,11 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/context/WishlistContext';
 import { cachedGetJSON } from '@/lib/api-cache';
 import { openWhatsAppChat, getServiceWhatsAppMessage } from '@/lib/quote-whatsapp';
 
 export default function FeaturedProducts() {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -87,7 +89,15 @@ export default function FeaturedProducts() {
                 )
               : null;
           return (
-          <div key={product.id} className="featured-product-card">
+          <div
+            key={product.id}
+            className="featured-product-card"
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('button, a')) return;
+              router.push(`/products/${product.slug || product.id}`);
+            }}
+          >
             <div className="fp-card-img">
               {discount && (
                 <span className="product-discount-badge">-{discount}% OFF</span>

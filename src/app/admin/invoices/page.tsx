@@ -98,6 +98,8 @@ export default function AdminInvoicesHub() {
             rows={paged}
             emptyText="No invoices yet."
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

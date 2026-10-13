@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 import { useWishlist } from '@/context/WishlistContext';
 import { openWhatsAppChat } from '@/lib/quote-whatsapp';
@@ -48,13 +48,14 @@ const filterCategories = [
   { id: 'kitchen', name: 'Kitchen', icon: 'fa-hat-chef' },
 ];
 
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 15;
 
 export default function ProductsPageClient({
   initialProducts,
 }: {
   initialProducts: ProductListItem[];
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -233,7 +234,15 @@ export default function ProductsPageClient({
                       : null;
                   const wished = isInWishlist(product.id);
                   return (
-                    <article key={product.id} className="gal-card prod-card">
+                    <article
+                      key={product.id}
+                      className="gal-card prod-card"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('button, a')) return;
+                        router.push(`/products/${product.slug || product.id}`);
+                      }}
+                    >
                       <div className="gal-card-media">
                         <Link href={`/products/${product.slug || product.id}`} aria-label={`View ${product.name}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}

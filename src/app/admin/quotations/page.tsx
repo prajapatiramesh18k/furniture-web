@@ -201,6 +201,8 @@ export default function AdminQuotations() {
             emptyText="No quotations found."
             onRowClick={openDetail}
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

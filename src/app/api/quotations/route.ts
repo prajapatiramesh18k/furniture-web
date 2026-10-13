@@ -168,9 +168,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error("Error saving quotation:", error);
+    const status = error?.name === 'ValidationError' ? 400 : 500;
     return NextResponse.json(
       { error: error?.message || "Failed to save quotation" },
-      { status: 500 },
+      { status },
     );
   }
 }
@@ -405,9 +406,10 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, quotation: existing, ...(autoProjectId ? { projectId: autoProjectId } : {}) });
   } catch (error: any) {
     console.error('Error updating quotation status:', error);
+    const status = error?.name === 'ValidationError' ? 400 : 500;
     return NextResponse.json(
       { error: error?.message || 'Failed to update quotation' },
-      { status: 500 },
+      { status },
     );
   }
 }

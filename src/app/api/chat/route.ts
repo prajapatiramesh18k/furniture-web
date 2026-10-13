@@ -22,13 +22,13 @@ ANANYA HOUSE OF FURNITURE - Product Information
 PRODUCTS:
 1. Bedside Table - Rs.4,999 (original Rs.6,999) - Bedroom category - Elegant wooden bedside table with 2 drawers, perfect for modern bedrooms
 2. Sofa & Chair - Rs.19,999 (original Rs.24,999) - Living Room category - Luxurious fabric sofa with matching chair
-3. TV Unit - Rs.12,999 (original Rs.17,999) - Living Room category - Modern TV unit with storage compartments
+3. TV Unit - Rs.12,499 (original Rs.16,999) - Living Room category - Modern TV unit with storage compartments
 4. Dining Table Set - Rs.18,999 (original Rs.24,999) - Dining Room category - 6-seater dining table with chairs
-5. Study Desk - Rs.7,999 (original Rs.9,999) - Office category - Compact study desk with drawer storage
+5. Reception Desk - Rs.7,999 (original Rs.9,999) - Office category - Sturdy reception desk with drawer storage
 6. Shoe Rack - Rs.3,999 (original Rs.5,999) - Entryway category - Wooden shoe rack with multiple shelves
-7. Kids Bed - Rs.14,999 (original Rs.19,999) - Kids Room category - Colorful kids bed with safety rails
+7. Kids Bed - Rs.14,499 (original Rs.18,999) - Kids Room category - Colorful kids bed with safety rails
 8. Wardrobe - Rs.22,999 (original Rs.29,999) - Bedroom category - Spacious 3-door wardrobe with mirror
-9. Pooja Unit - Rs.9,999 (original Rs.13,999) - Pooja Unit category - Traditional pooja unit with compartments
+9. Pooja Unit - Rs.10,499 (original Rs.13,999) - Pooja Unit category - Traditional pooja unit with compartments
 10. Modular Kitchen - Rs.59,999 (original Rs.79,999) - Kitchen category - L-shaped modular kitchen with premium finish
 11. Crockery Unit - Rs.8,999 (original Rs.11,999) - Dining Room category - Elegant crockery unit with glass doors
 12. Almirah - Rs.15,999 (original Rs.21,999) - Bedroom category - Sturdy almirah with locker compartment

@@ -305,6 +305,8 @@ export default function LiveAttendanceTab() {
             rows={paged}
             emptyText="No employee records found."
             onRowClick={handleOpenAdjust}
+            page={page}
+            pageSize={pageSize}
           />
         )}
         {!(loading && records.length === 0) && (

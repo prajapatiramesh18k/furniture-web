@@ -527,6 +527,8 @@ export default function PayrollTab() {
             rows={paged}
             emptyText={search ? `No employees found matching "${search}"` : 'No employees yet.'}
             onRowClick={handleSelectEmployee}
+            page={page}
+            pageSize={pageSize}
           />
         )}
         {!(loading && employees.length === 0) && (

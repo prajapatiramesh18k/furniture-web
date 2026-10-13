@@ -136,6 +136,8 @@ export default function AdminOrders() {
           minWidth={980}
           onRowClick={() => {}}
           loading={loading}
+          page={page}
+          pageSize={pageSize}
         />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

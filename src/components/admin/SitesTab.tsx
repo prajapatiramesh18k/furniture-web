@@ -313,6 +313,8 @@ export default function SitesTab() {
             rows={paged}
             emptyText={search ? `No job sites found matching "${search}"` : 'No job sites yet.'}
             onRowClick={handleOpenEdit}
+            page={page}
+            pageSize={pageSize}
           />
         )}
         {!(loading && sites.length === 0) && (

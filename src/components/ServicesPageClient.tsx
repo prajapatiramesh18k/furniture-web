@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import CloseButton from '@/components/CloseButton';
 import { openWhatsAppChat } from '@/lib/quote-whatsapp';
 import type { MarketingService } from '@/lib/marketing-services';
 
 export default function ServicesPageClient({ services }: { services: MarketingService[] }) {
+  const router = useRouter();
   const bookConsultation = () => {
     openWhatsAppChat(`Hi! I browsed your Services and want a free design consultation for my space.`, {
       branch: 'mumbai',
@@ -24,7 +26,15 @@ export default function ServicesPageClient({ services }: { services: MarketingSe
         <div className="gal-main gal-main-full">
           <div className="gallery-page-grid services-grid">
             {services.map((service, idx) => (
-              <article key={service.slug} className="gal-card svc-card">
+              <article
+                key={service.slug}
+                className="gal-card svc-card"
+                style={{ cursor: 'pointer' }}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('button, a')) return;
+                  router.push(`/${service.slug}`);
+                }}
+              >
                 <div className="gal-card-media">
                   <Link href={`/${service.slug}`} aria-label={`Learn more about ${service.name}`}>
                     <Image

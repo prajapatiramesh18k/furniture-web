@@ -1471,6 +1471,8 @@ export default function EmployeesTab() {
             rows={paged}
             emptyText={search ? `No employees found matching "${search}"` : 'No employees yet.'}
             onRowClick={openEmployee}
+            page={page}
+            pageSize={pageSize}
           />
         )}
         {!(loading && employees.length === 0) && (

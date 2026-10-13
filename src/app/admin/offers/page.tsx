@@ -88,6 +88,8 @@ export default function AdminOffers() {
             rows={paged}
             emptyText="No discounted products right now."
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

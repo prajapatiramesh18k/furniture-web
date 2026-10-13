@@ -196,6 +196,8 @@ function RequestList() {
             emptyText="No requests in this view yet."
             onRowClick={openMaker}
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

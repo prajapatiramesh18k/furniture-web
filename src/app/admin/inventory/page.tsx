@@ -56,6 +56,8 @@ export default function AdminInventory() {
             rows={paged}
             emptyText="No items at this stock level."
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

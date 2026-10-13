@@ -180,6 +180,8 @@ export default function AdminVendors() {
             emptyText="No vendors yet."
             onRowClick={startEdit}
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

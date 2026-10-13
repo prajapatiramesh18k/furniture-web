@@ -487,6 +487,8 @@ export default function AdminLeads() {
           emptyText="No leads in this view yet."
           onRowClick={openEditor}
           loading={loading}
+          page={page}
+          pageSize={pageSize}
         />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

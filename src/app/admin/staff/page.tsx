@@ -75,6 +75,8 @@ export default function AdminStaff() {
             rows={paged}
             emptyText="No team members found."
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={users.length} onPage={setPage} />

@@ -172,6 +172,8 @@ export default function AdminSiteVisits() {
             emptyText="No site visits yet."
             onRowClick={openEditor}
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

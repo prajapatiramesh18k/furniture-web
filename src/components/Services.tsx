@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { marketingServices } from '@/lib/marketing-services';
 
 export default function Services() {
+  const router = useRouter();
   return (
     <section className="services" id="services">
       <h2 className="heading">
@@ -13,7 +15,15 @@ export default function Services() {
       </p>
       <div className="box-container">
         {marketingServices.slice(0, 8).map((service) => (
-          <div key={service.slug} className="box">
+          <div
+            key={service.slug}
+            className="box"
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('button, a')) return;
+              router.push(`/${service.slug}`);
+            }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={service.image} alt={`${service.name} — Ananya House of Furniture`} loading="lazy" decoding="async" />
             <h3>{service.name}</h3>

@@ -85,6 +85,8 @@ export default function AdminPayments() {
             rows={paged}
             emptyText="No payment records yet."
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />

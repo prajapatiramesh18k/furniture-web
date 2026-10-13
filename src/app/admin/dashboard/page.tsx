@@ -255,6 +255,8 @@ export default function AdminDashboard() {
             ]}
             rows={stats.recentOrders}
             emptyText="No orders yet — new website orders will show up here."
+            page={1}
+            pageSize={10}
           />
       </div>
 

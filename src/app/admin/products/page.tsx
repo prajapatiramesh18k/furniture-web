@@ -33,6 +33,7 @@ export default function AdminProducts() {
   const [catFilter, setCatFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [priceFilter, setPriceFilter] = useState('all');
+  const [pageSizeOpt, setPageSizeOpt] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [viewing, setViewing] = useState<Product | null>(null);
@@ -80,7 +81,8 @@ export default function AdminProducts() {
     });
   }, [products, search, catFilter, stockFilter, priceFilter]);
 
-  const { page, totalPages, paged, setPage, pageSize } = usePagination(filtered, 10, [search, catFilter, stockFilter, priceFilter]);
+  const effPageSize = pageSizeOpt === 'all' ? Math.max(filtered.length, 1) : Number(pageSizeOpt);
+  const { page, totalPages, paged, setPage } = usePagination(filtered, effPageSize, [search, catFilter, stockFilter, priceFilter, pageSizeOpt]);
 
   const openAdd = () => {
     setEditing(null);
@@ -197,6 +199,18 @@ export default function AdminProducts() {
               ]}
               onChange={setPriceFilter}
             />
+            <UIDropdown
+              label="Rows per page"
+              value={pageSizeOpt}
+              options={[
+                { value: '10', label: '10 / page' },
+                { value: '25', label: '25 / page' },
+                { value: '50', label: '50 / page' },
+                { value: '100', label: '100 / page' },
+                { value: 'all', label: 'Show all' },
+              ]}
+              onChange={setPageSizeOpt}
+            />
             <button
               className="ahf-btn ahf-btn-primary ahf-btn-sm"
               onClick={openAdd}
@@ -242,9 +256,11 @@ export default function AdminProducts() {
           emptyText="No products match your filters."
           minWidth={820}
           loading={loading}
+          page={page}
+          pageSize={effPageSize}
         />
         {!loading && (
-          <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={filtered.length} onPage={setPage} />
+          <ListPagination page={page} totalPages={totalPages} pageSize={effPageSize} total={filtered.length} onPage={setPage} />
         )}
       </div>
 

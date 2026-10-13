@@ -626,6 +626,7 @@ export default function QuotationMakerPage() {
   };
 
   const handleDownload = async () => {
+    // ---- Validation ----
     if (subtotal === 0) {
       showNotice('Please add at least one item with a rate before downloading.', 'info');
       return;
@@ -636,90 +637,143 @@ export default function QuotationMakerPage() {
       document.getElementById('qm-cust-phone')?.focus();
       return;
     }
+    if (!customer.name.trim()) {
+      showNotice('Customer name is required.', 'info');
+      document.getElementById('qm-cust-name')?.focus();
+      return;
+    }
+    if (!project.type.trim()) {
+      showNotice('Please select a project type before downloading.', 'info');
+      document.getElementById('qm-proj-type')?.focus();
+      return;
+    }
     const target = document.getElementById('print-area');
-    if (!target) return;
+    if (!target) {
+      showNotice('Preview area not found. Please refresh and try again.', 'error');
+      return;
+    }
+    // Ensure items have valid data
+    const validItems = items.filter((it) => it.name.trim() && it.rate > 0 && it.quantity > 0);
+    if (validItems.length === 0) {
+      showNotice('Please add at least one valid item before downloading.', 'info');
+      return;
+    }
+    // For multi mode, ensure categories exist
+    if (mode === 'multi' && (!categories || categories.length === 0)) {
+      showNotice('Please add at least one trade section for multi-trade mode.', 'info');
+      return;
+    }
+
     setDownloading(true);
 
-    // Save to database asynchronously (POST for new, PUT fullEdit for ?edit=id)
+    // ---- Prepare payload ----
     const payloadTotals = mode === 'multi'
-      ? { subtotal, gst, total, totalDiscount, categoryTotals }
-      : { subtotal, gst: includeGst ? subtotal * 0.18 : 0, total: includeGst ? subtotal * 1.18 : subtotal };
+      ? {
+          subtotal,
+          gst,
+          total,
+          totalDiscount: totalDiscount ?? 0,
+          categoryTotals: categoryTotals ?? [],
+        }
+      : {
+          subtotal,
+          gst: includeGst ? subtotal * 0.18 : 0,
+          total: includeGst ? subtotal * 1.18 : subtotal,
+          totalDiscount: 0,
+        };
+
     let finalQuoteNo = project.quoteNo;
-    if (editId) {
-      fetch('/api/quotations', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editId,
-          fullEdit: true,
-          department,
-          departmentName: mode === 'multi' ? 'Interior (Multi-Trade)' : config.name,
-          mode,
-          ...(mode === 'multi' ? { categories } : {}),
-          customer,
-          project,
-          items,
-          totals: payloadTotals,
-          workType,
-          terms: notes,
-          inclusions: inclusionsText,
-          ...(linkedVisitId ? { visitId: linkedVisitId } : {}),
-        }),
-      })
-        .then(() => {
-          showNotice('Quotation updated.', 'success');
-          if (linkedVisitId) {
-            fetch('/api/site-visits', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: linkedVisitId, quoteStatus: 'completed' }),
-            }).catch(() => {});
-          }
-        })
-        .catch(console.error);
-    } else {
-      // Await save so the PDF uses the server-assigned quotation number.
-      try {
-        const res = await fetch('/api/quotations', {
+    let saveSucceeded = false;
+
+    // Build saveBody with defensive defaults
+    const saveBody = {
+      department,
+      departmentName: mode === 'multi' ? 'Interior (Multi-Trade)' : (config?.name ?? 'Furniture'),
+      mode,
+      ...(mode === 'multi' && categories?.length ? { categories } : {}),
+      customer: {
+        name: customer.name.trim(),
+        phone: custPhone,
+        email: customer.email?.trim() ?? '',
+        address: customer.address?.trim() ?? '',
+        branch: customer.branch ?? 'Mumbai (Head Office)',
+      },
+      project: {
+        type: project.type ?? '',
+        quoteNo: project.quoteNo ?? '',
+        date: project.date ?? new Date().toISOString().split('T')[0],
+        validTill: project.validTill ?? '',
+      },
+      items: validItems,
+      totals: payloadTotals,
+      workType: workType ?? '',
+      terms: notes ?? '',
+      inclusions: inclusionsText ?? '',
+      ...(linkedVisitId && /^[0-9a-fA-F]{24}$/.test(linkedVisitId) ? { visitId: linkedVisitId } : {}),
+    };
+
+    // ---- Save to database ----
+    try {
+      let res: Response;
+      if (editId) {
+        // Editing existing quotation - use PUT with fullEdit
+        res = await fetch('/api/quotations', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editId,
+            fullEdit: true,
+            ...saveBody,
+          }),
+        });
+      } else {
+        // Creating new quotation - use POST
+        res = await fetch('/api/quotations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            department,
-            departmentName: mode === 'multi' ? 'Interior (Multi-Trade)' : config.name,
-            mode,
-            ...(mode === 'multi' ? { categories } : {}),
+            ...saveBody,
             status: 'sent',
-            customer,
-            project,
-            items,
-            totals: payloadTotals,
-            workType,
-            terms: notes,
-            inclusions: inclusionsText,
-            ...(linkedVisitId ? { visitId: linkedVisitId } : {}),
           }),
         });
-        const d = await res.json().catch(() => ({}));
-        const assigned = d?.quotation?.project?.quoteNo;
-        if (res.ok && assigned) finalQuoteNo = assigned;
-        if (res.ok && assigned && assigned !== project.quoteNo) {
+      }
+
+      const d = await res.json().catch(() => ({}));
+      const assigned = d?.quotation?.project?.quoteNo;
+
+      if (res.ok && assigned) {
+        finalQuoteNo = assigned;
+        saveSucceeded = true;
+        if (assigned !== project.quoteNo) {
           setProject((p) => ({ ...p, quoteNo: assigned }));
           // Let the preview re-render with the assigned number before capture.
           await new Promise((r) => setTimeout(r, 150));
         }
-        if (res.ok) {
-          showNotice(`Quotation saved — ${assigned || project.quoteNo}.`, 'success');
-          if (linkedVisitId) {
-            fetch('/api/site-visits', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: linkedVisitId, quoteStatus: 'completed' }),
-            }).catch(() => {});
-          }
-        }
-      } catch (e) {
-        console.error(e);
+        showNotice(editId ? `Quotation updated — ${assigned}.` : `Quotation saved — ${assigned}.`, 'success');
+      } else {
+        // Save failed - show error to user
+        const errorMsg = d?.error || (res.status === 401 ? 'Session expired. Please log in again.' : 'Failed to save quotation');
+        showNotice(`Save failed: ${errorMsg}`, 'error');
+        console.error('Quotation save failed:', d, 'status:', res.status);
       }
+
+      if (res.ok && linkedVisitId) {
+        fetch('/api/site-visits', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: linkedVisitId, quoteStatus: 'completed' }),
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.error('Quotation save error:', e);
+      showNotice('Failed to save quotation. Please check your connection and try again.', 'error');
+    }
+
+    // Only generate PDF if save succeeded (or if we're editing and the save might have worked)
+    // For editing, we still generate PDF even if save failed to not block the user completely
+    if (!saveSucceeded && !editId) {
+      setDownloading(false);
+      return;
     }
 
     target.classList.add('qp-compact');
@@ -732,6 +786,7 @@ export default function QuotationMakerPage() {
       if (logoImg && logoSrc && !logoImg.src.startsWith('data:')) {
         logoImg.src = logoSrc;
       }
+      // Wait for images to load with timeout
       await Promise.all(
         Array.from(target.querySelectorAll('img')).map(
           (img) =>
@@ -753,6 +808,10 @@ export default function QuotationMakerPage() {
         windowWidth: target.scrollWidth,
         windowHeight: target.scrollHeight,
       });
+      // Guard against empty canvas
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Generated canvas is empty');
+      }
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -792,13 +851,18 @@ export default function QuotationMakerPage() {
       }
       const safeQuote = (finalQuoteNo || 'quotation').replace(/[^\w-]/g, '_');
       pdf.save(`${safeQuote}.pdf`);
-      trackQuotationPdfDownload({
-        department,
-        branch: customer.branch === 'ahmedabad' ? 'ahmedabad' : 'mumbai',
-        cta: 'quotation_pdf_download',
-        source: 'quotation_maker',
-        project_type: project.type,
-      });
+      // Track analytics with error boundary
+      try {
+        trackQuotationPdfDownload({
+          department,
+          branch: customer.branch === 'ahmedabad' ? 'ahmedabad' : 'mumbai',
+          cta: 'quotation_pdf_download',
+          source: 'quotation_maker',
+          project_type: project.type,
+        });
+      } catch (trackErr) {
+        console.warn('Analytics tracking failed:', trackErr);
+      }
     } catch (err) {
       console.error('PDF generation failed', err);
       showNotice('PDF generation failed. Please try again or use the browser print dialog.', 'error');

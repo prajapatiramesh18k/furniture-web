@@ -43,7 +43,8 @@ export default function ProductDetailPage() {
         const res = await fetch('/api/products');
         const data = await res.json();
         const products: Product[] = data.products || [];
-        const found = products.find(p => p.slug === slug);
+        // Match by slug, id, or legacy numeric id — never hard-404 on URL variants.
+        const found = products.find(p => p.slug === slug || String(p.id) === slug);
         setProduct(found || null);
         setActiveImageIndex(0);
 

@@ -188,6 +188,8 @@ export default function AdminTasksHub() {
               ? 'No tasks yet — they are seeded automatically when a quotation becomes a project.'
               : 'No tasks in this project for the current search / status.'}
             loading={loading}
+            page={page}
+            pageSize={pageSize}
           />
         {!loading && (
           <ListPagination page={page} totalPages={totalPages} pageSize={pageSize} total={rows.length} onPage={setPage} />
